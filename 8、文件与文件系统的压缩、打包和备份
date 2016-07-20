@@ -1,0 +1,51 @@
+Linux 中 打包 和 压缩 是两个概念
+1、压缩：只能减少单个文件的大小，并提供解压缩方案
+2、打包：将多个文件变成一个文件，并提供解包方案
+
+打包文件常见后缀 .tar
+压缩文件常见后缀 .Z .zip .gz .bz2 .xz
+
+注意，在 Linux 中后缀名并不影响文件本身，只是作为人类可读的方式而存在
+
+
+
+.gz 的压缩工具
+
+gzip [-cdtv#] [文件]
+
+-c, --stdout, --to-stdout 将压缩后的数据重导向至 standard out
+-d, --decompress, --uncompress 无视后缀名，强制解压缩
+-t, --test 测试压缩包完整性
+-v, --verbose 输出各类参数
+-<number>, --fast, --best 压缩级别（取值 1-9，默认 6）， <number> 越大，压缩率越大，压缩解压资源消耗越多
+
+#! 注意！ gzip 在压缩/解压的时候，默认会删除原有文件
+
+zcat/zless/zmore/zgrep 查看压缩文件的内容
+
+
+
+.bz2 的压缩工具
+
+bzip2 [-cdkzv#] [文件]
+
+-c, --stdout 将压缩后的数据重导向至 standard out
+-d, --decompress 无视后缀名，强制解压缩
+-z, --compress 无视后缀名，强制压缩
+-k, --keep 压缩/解压后保留原文件
+-v, --verbose 输出各类参数
+-<number> 压缩级别（取值 1-9 ）
+
+bzcat/bzless/bzmore/bzgrep 查看压缩文件的内容
+
+
+
+.xz 的压缩工具
+
+xz [-cdkzv#] [文件]
+
+参数同 bzip2
+
+
+
+
