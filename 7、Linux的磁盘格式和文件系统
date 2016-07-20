@@ -1,0 +1,740 @@
+Linux文件系统中
+
+权限与属性放置在 inode 磁盘区块中
+而文件内容则放置在 block 磁盘区块中
+而记录某个文件系统的整体属性资料的数据被放置在 superblock 磁盘区块中
+superblock 包含的数据：inode/block的总量、使用量、剩余量、文件系统的格式和其他信息
+
+
+
+索引式文件系统（Indexed Allocation）
+
+每个 inode 和 block 都有编号
+每个文件都占用一个 inode 号
+每个 inode 里都有 存储文件数据的 block 的编号
+这样搜索 inode 就可以找到文件数据在磁盘上的位置了
+
+这种通过 inode 来记录文件存储位置的方式被称为
+索引式文件系（indexed allocation）
+
+
+文件配置表（FAT：File Allocation Table）
+
+与索引式文件系统对应的
+
+FAT 在每个数据 block 的尾部写入下一段数据所在的数据 block 编号
+
+
+
+EXT2 文件系统的详细说明
+
+在 EXT2 文件系统中，格式化结束之后 inode 和 block 就已经分配好了，一般来说是不会被修改的
+
+EXT2 格式化硬盘的时候
+
+会在自己控制的硬盘区域的最前方写入 Boot Sector
+之后将硬盘分组 分为数个 Block Group
+
+每个 Block Group，开始是 Super Block（不是每个 Block Group 都有）
+				 之后是 Filesystem Description
+				 然后是 Block Bitmap
+				 之后是 Inode Bitmap
+				 之后是 Inode Table
+				 之后是 Data Block
+
+（1） Data Block
+EXT2 支持的 Block 大小有 1KB 2KB 4KB 三种
+
+Block大小		1KB		2KB		4KB
+最大单个文件大小	16GB	256GB	2TB
+最大文件系统大小	2TB		8TB		16TB
+
+<1> block 的数量和单个大小在格式化完成之后就不再改变
+<2> 每个 block 最多只能放置一个文件
+<3> 一个文件的总量大于一个 block 的时候会占用多个 block
+<4> 一个文件的剩余量不能写满一个 block 的时候， block 会留空
+<5> 对于大文件而言，block 越小，每个 inode 需要记载的 block 数也就越多，越不利于读写
+
+
+（2） Inode Table
+
+其记录的数据有
+<1> 文件的存取模式（read/write/execute）
+<2> 文件的拥有者和群组（owner/group）
+<3> 文件的大小
+<4> 文件的建立时间/状态改变的时间（ctime）
+<5> 最近一次读取的时间（atime）
+<6> 最近一次修改的时间（mtime）
+<7> 文件特殊属性（eg. SetUID、SetGID、StickyBit）
+<8> 指向 Data Block 的指针（pointer）
+
+特点
+<1> inode 大小固定为 128 bytes （ext4 和 xfs 可以设定为 256 bytes）
+<2> 每个文件仅占用一个 inode
+<3> 文件系统最多能创建的文件数量和 inode 数量有关
+<4> 系统先查询 inode 的权限设置，再通过记录的指针寻找 Data Block
+
+由于记录一个 block 需要消耗 4bytes 的 inode 空间，所以 inode 也会将指针记录在 block 中，来指向更多的 Data Block
+
+
+（3） Super Block
+
+其记录的主要数据有
+<1> Block 和 Inode 的总数量
+<2> 未使用与已使用的 Inode/Block 的数量
+<3> Block/Inode 的大小
+<4> 文件系统的挂载时间、最近一次写入资料的时间、最近一次检查磁盘（fsck）的时间等
+<5> valid bit 数据，若已被挂载则为 0， 若未被挂载则为 1
+
+特点
+<1> 记录了 Block Group 的整体信息
+<2> 一般大小为 1024 bytes
+<3> 第一个 Block Group 具有 Super Block
+	其他 Block Group 里可能含有 Super Group，主要用于对一个 Block Group 里的 Super Group 的冗余备份
+
+
+（4） Filesystem Description
+
+其记录的主要内容
+<1> 每个 Block Group 的 起始/结束 Block 的编号
+<2> 每个区段（Super Block/Block Bitmap/Inode Bitmap/Data Block）的 起始/结束 Block 的编号
+
+
+（5） Block Bitmap
+
+其主要记录的内容是
+<1> 当前那些 Data Block 是空的
+
+
+（6） Inode Bitmap
+
+其主要记录的内容是
+<1> 当前那些 Inode Block 是空的
+
+
+
+目录与文件系统的关系
+
+创建目录时，分配一个 Inode 和至少一个 Data Block
+Data Block 记录在此目录下的文件/目录的 文件名 和 Inode 编号
+
+正因如此，一个文件/目录的 重命名、移动、删除 等操作需要所在目录的权限的原因
+
+
+
+EXT2/3/4 文件的写入
+
+（1） 查询用户对目标目录是否有wx权限
+（2） 查询未使用的 inode 号，写入文件权限/属性
+（3） 查询未使用的 block 号，向 Data Block 写入数据，更新 Inode 中的 Data Block 数据
+（4） 更新 inode bitmap 和 block bitmap，并更新 super block
+
+
+一般来讲 inode table 和 data block 合称 文件存放区，而 super block/block bitmap/inode bitmap 等称为 metadata 元数据
+
+
+如果文件写入执行到了第 3 步，却因为某些原因没有完成第 4 步，就会出现 metadata 和 数据 不一致（Inconsistent）的现象
+
+如果要检查错误的话就要扫描整个文件系统才行，于是我们在Ext3中引入了 日志式文件系统
+
+
+日志式文件系统（Journaling filesystem）
+
+（1） 写入文件前，先在 日志记录区块 中记录要写入文件的信息
+（2） 正式执行写入操作
+（3） 写入文件完成后，在 日志记录区块 中写入文件已完整写入的信息
+
+这样系统只要检查 日志文件就可以快速了解文件是否被正常写入了
+
+
+内存缓存机制
+
+对于需要修改的文件，系统会将文件暂存在内存中
+若文件没有被修改，则被标记为 clean 状态；若有修改，则被标记为 dirty 状态
+而系统会不定期的将内存中被标记为 dirty 状态的文件写回硬盘中
+这一步叫做 sync
+
+这也是为什么 Linux 经常性的完全占满物理内存
+同时又会在关机的时候调用 sync 将文件刷入硬盘的原因
+也是为什么非正常的关机对 Linux 有很大损害的原因
+
+
+查看系统支持的 文件系统类型
+
+ls -l /bin/modules/$(uname -r)/kernel/fs/
+
+目前已经载入到 Linux 系统里的 文件系统类型
+
+cat /proc/filesystems
+
+
+Linux 会自动使用 VFS （Virtual Filesystem Switch） 来管理不同文件系统的文件，而不需要使用者来选择文件系统的调用方式
+
+
+xfs 文件系统简介
+
+EXT2/3/4 文件系统的问题：对于超大硬盘的格式化速度过慢（格式化时需要分配所有的 inode/data block/metadata）等的问题
+
+xfs将文件系统分为三大部分：资料区（data section）、日志区（log section）、即使区（realtime section）
+
+（1） data section 包含 inode/data block/superblock，如同 Ext2 的 Block Group 也将硬盘划分为数个 存储区群组（allocation groups, AG）
+每个 allocation group 包含整个 文件系统 的 super block，剩余空间的管理机制，inode 的动态分配与追踪
+
+xfs 支持的 block 大小 512bytes ~ 64Kbytes，支持的 inode 大小 256bytes ~ 2Mbytes
+
+
+（2） log section 类似于 Journal，记录文件系统的变化。文件被写入时就开始记录，直到文件写入完成在结束某一笔记录
+log section 可以放置在不同的设备上，以供这个区域的快速读写的要求
+
+（3） realtime section，在 xfs 分配新的 inode 和 data block 的时候暂时将要写入的数据存储至 Extent Block ，
+并在分配完成之后，将数据写入对应的 data block 之中
+
+可使用的大小是 4K 至 1G
+
+
+RAID0 的情况下，extent block 的大小最好与 stripe 的大小一致
+
+
+
+使用 xfs_info 命令来查看 xfs 的文件系统信息
+
+eg.
+
+[eP@epct ~]$ xfs_info /dev/sda2
+#返回值
+meta-data=/dev/sda2              isize=256    agcount=4, agsize=65536 blks
+         =                       sectsz=512   attr=2, projid32bit=1
+         =                       crc=0        finobt=0
+data     =                       bsize=4096   blocks=262144, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0 ftype=0
+log      =internal               bsize=4096   blocks=2560, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+
+第 1 行
+isize	指单个 inode 的大小为 256bytes
+agcount	指这个文件系统上的 Allocation Group 的总数目为 4 个
+agsize	指每个 Allocation Group 中用于记录 meta-data 的 blocks 数量为 65536 个
+
+第 2 行
+sectsz	指该磁盘的逻辑扇区大小为 512bytes
+
+第 3 行
+bsize	指该文件系统中，每个 data block 的大小为 4096bytes
+blocks	指该文件系统中一共有 262144 个 data block
+
+第 6 行
+internal指该文件系统的 log sector 占用的是本身的空间
+
+
+
+查看文件系统的使用量 df/du
+
+df 查看指定目录或文件占硬盘的总量
+
+df [-ahikHTm] [目录或文件名]
+-a 列出所有的文件系统
+-h 使用人类可读的大小显示方式
+-i 用 inode 数量替代文件大小
+-k 以 1KB 为单位显示文件大小
+-m 以 1MB 为单位显示文件大小
+-H 以 1000 替代 1024 作为进制大小
+-T 同时写出该分区的文件系统格式
+
+
+eg.
+[eP@epct ~]$ df
+#返回
+Filesystem	1K-blocks	Used	Available	Use%	Mount on
+...blah...blah...blah...
+
+Filesystem 列出设备名称（分区名）
+1K-block 列出该文件系统的总容量（1KB 为单位）
+Used 使用的总量
+Available 可用的总量
+Use% 使用的百分比
+Mount on 挂载的目录
+
+
+当 df 后面跟随了路径，则显示该路径所在的文件系统的信息
+
+
+
+du 显示文件占用的磁盘空间
+
+du [-ahsSkm] [目录或文件名]
+
+-a 除了显示每个子文件夹占用的总大小，也显示每个文件占用的大小
+-h 人类可读的大小显示
+-s, --summarize 只列出指定文件/文件夹的大小
+-S 对于文件夹，只计算自身含有的文件大小，而不将其下子目录文件的大小计算入其中
+-k 以 KB 显示
+-m 以 MB 显示
+
+
+
+硬链接、符号链接
+
+硬链接（Hard Link）->在目录中写入指向同一个 inode 号的文件记录
+
+eg.
+[eP@epct ~]$ touch OriginFile
+[eP@epct ~]$ ln ./OriginFile SecondFile
+[eP@epct ~]$ ls -li
+
+#返回 inode 号完全相同的两个文件
+
+
+硬链接的特点：原始文件删除其也能正常工作（只要 inode 不被移除就可以正常工作）
+			不能跨 文件系统 创建硬链接
+			不能对 目录 创建硬链接
+
+
+符号链接（Symbolic Link）->创建一个文件，这个文件的内容指向另一个文件的文件名/目录
+
+
+ln 创建链接
+ln [-sf] [来源文件] [目标文件]
+-s 创建符号链接，默认状态下创建硬链接
+-f 如果目标文件存在，则先移除之后再创建链接
+
+
+关于空文件夹的硬链接数为 2 的解释
+假设一个空文件夹 ~/NewFolder
+
+一定会创建三样东西
+~/NewFolder
+~/NewFolder/.
+~/NewFolder/..
+
+由于 ~/NewFolder 与 ~/NewFolder/. 等价
+所以还剩 ~/NewFolder/.. 和 {~/NewFolder | ~/NewFolder/.} 两个链接点了
+
+
+
+lsblk 显示系统的磁盘/分区列表（ls block）
+
+lsblk [-dfimpt] [device]
+
+-d, --nodeps 只显示磁盘本身的信息，而不显示磁盘分区的状态
+-f, --fs 同时显示对应的文件系统
+-i, --ascii 仅用 ASCII 码来展示文件夹层级关系
+-m, --perms 输出设备的权限信息
+-p, --paths 输出完成的设备路径
+-t, --topology 列出磁盘的完整信息
+
+eg.
+
+[eP@epct ~]$ lsblk
+#返回
+NAME	MAJ:MIN	RM	SIZE	TYPE	MOUNTPOINT
+...BLAH...BLAH...BLAH...
+
+NAME 设备的名字
+MAJ:MIN 核心识别设备时的编号，依次为 主要编号:次要编号
+RM 是否为可卸载设备（Removable Device）
+SIZE 设备容量
+RO 是否为只读设备（Read Only）
+TYPE 设备类型（磁盘 disk/分区 part/ROM 等）
+MOUNTPOINT 挂载点
+
+
+
+blkid 显示设备的UUID（block ID）
+UUID 全局唯一识别符（Universally Unique Identifier）
+每个设备都有一个唯一的识别符用于挂载等操作
+
+blkid 就可以用来查询它们的 UUID
+
+
+
+列出当指定磁盘的各类信息以及分区状态
+parted [device] print
+
+
+
+磁盘分区工具 fdisk（MRB适用）/gdisk（GPT适用）
+
+#！注意不要对已经被挂载的分区进行操作！！
+
+以 gdisk 为例
+
+gdisk [磁盘]
+
+会列出磁盘信息
+
+常用的命令
+d 删除分区
+n 新建分区
+p 显示分区表
+q 放弃更改并退出
+w 写入分区并退出
+
+
+输入 p 之后
+返回
+Number	Start(sector)	End(sector)	Size	Code Name
+...Blah...Blah...Blah...
+
+Number 分区编号
+Start(sector)/End(sector) 开始/结束 扇区号
+Size 分区容量
+Code 【未知？？】
+Name 文件系统名
+
+
+新建分区
+
+0、输入 p，查看当前分区状况
+1、输入 n，进入新增分区状态
+2、请求分区号，直接按 Enter，自动指定一个分区号
+3、请求分区起始扇区 或 留空容量，直接按 Enter，自动指定一个分区号
+4、请求分区结束扇区 或 留空容量，请使用 +容量值，指定容量，系统自动计算扇区
+5、请求分区文件系统，可以按 L 查看代号
+6、重复0-5步，完成新建分区
+7、输入p，查看最终分区结果
+8、输入w，写入分区表
+
+此时会提示重启系统，以便内核读取新的分区信息
+
+0、使用 cat /proc/partitions 查看当前认知的分区信息
+1、使用 partprobe [-s] 来要求 Linux 内核去读新的分区表
+				-s 的目的是输出一个总结
+
+
+删除分区
+
+0、输入 p，查看当前分区状况
+1、输入 d，进入删除分区状态
+2、请求要删除的分区号，手动输入一个值
+3、重复0-2步，完成删除分区
+4、输入 p，查看最终分区结果
+5、输入 w，写入分区表
+6、使用 partprobe -s 来让内核去读新的分区表
+
+
+
+格式化分区--为分区新建文件系统
+mkfs.[文件系统] 或者 mkfs -t [文件系统]
+
+（1）XFS 的格式化
+
+mkfs.xfs [-b bsize] [-d parms] [-f] [-i parms] [-l parms] [-L label] [-r parms] [分区]
+
+以下参数设计到容量的时候可以使用k，m，g，t，p（小写）来指定
+如果使用 s 作为单位的话，则代表 sector 的个数
+
+-b 单个 block 的大小，512bytes-64Kbytes ， Linux 最大只识别 4K 大小
+
+-d data block 的相关参数
+	agcount：与 CPU 的核心数相关
+			 如果不使用RAID，则与 CPU 核心数相等，如果有 Intel 的超线程技术，则为实际核心的两倍
+	agsize：每个 AG 具有多大容量
+	agcount/agsize 二选一
+	file=[0或1]：格式化的是一个文件而非设备（比如虚拟光驱等等）
+	su
+	sw
+	sunit
+	swidth
+-f 强制格式化原有文件系统
+-i inode 的相关参数
+	size：单个 inode 的大小，256byte-2K
+-l log_section 的相关参数
+	internal=[0或1]： log 文件是否记录在自身文件系统之中
+	logdev=[dev]:如果 log 文件不记录在自身文件系统中，则指定记录的设备
+	size：整个 log_sector 的代销，最小为 512 个 blocks
+-r realtime_section 的相关参数
+	一般不设定，除非使用了RAID
+
+
+eg.
+
+[eP@epct ~]$ mkfs.xfs /dev/sda4
+
+
+（2）EXT4 的格式化
+
+mkfs.ext4 [-b size] [-L label] [分区]
+
+
+查看 当前的 CPU 线程数
+
+cat /proc/cpuinfo | grep "processor"
+
+
+
+
+xfs_repair 检查和修复 xfs 文件系统的错误
+
+#！不可对已挂载的文件系统进行检查
+
+xfs_repair [-fnd] [设备]
+-f 检查的是一个文件而非一个设备
+-n 只检查错误而不修复文件系统（No Modify Mode）
+-d 对只读目录进行修复操作，一般是针对 / 根目录的检查与修复操作，很危险，（dangerous repair）
+
+
+
+文件系统的挂载
+
+mount
+无参数 罗列当前的挂载信息
+-a, --all 依照 /etc/fstab 的信息，将所有未挂载的文件系统全部挂载上来
+-l 在罗列挂载信息的时候加上 文件系统的 Label
+
+[-t <文件系统>] [LABEL=""] [挂载点]
+[-t <文件系统>] [UUID=""] [挂载点]
+[-t <文件系统>] [设备名] [挂载点]
+
+以上三种都是挂载时使用的命令
+-t 指定文件系统的类型（一般不需要指定，系统自动识别）
+-n, --no-mtab 一般来说，系统的挂载情况会实时写入 /etc/mtab 文件中
+					   但在某些情况下，我们不希望 /etc/mtab 被更新
+					   此时我们就使用 -n 来禁止本次 /etc/mtab 的更新
+-o, --options 附带一些参数
+			  async/sync	异步/同步更新硬盘数据
+			  atime/noatime 修改/不修改读取时间
+			  ro/rw			只读/读写
+			  auto/noauto	允许/不允许自动挂载（mount -a）
+			  dev/nodev		允许/不允许挂载其他设备
+			  suid/nosuid	允许/不允许含有 SUID、SGID 属性的文件
+			  exec/noexec	允许/不允许可执行二进制文件
+			  user/nouser	允许/不允许非 root 用户挂载该文件系统
+			  defaults		默认参数：rw, suid, dev, exec, auto, nouser, async
+			  remount		重新挂载
+
+
+在单人模式下，以读写方式打开根目录 / 的方法
+mount -n -o remount,rw /
+#不更新 /etc/mtab 并以读写方式重新挂载 根目录 /
+
+#!注意挂载的时候，文件夹本身具有的文件会被隐藏，而只展示被挂载的目录结构
+理论上来说，一个用于挂载的目录应该是空的
+
+
+系统自动识别的文件系统的顺序：
+cat /etc/filesystems
+
+系统具有的 文件系统 的驱动
+/lib/modules/$(uname -r)/kernel/fs
+
+
+eg.
+[ep@epct ~]$ mkdir -p /tmp/data/xfs
+# 创建挂载目录
+[ep@epct ~]$ lsblk
+#查看系统识别的所有存储设备/分区（块设备）
+[ep@epct ~]$ mount /dev/sda4 /tmp/data/xfs
+# 将分区 /dev/sda4 挂载到目录 /tmp/data/xfs 中
+[eP@epct ~]$ df /tmp/data/xfs
+# 查看文件系统用量
+
+
+修改不可卸载的目录的挂载参数
+mount -o remount,...
+
+eg.
+[eP@epct ~]$ mount -o remount,rw,auto /
+#使用 remount 参数来让某个目录具有新的挂载参数
+
+
+挂载非文件系统的目录（文件夹的硬链接）
+mount --bind [源目录] [目标目录]
+
+eg.
+[eP@epct ~]$ mkdir /tmp/var
+[eP@epct ~]$ mount --bind /var /tmp/var
+# 将 /var 挂载至 /tmp/var
+[eP@epct ~]$ ls -lid var /tmp/var
+# 返回的 inode 是一样的
+
+
+
+文件系统的卸载
+
+umount [-fn] [装置名|挂载点]
+
+-f, --force 强制卸载一个文件系统（当文件系统本身无法读取的时候）（比如断线的网络硬盘）
+-l, --lazy 立刻从文件层级中断开这个文件系统，并在文件系统空闲的时候删除所有的对它的引用
+-n, --no-mtab 卸载但不更新 /etc/mtab
+
+注意如果卸载的时候提示文件系统正忙，请 cd 至该文件系统之外的目录再试
+
+
+
+设备和设备文件
+
+Linux 使用 设备文件的 Major号 和 Minor号 来代表设备
+也就是说，每个 /dev 文件夹下的 设备文件都使用特定的 Major号 和 Minor号 来定义至特殊的设备上
+
+eg.
+[ep@epct data]$ ls -l /dev/sd*
+#返回
+brw-rw----. 1 root disk 8, 0 Jul 18 17:06 /dev/sda
+brw-rw----. 1 root disk 8, 1 Jul 18 17:06 /dev/sda1
+brw-rw----. 1 root disk 8, 2 Jul 18 17:06 /dev/sda2
+brw-rw----. 1 root disk 8, 3 Jul 18 17:06 /dev/sda3
+brw-rw----. 1 root disk 8, 4 Jul 18 17:06 /dev/sda4
+brw-rw----. 1 root disk 8, 5 Jul 18 17:06 /dev/sda5
+
+注意权限开头的 b，以及 8,0 这列，这就是 block设备 中 普通磁盘 对应的 major/minor 号
+
+常见的设备的 major/minor 号
+
+设备名		Major	Minor
+/dev/sda	8		0-15
+/dev/sdb	8		16-31
+/dev/loop0	7		0
+/dev/loop1	7		1
+
+
+一般来说，设备的 major/minor 在系统正确识别设备之后都会自动分配
+但在某些情况下，需要手动创建这些设备文件
+
+
+手动创建 设备文件，并设置 major/minor 号
+
+mknod <设备文件> [bcp] [Major] [Minor]
+
+b 这是一个 block 设备（块设备）
+c 这是一个 character 设备（字符设备）
+p 者是一个 pipe 设备（FIFO设备）
+
+eg.创建一个 FIFO 设备文件，并删除它
+
+[ep@epct ~]$ mknod /tmp/testpipe p
+# 创建了一个 pipe 设备
+[ep@epct ~]$ ls -l /tmp/testpipe
+#返回以  prw-r--r-- 开头的属性
+[ep@epct ~]$ rm /tmp/testpipe
+
+
+
+修改 XFS 文件系统下的 文件系统 标签（Label Name）和 UUID
+
+xfs_admin [-lu] [-L label] [-U uuid] [设备文件]
+-l 显示设备标签
+-u 显示设备UUID
+-L 写入设备标签
+-U 写入设备UUID
+
+uuidgen 生成 UUID
+
+
+修改 EXT4 文件系统下的 文件系统 标签 和 UUID
+
+tune2fs [-l] [-L label] [-U uuid] [设备文件]
+参数类似 XFS
+
+
+自动挂载
+
+/etc/fstab 自动挂载配置
+
+
+系统挂载的限制于注意事项
+
+1、根目录 / 必须挂载，且一定要第一个被挂载
+2、其他 挂载点 必须是 已经存在 的目录，并要遵守 FHS （系统目录构架原则）
+3、任意一个 挂载点 在同一时间内，只能被挂载一次
+4、任意一个 文件系统 在同一时间内，只能被挂载一次
+5、请先将 工作目录 移动至 挂载点 之外，再进行卸载
+
+
+eg.
+#查看自动挂载配置文件
+[ep@epct ~]$ cat /etc/fstab
+#返回
+/dev/mapper/centos-root / xfs defaults 0 0
+...Blah...Blah...Blah...
+
+依次是
+设备文件/UUID			文件系统挂载点	文件系统格式	挂载参数		是否使用dump备份	是否自动执行fsck（xfs 不适用 fsck）
+/dev/mapper/centos-root /				xfs			defaults 	0				0
+
+
+注意，在/dev/mapper 下的是 VLM 设备创建的文件系统
+文件系统包含 xfs/ext4/vfat/reiserfs/nfs 等
+
+eg. 配置自动挂载 xfs 格式的 /dev/sda4
+
+[ep@epct ~]$ mkdir /data/xfs
+# 创建挂载点
+[ep@epct ~]$ lsblk
+# 查看磁盘文件系统信息，与当前挂载信息
+# 若要自动挂载的磁盘已被挂载，请先将其卸载
+[ep@epct ~]$ blkid /dev/sda4
+# 查看 /dev/sda4 的 UUID
+[ep@epct ~]$ blkid /dev/sda4 > ./Desktop/somestring
+# 将 blkid 的输出值重定向至一个文件
+[ep@epct ~]$ nano ./Desktop/somestring
+# 使用 nano 修改 somestring 的内容以符合 /etc/fstab 的格式要求
+[ep@epct ~]$ cat ./Desktop/somestring >> /etc/fstab
+# 将 somestring 的内容追加至 /etc/fstab 的文件尾部
+[ep@epct ~]$ mount -a
+# 测试自动挂载结果，若结果成功，则下次开机时可自动挂载
+# 若不成功，重新检查问题所在
+
+
+
+挂载光盘镜像（loop设备）
+
+mount -o loop [镜像文件] [挂载目录]
+
+eg.
+[ep@epct ~]$ mkdir /data/loopfs
+# 创建挂载点
+[ep@epct ~]$ mount -o loop ~/test.iso /data/loopfs
+# 用 -o loop 参数挂载镜像文件，在 CentOS7 之后，不使用 -o loop 也可以挂载
+[ep@epct ~]$ umount /data/loopfs
+# 卸载光盘镜像
+
+
+
+自动挂载光盘镜像的配置
+
+/etc/fstab 添加
+
+[镜像位置] [挂载点] [文件系统] default,loop 0 0
+
+注意要添加 loop 来指明这个文件系统是一个文件
+
+
+
+Swap 交换空间的 创建 启用 自动挂载配置
+
+(1) gdisk 分出一块磁盘空间
+(2) mkswap 将分出的磁盘空间转换为 swap 分区
+(3) swapon 启用 swap 分区
+(4) 配置 /etc/fstab 自动挂载分区
+
+其他相关命令
+<1> free 查看剩余 内存 和 swap 空间
+<2> swapon -s 查看系统当前 swap 详情
+<3> swapoff 卸载某个 swap 分区
+<4> swapon -a swap 分区自动挂载测试
+<5>
+
+eg.
+[ep@epct ~]$ gdisk /dev/sda
+# 用 gdisk 切割出 512MB 大小的 /dev/sda5
+[ep@epct ~]$ mkswap /dev/sda5
+# 使用特殊的 swapon 格式化 /dev/sda5 分区
+[ep@epct ~]$ free
+# 使用 free 命令查看当前 内存 和 swap
+
+
+
+ls -l 列表中返回的第一行的 total 指实际占用的磁盘空间，也就是 单个 block 大小 * 占用的 block 大小
+由于会出现 block 未写满的情况，所以文件大小和占用大小不是一模一样的
+
+
+
+命令行式分区
+
+parted [设备] [命令 <参数>]
+常用命令与参数
+新建分区 mkpart [primary|logical|extended] [ext4|vfat|xfs] 开始位置 结束位置
+显示分区 print
+删除分区 rm [分区]
