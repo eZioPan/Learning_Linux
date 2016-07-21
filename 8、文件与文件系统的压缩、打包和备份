@@ -50,21 +50,34 @@ xz [-cdkzv#] [文件]
 
 文件打包
 
-tar [-z|j|J] [-c] [-v] [-f 新建的tar文件] [待处理的文件名]
-tar [-z|j|J] [-t] [-v] [-f 已有的tar文件]
-tar [-z|j|J] [-x] [-v] [-f 已有的tar文件] [-C 目录]
+tar [-z|j|J] <-c> [-v] [--exclude=<要排除文件>] <-f 新建的tar文件> <待处理的文件名1> [待处理的文件名2] ...
+tar [-z|j|J] <-t> [-v] <-f 已有的tar文件>
+tar [-z|j|J] <-x> [-v] [-C 目标目录] <-f 已有的tar文件> [需要单独解包的文件]
 
--z/-j/-J 调用 gzip/bzip2/xz 对文件压缩/解压
--c/t/x 打包/罗列包内容/解包
--v 显示详细信息
--f tar文件名
--C 解包的位置
+--{z|gzip}/{j|bzip2}/{J|xz} 调用 gzip/bzip2/xz 对文件压缩/解压
+--{c|create}/{t|list}/{x|extract|get} 打包/罗列包内容/解包
+-v, --verbose 显示详细信息
+-f, --file=<ARCHIVE> tar文件名
+-C, --directory=<DIR> 解包的位置
 
--p 保留文件原有的属性
--P 保留文件原有的绝对路径（解包将直接覆盖原文件）
+-p, --presver-premissions, --same-permissions 保留文件原有的属性
+-P, --absolute-names 保留文件原有的绝对路径（解包将直接覆盖原文件）
 --exclude=<filename> 不处理的文件名
 
 #! 注意，不要将 tar -jcvf [filename] ，写成 tar -jcfv [filename] 后者的意思是将文件打包为名为 v 的文件
 # 建议使用 tar -jcv -f [filename] 来明确打包的内容
 
+# tar 不会删除原文件
 
+
+
+从 tar 包中解压指定的文件
+
+tar [-jtv] [-f tar文件] | grep "<文件字段>"
+# 预览 tar 包中指定字段的文件的完整路径
+tar [-jxv] [-C 解压路径] [-f tar文件] [文件完整路径]
+
+
+排除部分文件进行压缩
+--exclude=<FILE>
+-X, --exclude=from=<FILE>
