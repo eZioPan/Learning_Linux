@@ -78,6 +78,32 @@ tar [-jtv] [-f tar文件] | grep "<文件字段>"
 tar [-jxv] [-C 解压路径] [-f tar文件] [文件完整路径]
 
 
+
 排除部分文件进行压缩
---exclude=<FILE>
--X, --exclude=from=<FILE>
+
+tar -jcv <-f tar文件名> --exclude=<要排除的文件名1> --exclude=<要排除的文件名2> ... [待处理文件]
+
+--exclude=<FILE> 直接指定排除的 Pattern
+-X, --exclude-from=<FILE> 从指定文件读取排除 Pattern
+
+
+
+仅打包比某个时间要新的文件
+
+--newer 测试所有时间类型
+--newer-mtime 仅测试 mtime
+
+
+
+tar 与 tarball
+
+如果打包文件没有被压缩，习惯称为 tar 包
+如果打包文件被压缩，习惯称为 tarball 包
+
+
+
+XFS 文件系统的备份与还原
+xfsdump xfsrestore
+
+xfsdump [-L S_label] [-M M_label] [-l #] [-f 输出文件] [原文件]
+xfsdump -I
