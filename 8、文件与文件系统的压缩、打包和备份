@@ -110,15 +110,17 @@ tar 与 tarball
 
 
 XFS 文件系统的备份与还原
+
 xfsdump xfsrestore
 
 
 XFS 文件系统的备份
-xfsdump [-L S_label] [-M M_label] [-l <number>] [-f 输出文件] [原文件]
+
+xfsdump [-L S_label] [-M M_label] [-l <number>] <-f 输出文件1> [-f 输出文件2] ... [原文件]
 xfsdump -I
 
--L 写入 session 标签，关于文件系统的备注
--M 写入 media 标签，关于媒体的备注
+-L 写入 session 标签，与备份等级对应，一个备份等级对应一个 session
+-M 写入 media 标签，与备份设备对应，一个备份文件对应一个 media
 -l 指定备份等级，取值 0-9，0级为完全备份，1-9为补丁形式的备份
 -f 生成的文件名
 -I 从 /var/lib/xfsdump/inventory 列出备份的信息
@@ -127,3 +129,23 @@ xfsdump -I
    备份等级为 1-9 时，每个级别都只备份与上个等级的文件差异
 
 #2 xfsdump 的备份信息记录在 /var/lib/xfsdump/inventory
+
+
+
+XFS 文件系统的还原
+
+xfsrestore -I
+xfsrestore [-f 备份文件] [-L S_label] [-s 需要单独恢复的文件] <恢复至的文件夹>
+xfsrestore [-f 备份文件] -i <恢复至的文件夹>
+
+-I 查看 /var/lib/xfsdump/inventory 下记录的备份信息
+-f 备份文件位置
+-L 要恢复的备份级别所对应的 session 标签
+-s 只恢复指定的文件
+-i 交互模式操作恢复
+
+
+
+光盘镜像的创建、烧录
+
+
