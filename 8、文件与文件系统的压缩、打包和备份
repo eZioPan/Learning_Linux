@@ -147,14 +147,14 @@ xfsrestore [-f 备份文件] -i <恢复至的文件夹>
 
 
 光盘镜像的创建、烧录
-mkisofs、cdrecord
+mkisofs、wodim
 
 #注1：默认情况下，光盘镜像使用 ISO9660 文件系统，只支持 8字符文件名+3字符后缀名 的格式
 
 无开机引导的数据光盘镜像的创建
 
 mkisofs [-o ISO文件名] [-Jrv] [-V vol] [-m filenamePattern1] [-m filenamePattern2]...  [-exclude-list file]\
-[-graft-point <ISODir1=SourceDir1> [ISODir2=SourceDir2] ...] <待加入镜像的文件1> [待加入镜像的文件2] ...
+[-graft-points <ISODir1=SourceDir1> [ISODir2=SourceDir2] ...] <待加入镜像的文件1> [待加入镜像的文件2] ...
 
 -o 输出的 ISO 文件名（未指定时输出为 stdout）
 -J 使用 Joliet 来扩展文件名的支持，这项技术仅与 Windows 及 Linux 兼容，可支持长达 64 字符的 Unicode 字符作为文件名
@@ -165,4 +165,9 @@ mkisofs [-o ISO文件名] [-Jrv] [-V vol] [-m filenamePattern1] [-m filenamePatt
 -V volid 设定光盘镜像的卷标签
 -m 按照设定的样式排除文件
 -exclude-list 从指定的文件中读取排除文件的样式
+-graft-points 修改文件路径，（测试失败，这个指令会导致文件被复制到新的路径下，而非修改至新的路径下）
 
+
+光盘烧录
+
+wodim
