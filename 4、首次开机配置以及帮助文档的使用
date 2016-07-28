@@ -2,8 +2,18 @@
 
 应用程序--优化工具--打字--杀死 X 服务器的按键序列--勾选 Ctrl+Alt+Backspace
 
+开机时默认使用 命令行界面 / 图形界面 的方法
 
-如果使用 Oracle VM Virtualbox，请勿安装 VM 的增强功能，这可能会使登录失败（GNOME崩溃）
+（1）命令行模式
+
+systemctl set-default multi-user.target
+
+（2）图形界面
+
+systemctl set-default graphical-target
+
+
+如果使用 Oracle VM Virtualbox，请勿在安装 VM 的增强功能后，使用图形界面启动，这会让GNOME崩溃
 
 
 将系统默认文件路径都转换为英文的方法
