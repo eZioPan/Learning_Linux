@@ -1,0 +1,40 @@
+Shell 和其他程序一样，是介于 Kernel 和用户之间的程序，可以保护 Kernel，同时提供良好的与用户交互的界面
+
+/etc/shells 中包含了当前系统中具有的所有 shell 程序
+
+/etc/passwd 中定义了某个用户登录后使用的 shell 是哪个
+
+
+
+~/.bash_history 记录了 bash 命令的历史
+每次在 tty 或者在 terminal 中执行了 exit 命令都会更新 bash 历史
+
+
+
+设置命令别名
+alias [-p] [别名=原命令]
+-p 打印当前所有的别名
+
+
+别名的存储文件
+当前 ~/.bashrc
+全局 /etc/bashrc
+
+
+
+检查命令是否为 bash 的内建命令
+
+type [-tpa] <命令>
+不加参数时，若命令是 shell 内建的则显示 builtin
+			若命令不是 shell 内建的则显示命令位置
+
+
+
+
+
+
+
+
+
+
+
