@@ -63,6 +63,8 @@ Kernel 3.10.0-327.e17.x86_64 on an x68_64
 
 在 Terminal 中，若当前的语言为 非英文，则会出现乱码，此时
 使用 locale 命令显示当前的语言配置信息
+使用 locale -a 显示当前系统支持的所有语言
+这些文件都放置在 /usr/lib/locale/ 中
 
 设置变量
 LANG=en_US.utf8

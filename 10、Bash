@@ -43,7 +43,7 @@ type [-tpa] <命令>
 
 
 
-变量名的 赋予/引用/解绑
+变量名的 赋予/引用/解除
 
 变量名=值
 
@@ -73,6 +73,124 @@ $(命令) 可以将命令执行的输出值赋给另一个匿名的变量
 
 eg.
 ls -l /bin/modules/$(uname -r)/kernel/fs
+#其中的 $(uname -r) 就输出了当前系统的版本号
+
+使用 <变量名A>=$<变量名A>[待添加数据] 来添加数据
+
+如果要让变量被子程序（child shell）使用，就要将该变量变成 环境变量
+export <变量名>
+
+一般来说，系统变量名 都为 大写，所以可以使用 小写 变量名 来设定自定义的变量
+
+解除一个变量的方法
+unset <变量名>
 
 
+
+env 查看环境变量（当前会话中有效）
+
+env 常用返回值解释
+
+<01> HOME 当前使用者主目录路径
+
+<02> TERM 当前启动环境
+	tty 模式显示为 Linux
+	Terminal 模式则显示为 xterm 或 xterm-256color
+
+<03> SHELL 当前使用的 Shell 类型
+	一般为 /bin/bash
+
+<04> HISTSIZE shell 在内存中最大历史长度
+
+<05> USER 当前使用者名
+
+<06> LS_COLORS 在 ls 中特殊 格式/文件 使用的特殊颜色
+	以 分号 ; 隔开RGB值
+	以 冒号 : 隔开不同的条目
+
+<07> MAIL 使用 mail 命令收发邮件时，查询的本地目录
+
+<08> PATH 命令的搜索路径
+	以 冒号 : 隔开不同条目
+	具有 短路 性质，也既按照条目顺序搜索，找到第一个匹配项之后忽略后续可能有的匹配项
+
+<09> PWD 输出当前工作路径
+
+<10> LANG 输出当前语言环境
+
+<11> SHLVL 当前 Shell 的深度（也就是需要几次 exit 才能退回登录界面）
+
+<12> BASH_SUBSHELL 真正的 子进程（SubShell） 深度
+	sub shell 是仅调用 fork 函数产生的进程，可以完全使用父进程的所有变量
+	child shell 在调用了一次 fork 之后又 调用 execve 重新用 /bin/bash 程序加载了一遍 脚本 而产生的新 shell
+	所以 child shell 只能继承 父进程 export 之后的变量
+
+<13> XDG_VTNR 当前使用第几个 tty 启动的 shell
+
+<14> XDG_SESSION_ID 从开机到当前 shell 一共启动了多少了个 shell
+
+
+
+set 查看当前 shell 具有的变量（仅在本 shell 中有效）
+
+<01> BASH 当前使用的 shell
+
+<02> BASH_VERSINFO 当前 bash 版本（分字段）
+
+<03> BASH_VERSION 当前 bash 版本
+
+<04> COLUMNS 当前屏幕的宽度，单位 字符
+
+<05> LINES 当前屏幕的长度，单位 字符
+
+<06> HISTFILE 当前 bash 历史记录文件路径
+
+<07> HISTFILESIZE bash 历史文件能够记录的最大历史数量
+
+<08> HISTSIZE 内存能存储的 bash 历史的最大数量
+
+<09> IFS 默认分割符号
+	Interal Field Seprator
+	默认是 空格 制表符 换行符
+	对应的二进制码 040 011 012
+
+<10> HOSTTYPE 主机硬件的版本
+
+<10> MACHTYPE 当前的系统版本
+
+<11> OSTYPE 操作系统类型
+
+<12> PS1 首行提示符
+	默认内容为 '[\u@\h \W]\$'
+	也就是普通行头 [ep@epct ~]$ 这个提示符的来源
+
+<13> PS2 次行提示符
+	也就是跳脱行行头 > 这个提示符的来源
+
+PS1 以及 PS2 特殊定义符
+
+\d 以 星期 月 日 的格式显示时间
+\H 显示完整主机名
+\h 仅显示第一个小数点之前的主机名
+\t 二十四小时制显示时间 HH:MM:SS
+\T 十二小时制显示时间 HH:MM:SS
+\A 十二小时制显示时间 HH:MM
+\@ 十二小时制显示时间 HH:MM am/pm
+\u 当前用户名
+\v Bash 版本，仅显示 <主版本号>.<副版本号>
+\w 显示完整的当前工作路径，主目录则会用 ~ 代替
+\W 显示当前所在的目录名，调用的是 basename 函数
+\# 显示当前会话下达的命令数
+\$ 提示符，非 root 用户为 $ ， root 用户为 #
+
+<14> $ 当前 shell 的 PID（Process ID）
+
+<15> ? 获取上一个命令的返回值
+
+
+
+export 将 自定义变量转化为环境变量 set -> env
+
+export 显示所有的变量
+export <变量名> 将 自定义变量变为环境变量
 
