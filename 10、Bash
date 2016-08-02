@@ -10,6 +10,24 @@ Shell 和其他程序一样，是介于 Kernel 和用户之间的程序，可以
 每次在 tty 或者在 terminal 中执行了 exit 命令都会更新 bash 历史
 
 
+查看命令历史
+history [n]
+history [-c]
+history [-raw]
+
+系统会在登录成功后自动将 HISTFILE 里的记录加载到内存中，并在内存中不断记录新的历史记录
+n 列出最近 n 条历史记录
+-c 清楚内存中所有的历史记录
+-a 将内存中 新的历史记录 追加 至硬盘文件中
+-r 从硬盘文件 读取 历史记录 并覆写 内存
+-w 将内存中 所有的历史记录 覆写 至硬盘文件中
+
+
+重复执行之前的命令
+!<number> 重复执行 history 编号为 <number> 的命令
+!! 重复执行上个命令
+!<strings> 重复执行以 <strings> 开头的最新命令
+
 
 设置命令别名
 alias [-p] [别名=原命令]
@@ -20,7 +38,9 @@ alias [-p] [别名=原命令]
 当前 ~/.bashrc
 全局 /etc/bashrc
 
-
+取消设置别名
+unalias [-a] [别名]
+-a 取消全部别名
 
 检查命令是否为 bash 的内建命令
 
@@ -129,6 +149,7 @@ env 常用返回值解释
 
 <14> XDG_SESSION_ID 从开机到当前 shell 一共启动了多少了个 shell
 
+<15> _ 返回最后一个命令的参数，若没有参数则返回最后一个命令
 
 
 set 查看当前 shell 具有的变量（仅在本 shell 中有效）
@@ -242,3 +263,93 @@ eg.
 
 <1> 数组的引用必须加 大括号 {}
 <2> 数组的 key value 都是 string 类型
+
+
+
+变量值的删除与替换（非原地修改）
+
+
+变量值的删除
+
+从头删除匹配字符（最小匹配模式）
+${<变量名>#<匹配字符>}
+
+从头删除匹配字符（最大匹配模式）
+${<变量名>##<匹配字符>}
+
+从尾删除匹配字符（最小匹配模式）
+${<变量名>%<匹配字符>}
+
+从尾删除匹配字符（最大匹配模式）
+${<变量名>%%<匹配字符>}
+
+
+变量值的查找替换
+
+从头替换第一个找到的字符
+${<变量名>/<匹配字符>/<新字符>}
+
+从头替换所有找到的字符
+${<变量名>//<匹配字符>/<新字符>}
+
+
+变量的重设定
+方法						var1不存在		var1为空			var1有值
+var2=${var1-NStr}		var2=NStr		var2=""			var2=$var1
+var2=${var1:-NStr}		var2=NStr		var2=NStr		var2=$var1
+
+var2=${var1+NStr}		var2=""			var2=NStr		var2=NStr
+var2=${var1:+NStr}		var2=""			var2=""			var2=NStr
+
+var2=${var1=NStr}		var1=NStr		var1=""			var1=$var1
+						var2=NStr		var2=""			var1=$var1
+var2=${var1:=NStr}		var1=NStr		var1=NStr		var1=$var1
+						var2=NStr		var2=NStr		var2=$var1
+
+var2=${var1?NStr}		NStr->stderr	var2=""			var2=$var1
+var2=${var1:?NStr}		NStr->stderr	NStr->stderr	var2=$var1
+
+-	“设定式” 替换 变量值（仅当 未指定 时起效）
+:-	“设定式” 替换 变量值（未指定 和 为空 都起效）
+
++	“追加式” 替换 变量值（只要 存在 就起效）
+:+	“追加式” 替换 变量值（只有 有值 才起效）
+
+=	“设定式” 修改 变量值（只有 未设定 时起效）
+:=	“设定式” 修改 变量值（未指定 和 为空 都起效）
+
+?	输出错误（仅当 未指定 时起效）
+:? 输出错误（未指定 和 为空 都起效）
+
+
+
+Bash 的两种启动状态 login 和 non-login
+
+login 需要完整账户名和密码才能启动的状态
+		比如 tty 登录
+
+non-login 未输入账户和密码就启动的状态
+			比如登录过后在 tty 中启动 shell
+			或 在登录过的 GUI 界面 启动 terminal
+
+
+login 状态会读取的配置文件
+<1> /etc/profile 系统级别的预设文件
+<2> ~/.bash_profile 或 ~/.bash_login 或 ~/.profile 个人级别的预设文件
+
+
+login 状态下 系统级别配置文件
+/etc/profile 是一组判断语句，用于设定 PATH MAIL USER HOSTNAME umask
+
+/etc/profile 还会调用外部文件 /etc/profile.d/*.sh 进行设定
+
+/etc/profile.d/*.sh 定义了 bash 的颜色、别名等等设置
+/etc/profile.d/*.sh 又会调用 /etc/locale.conf 和 /usr/share/bash-completion/completions/* 来设置 语系 与 自动补全信息
+
+
+login 状态下 用户级别配置文件
+~/.bash_profile ~/.bash_login ~/.profile 三者逐次寻找，短路执行
+
+~/.bash_profile 会调用 ~/.bashrc 文件进行配置，并为 PATH 添加当前用户的特殊路径
+
+~/.bashrc 会调用 /etc/bashrc 文件进行配置（rc 代表 runcom 可理解为 run command）

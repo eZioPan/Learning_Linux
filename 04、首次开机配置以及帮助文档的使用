@@ -53,7 +53,27 @@ CentOS提供 6 个 Terminal 供登录的用户使用
 CentOS Linux 7 (Core)
 Kernel 3.10.0-327.e17.x86_64 on an x68_64
 
-来自 /etc/issue 文件
+本地登录提示来自 /etc/issue 文件
+telnet 登录提示来自 /etc/issue.net 文件
+
+eg.
+[ep@epct ~]$ cat /etc/issue
+# 返回1 \S
+# 返回2 Kernel \r on an \m
+
+含义
+\d 日期
+\l 第几个 tty
+\m 硬件等级（i386/x86_64 etc.）
+\n 主机网络名
+\O domain name
+\r 操作系统版本
+\t 时间
+\S 操作系统名称
+\v 操作系统版本
+
+
+/etc/motd 成功登录后的提示内容（Message Of ToDay）
 
 
 使用 exit 命令登出系统（等价于注销）
