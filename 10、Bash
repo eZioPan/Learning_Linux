@@ -294,7 +294,9 @@ ${<变量名>//<匹配字符>/<新字符>}
 
 
 变量的重设定
+
 方法						var1不存在		var1为空			var1有值
+
 var2=${var1-NStr}		var2=NStr		var2=""			var2=$var1
 var2=${var1:-NStr}		var2=NStr		var2=NStr		var2=$var1
 
@@ -319,7 +321,7 @@ var2=${var1:?NStr}		NStr->stderr	NStr->stderr	var2=$var1
 :=	“设定式” 修改 变量值（未指定 和 为空 都起效）
 
 ?	输出错误（仅当 未指定 时起效）
-:? 输出错误（未指定 和 为空 都起效）
+:?	输出错误（未指定 和 为空 都起效）
 
 
 
@@ -353,3 +355,130 @@ login 状态下 用户级别配置文件
 ~/.bash_profile 会调用 ~/.bashrc 文件进行配置，并为 PATH 添加当前用户的特殊路径
 
 ~/.bashrc 会调用 /etc/bashrc 文件进行配置（rc 代表 runcom 可理解为 run command）
+
+/etc/bashrc 会设定 umask PS1 的值
+
+在不重新登录的情况下重载 /etc/profile 和 ~/.bash_profile
+source <配置文件>
+. <配置文件>
+
+
+non-login 的状态的下的配置文件
+
+只执行 ~/.bashrc 的内容，同样会执行 /etc/bashrc 的内容
+
+
+其他相关配置文件
+
+/etc/man_db.conf
+
+指定了系统搜索 man page 的目录
+当使用 tarball 安装程序的时候，man page 可能存放在 /usr/local/<软件名>/man 这个目录下
+所以需要手动添加至 /etc/man_db.conf 中，以便被 man 调用
+
+
+~/.bash_logout
+
+当用户登出 bash 后，系统又执行了那些命令才正式结束
+
+
+
+stty 查看当前 tty 的设置
+
+stty -a 输出当前 tty 的所有配置
+stty <命令> <快捷键> 配置某个命令的快捷键
+
+比较重要的几个默认设置
+
+intr = ^C	发送 interrupt 信号给当前程序
+erase = ^?	向后删除字符
+kill = ^U	删除当前指令行的文字
+eof = ^D	End of file；指令结束
+start = ^Q	启用屏幕输出（用这个命令解除屏幕锁死）
+stop = ^S	停止屏幕输出（会锁死屏幕）
+susp = ^Z	发出 terminal stop 信号给当前程序
+
+#其中 ^ 表示 ctrl 键， ^? 指退格键
+
+
+
+bash 的 通配符 与 特殊符号
+
+通配符
+
+* 匹配从 0 到任意多个的字符
+? 匹配有且仅有一个的字符
+[<字符1><字符2><字符3>...] 至少匹配到一个括号内的字符
+[<字符1>-<字符2>] 匹配该区间字符
+[^] 排除指定的字符
+
+eg.
+/etc/cron* 匹配文件名以 cron 开头的（含 cron 本身） 的文件
+/etc/????? 匹配文件名为 五个字符 的文件
+/etc/*[0-9]* 匹配文件名中含有数字（含 只有数字 本身）的文件
+/etc/[^a-z]* 匹配文件名以非小写字母开头的文件
+
+特殊符号
+
+# 注释开头
+\ 转义字符
+| 管道符号
+; 命令分割
+~ 主目录
+$ 引用变量
+& 后台工作
+! 非运算符
+/ 路径分割
+> 输出重定向 覆写模式
+>> 输出重定向 追加模式
+< 输入重定向
+<< 输入重定向
+'' 单引号 不解析引号内部的变量
+"" 双引号 解析引号内部含有的变量
+`` （弃用）反引号 执行反引号内的命令
+() 启动 subshell 执行命令
+{} 命令块的组合
+
+# 以上字符不要出现在文件名中
+
+
+
+输入输出重定向
+
+标准输入		stdin	文件描述符0	重导向符 < 或 <<
+标准输出		stdout	文件描述符1	重导向符 > 或 >>
+标准错误输出	stderr	文件描述符2	重导向符 2> 或 2>>
+
+& 代表 文件描述符
+
+
+eg.
+# 二重定向 至 双文件
+[ep@epct ~]$ find /home -name .bashrc > list_right 2> list_error
+
+# 将正常的输出 定向至 list_right 将报错定向至 list_error
+
+
+# 二重定向 至 单文件
+[ep@epct ~]$ find /home -name .bashrc > list_all 2>&1
+
+# 将 正常输出 重定向 至 文件 list_all
+# 将 错误输出 重定向 至 文件描述符 1 也就是 正常输出
+
+# 注意1 不可以写成 <cmd> > <file1> 2> <file1>
+# 这样 stdout 和 errout 会互相覆写对方的文件内容
+
+# 注意2 不可以写成 <cmd> 2>&1 > <file1>
+# 因为 &1 还没有重定向至文件
+
+# Tip 二重定向 至 单文件 可以简写为 <cmd> &> <file1>
+
+
+/dev/null 丢弃某类输出的方法
+
+eg.
+[ep@epct ~]$ find /home -name .bashrc 2> /dev/null
+
+# 这会让系统将错误信息定向至 /dev/null ，清除这个信息
+
+
