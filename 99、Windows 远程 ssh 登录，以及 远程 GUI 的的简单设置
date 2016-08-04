@@ -1,0 +1,85 @@
+Windows 远程 ssh 登录，远程文件传输，远程 GUI 的，简单设置
+
+
+
+以 PuTTY 连接远程 CLI
+
+0.0 在 CentOS 中输入 sudo ps -e | grep "ssh"
+	查看是否有 ssh 进程在运行
+	若没有则用
+	sudo /etc/init.d/ssh start 启动
+	（sudo /etc/init.d/ssh stop 可关闭这个服务）
+	若没有安装 ssh server
+	则使用 yum install openssh-server 安装
+
+0.1 修改 /etc/ssh/sshd_config 配置部分参数
+	默认只需要取消 PermitRootLogin yes 前的注释即可
+
+1.0 下载 PuTTY
+
+1.1 若使用 VBox 虚拟机，请修改 虚拟机 设置--网络--网卡1--连接方式：桥接网卡
+
+2、在 CentOS 中输入 ifconfig 查看当前机器的 IP
+	一般出现在第二行的 inet 字段后
+
+3.0 打开 PuTTY，选择 左侧 Session 标签，在右侧的 Host Name (or IP address) 中输入 刚刚获得的 IP
+	并在下方的 Saved Sessions 中输入名称并按 Save 保存设置
+
+3.1 点击下方的 Open，就启动了 SSH 的终端，接着就可以正常登陆了
+
+
+
+
+以 PSCP 向远端传输文件
+
+1、下载 PSCP
+
+2、在 cmd 中执行 pscp <源用户名>@<源主机地址>:<源文件名> <目标用户名>@<目标主机地址>:<目标文件夹> 来传输文件
+	若某个主机为 本地主机 则不需要输入 用户名 和 主机地址
+	路径的书写方法 为 自身文件 所在系统 的输入方法
+
+eg.
+
+# 将文件从 本地 Windows 的 D:\transferfile.txt 拷贝至 远程 192.168.101 的 /home/ep/Desktop 下
+
+# 在 Windows 的 cmd 中输入
+
+pscp D:\transferfile.txt ep@192.168.1.101:/home/ep/Desktop/
+
+# 会提示输入用户 ep 的密码，验证成功后，文件就会自动传输
+
+# 注意， pscp 不会检查目标路径剩余的空间大小，所以要先用 df -h 检查目标位置的剩余容量再拷贝文件
+
+
+
+以 Xming 开启 远程 GUI 模式
+
+0、修改 远程服务器 上 /etc/ssh/sshd_config 文件
+	确保 X11Forwarding yes 未被注释
+
+1.0 下载并安装 Xming
+	安装时，若已有 PuTTY，则选择 Don't install an SSH client 选项
+
+1.1 安装结束后会进入 Xming 的 Settings
+
+	注意第一个页面的 Display number 中输入的数字
+
+	第二个页面选择是否启动内部的 SSH client
+	若已提前安装 PuTTY 或已提前启动 PuTTY
+	则选择 Start no client
+	否则选择 Start a program
+
+2、安装成功后 Xming Server 将在 任务栏 的 系统托盘区 出现
+	鼠标悬停在图标上会出现类似 Xming Server:0.0 的字样
+
+3.0 打开 PuTTY，Load 以前配置过的 Session
+
+3.1	切换 左侧标签 至 SSH--X11
+	勾选 Enable X11 forwarding
+	并在下方的 X displaylocation 中输入 localhost:<Display number>
+
+	Save 这个 Session
+
+4、在正常使用 PuTTY 登录后，就可以在命令行中直接执行带 GUI 的程序，GUI 就会出现在本地屏幕了
+
+# 目前无法成功启用 gnome-session 这个桌面程序，原因和解决方法未知
