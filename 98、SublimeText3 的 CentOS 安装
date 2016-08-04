@@ -1,0 +1,15 @@
+1、从 sublimetext.com 的官网上下载 tarball 包
+
+2、解压 tarball 包 至 /opt 目录下
+
+3、ln -s /opt/sublime_text_3/sublime_text /usr/local/bin/sublime
+	让我们可以从 Terminal 中输入 sublime 来启动程序
+
+4、cp /opt/sublime_text_3/sublime_text.desktop /usr/share/applications/
+	将桌面启动文件拷贝至指定目录
+
+5、 编辑 /usr/share/applications/sublime_text.desktop 文件
+	将 Exec 的路径修改为正确的路径
+
+	并删除 [Desktop Action Window] 和 [Desktop Action Document] 两段
+	这两段是为 Unity 桌面环境而准备的
