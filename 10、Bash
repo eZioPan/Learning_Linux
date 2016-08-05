@@ -482,3 +482,44 @@ eg.
 # 这会让系统将错误信息定向至 /dev/null ，清除这个信息
 
 
+输入重定向
+
+eg1.
+[ep@epct ~]$ cat < ~/.bachrc > catfile
+
+# 将 ~/.bashrc 文件作为 cat 的输入源， 接着将输出的内容写入到 catfile 中
+
+# 这个命令等价于 cat ~/.bachrc > catfile
+
+
+eg2.
+[ep@epct ~]$ cat << "eof" > catfile
+
+# 这个命令会让 cat 等待用户的键盘输入直到 用户输入 eof 才会结束等待
+
+
+
+Bash 中的 短路与操作（&&） 和 短路或操作（||）
+
+<commandA> && <commandB> 仅当 <commandA> 的回传值（$?）为 0 的时候， 执行 <commandB>
+
+<commandA> || <commandB> 仅当 <commandA> 的回传值（$?）值不为 0 的时候， 执行 <commandB>
+
+
+eg1.
+
+ls /tmp/abc || mkdir /tmp/abc && touch /tmp/abc/hehe
+
+# 以上命令会判定 abc 目录是否存在，不存在就新建一个，并创建一个名为 hehe 的文件
+
+eg2.
+
+ls /tmp/abc || echo "not exist" && echo "exist"
+
+# 若 ls /tmp/abc 执行成功，则跳到 && 判定，执行 echo "exist"
+
+# 若 ls /tmp/abc 不成功，则执行 echo "not exist"
+# 并返回 echo "not exist" 执行成功，接着执行 && 判定，执行 echo "exist"
+
+# 所以无论 ls /tmp/abc 是否存在都会输出 "exist"，但只有不存在时才输出 "not exist"
+
