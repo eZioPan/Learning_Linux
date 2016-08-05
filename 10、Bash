@@ -523,3 +523,12 @@ ls /tmp/abc || echo "not exist" && echo "exist"
 
 # 所以无论 ls /tmp/abc 是否存在都会输出 "exist"，但只有不存在时才输出 "not exist"
 
+
+
+管道命令 |
+
+管道命令 的作用是把上一个命令的 标准输出（StdOut） 当做下一个命令的 标准输入（StdIn） 使用
+
+注意1 管道命令 对 标准错误输出（StdErr） 是无效的，可以使用 2>&1 或者 &> 来使 StdErr 起效
+
+注意2 管道命令 后 不可以接 ls cp mv 等命令，因为他们不接受 StdIn 的数据
