@@ -9,7 +9,8 @@
 	将桌面启动文件拷贝至指定目录
 
 5、 编辑 /usr/share/applications/sublime_text.desktop 文件
-	将 Exec 的路径修改为正确的路径
+	将 Exec 的路径修改为正确的 二进制文件 路径
+	将 Icon 指向正确的 png 图标 路径
 
-	并删除 [Desktop Action Window] 和 [Desktop Action Document] 两段
+	删除 [Desktop Action Window] 和 [Desktop Action Document] 两段
 	这两段是为 Unity 桌面环境而准备的
