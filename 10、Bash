@@ -532,3 +532,66 @@ ls /tmp/abc || echo "not exist" && echo "exist"
 注意1 管道命令 对 标准错误输出（StdErr） 是无效的，可以使用 2>&1 或者 &> 来使 StdErr 起效
 
 注意2 管道命令 后 不可以接 ls cp mv 等命令，因为他们不接受 StdIn 的数据
+
+
+
+数据的截取
+
+cut 提取指定位置上的文件内容
+
+cut [-cdf] [文件]
+-c, --characters=<LIST> 以字符为单位，选择指定区间的内容（从 1 开始编号）
+-d, --delimiter=<分隔符> 使用指定的字符作为分隔符，若不指定则使用 <Tab> 作为分隔符
+-f, --fields=<LIST> 以片段为单位，选择指定区间的内容（从 1 开始编号）
+若不指定文件，则用 StdIn 作为输入
+-b, --bytes=<LIST> 以 Byte 为单位，选择指定区间的内容（从 1 开始编号）
+-n 与 -b 连用，将 multibyte 字符当做一个 byte 来切割（比如 UTF-8 编码下的中文）
+--complement 反选 -b -c -f 指定的部分
+-s, --only-delimited 仅当该行有 分隔符 的时候才输出本行
+--output-delimiter=<string> 指定输出时使用的分隔符，若不指定则使用原始分隔符输出
+
+
+LIST 的几种形式
+<num1>,<num2>... 罗列指定位置
+<num1>- 从指定位置（包含 <num1>）罗列至最后
+-<num2> 从头罗列至指定位置（包含 <num2>）
+<num1>-<num2> 从 <num1>（包含） 罗列至 <num2>（包含）
+
+eg.
+[ep@epct ~]$ echo ${PATH} | cut -d ":" -f 3,5
+# 返回 $PATH 里以 : 作为分隔的 第三段 以及 第五段
+# 即 /usr/local/sbin:/home/eP/.local/bin
+
+
+
+grep 获取指定字符所在行
+grep [-acinv] [--color=auto] <匹配字符> [文件]
+-a, --text 将 二进制 文件当成 普通 文本文件进行搜索
+-c, --count 只显示找到的行数而不显示找到的行内容
+-i, --ignore-case 忽略大小写区别
+-n, --line-number 在每行前输出所在行号（行号从 1 开始）
+-v, --invert-match 反选
+--color=<never|always|auto> 根据 环境变量 GREP_COLOR 来设定匹配字符的颜色
+
+# 注意 CentOS7 中， grep 是 grep --color=auto 的 alias
+
+
+
+排序指令
+
+sort [-fbMhnrtuk] [文件]
+-f, --ignore-case 忽略大小写
+-b, --ignore-leading-blanks 忽略行前空白字符
+-M, --month-sort 月份排序： (unknown) < JAN < FEB < ... < DEC
+-h, --human-numeric-sort 人类可读大小排序 （eg. 2K 1G）
+-n, --numeric-sort 根据数字大小排序（默认为文本排序）
+-r, --reverse 反转结果
+-u, --unique
+-t, --field-separator=<SEP> 使用指定的分隔符区分字段（默认使用任何空白字符作为分隔）
+-k, --key=<KEYDEF> 指定特定的方法 按照特定的路程
+
+-t -k 一般连用
+
+-k [ FStart [ .CStart ] ] [ Modifier ] [ , [ FEnd [ .CEnd ] ][ Modifier ] ]
+
+http://roclinux.cn/?p=1472
