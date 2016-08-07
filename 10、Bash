@@ -592,6 +592,63 @@ sort [-fbMhnrtuk] [文件]
 
 -t -k 一般连用
 
--k [ FStart [ .CStart ] ] [ Modifier ] [ , [ FEnd [ .CEnd ] ][ Modifier ] ]
+-k 的通用语法
 
-http://roclinux.cn/?p=1472
+-k [[开始分区].[开始字符]],[[结束分区].[结束字符]]
+
+eg.
+
+-k 1.2,3.4
+
+# 取 第 1 个字段 的 第 2 字符 至 第 3 个字段 的 第 4 个字符 作为 排序依据
+
+
+
+将连续出现的相同行合并为一行，并计数
+
+uniq [-ic]
+-i 忽略大小写差异
+-c 罗列连续行的数量
+
+
+eg.
+[ep@epct ~]$ last | cut -d ' ' -f 1 | sort | uniq -c
+
+# 返回登录名以及登录次数
+
+
+
+文档统计
+
+wc [-clmw] [文件]
+-c 计算文件 byte 数
+-l 计算文件行数
+-m 计算字符数
+-w 计算词语数
+
+-c 和 -m 会互相 override
+
+当系统语言环境不识别 multibytes character 时， -c 和 -m 的数量为同一个
+
+如果不加参数 则在同一行逐次显示 行数 单词数 字符数
+
+
+
+分流重定向
+
+tee [-a] [输出文件]
+-a 追加至文件尾
+
+eg.
+<命令1> | tee <输出文件> | <命令2>
+
+将 <命令1> 的 StdOut 保存一份至文件，并接着作为 <命令2> 的 StdIn
+
+
+
+tr 转换字符（ translate characters ）
+
+
+
+
+

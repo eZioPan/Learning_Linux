@@ -1,0 +1,2 @@
+lspci 罗列当前所有的 PCI/PCIe 信息
+lsmod
