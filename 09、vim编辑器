@@ -172,8 +172,13 @@ backup 自动备份（保存新文件时，自动产生 <原文件名>~ 的备�
 ruler 是否显示位置信息
 showmode 是否显示 输入状态（INSERT、REPLACE 等等）
 bg={drak/light} 切换两种预设的配色方案
+ts=4 设置 tab 等于多少个 space 的长度
+(no)expandtab 是否将 tab 展开为 space
 
+:%retab 按照 (no)expandtab 和 ts 的设置将 所有行首 的 tab/space 转化为 space/tab
+:%retab! 按照 (no)expandtab 和 ts 的设置将 所有 的 tab/space 转化为 space/tab
 :syntax on/off 是否语法高亮
+
 
 
 CRLF LF换行符转换
