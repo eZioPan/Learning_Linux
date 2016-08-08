@@ -646,9 +646,102 @@ eg.
 
 
 
-tr 转换字符（ translate characters ）
+标准输入流的转换字符（ translate characters ）
+
+tr [-cCdst] <SET1> [SET2]
+-c, -C, --complement 对 SET1 中没有的字符进行操作
+-d, --delete 删除 SET1 中出现的字符
+-s, --squeeze-repeats 若 标准输入 中有 连续多个字符 经 tr 转换后 对应同一个 SET2 中的字符，则只保留一个字符（去除连续重复）
+-t, --truncate-set1 若 SET1 的长度大于 SET2，则从后删除 SET1 比 SET2 长的部分
+
+tr 的算法（猜测）
+
+将 SET1 中的字符顺次一一映射至 SET2 的字符上
+若 SET1 的字符数多于 SET2，则超出部分一直使用 SET2 指定的最后一个字符
+若 SET1 的字符数少于 SET2，则舍去 SET2 中超出的部分
+若使用 -C，则一直使用 SET2 指定的最后一个字符作为替代字符
+
+SET1 SET2 的语法格式
+
+<1> 指定的字符
+aceg 1357
+<2> 指定的字符段-方括号与连字符
+[a-z] [1-9]
+<3> 其他用法
+暂不表述
+
+tr 的注意事项，tr 会操作特殊字符，所以在使用 -c 参数时要小心会转换 <Tab> 和 <LF>
 
 
 
+标准输入 的 Tab-Space 转换
 
+col [-hx]
+-h, --tabs 将 空格 转换为 制表符
+-x, --spaces 将 制表符 转换为 空格
+
+注意，系统默认的 Tab 为 8 个 Space 的长度
+
+
+
+对两个文件每行中的部分字符，若匹配成功则将两个文件的对应行合并为一行
+
+join [-aeijtv12] <文件1> <文件2>
+-a <FileNum> 将没有匹配成功的行也输出至文件尾部， <FileNum> 指代要合并的文件的编号
+	可以使用 -a 1 -a 2 将两个文件的不匹配项都输出
+-e <FillString> 若在某个文件中某行缺少一个字段，则用 <FillString> 填充这个字段
+-i, --ignore-case 忽略对比区的大小写差异
+-t <Sep> 指定分割字符，默认使用空格
+-j <CompareNum> 以 <文件1> <文件2> 的指定的相同位置的字段作为匹配依据
+-v <FileNum> 同 -a，仅输出不匹配的项目
+-1 <CompareNum> 设定 <文件1> 的匹配字段
+-2 <CompareNum> 设定 <文件2> 的匹配字段
+
+
+
+将两个文件具有同一个行序号的行粘贴在一起
+
+paste [-d <Sep>] <文件1> <文件2>
+-d 设置站在一起的两行中间的分隔符号
+
+
+
+将 Tab 转换为 Space
+
+expand [-t <num>] <file>
+-t 指定一个 tab 转化为几个 space
+
+
+
+文件的分割
+
+split [-abCdl] [输入文件] [前缀]
+-a, --suffix-length=<N> 后缀长度
+--additional-suffix=<String> 后缀名
+-b, --bytes=<Size> 规定分割文件的固定大小（允许人类可读大小）
+-C, --line-bytes=<Size> 最大单行大小
+-d, --numeric-suffixes[=<num>] 使用数字而非字母作为后缀，<num> 指定了开始的标号
+-l, --lines=<num> 每个文件含有的行数
+
+
+
+文件的合并
+
+cat [文件序列]
+
+
+
+将 StdIn 的内容逐次作为命令的参数
+
+xargs [-0adEnp] <comand>
+-0 将所有的字符作为普通字符对待包括空格和转译字符
+-a <file>, --arg-file=<file> 从指定的文件中读取指令
+-d <Sep>, --delimiter=<Sep> 自定义不同参数间的分隔符号
+-E <String> 读取到 <String> 之后，发送 EOF 信号结束命令
+-n <num>, --max-arges=<num> 单次执行 <command> 获取的最大参数数量
+-p, --interactive 每次执行 <command> 前都询问用户是否执行
+
+
+
+在管道命令中，可以使用 连字符 - 来表示，用 StdIn/StdOut 替代文件 作为 输入/输出
 
