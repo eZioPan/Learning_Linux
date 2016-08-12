@@ -1,4 +1,4 @@
-正则表达式分为 基础正则表达式 和 扩展正则表达式
+正则表达式分为 基础正则表达式(basic RE) 和 扩展正则表达式(extended RE)
 
 语系的设置对正则表达式输出的结果又很大的影响
 
@@ -177,4 +177,31 @@ grep 'o\{2,5\}' 匹配 2 至 5 个 o 连续出现
 grep 'o\{2,\}' 匹配 2 至 无穷多个 o 连续出现
 
 
+
+sed 数据的查找、替换、删除、添加
+
+sed [-En] [command] [文件1] [文件2]...
+
+sed [-En] [[-e command1] [-e command2]...] [-f command_file] [-i extension]  [文件1] [文件2]...
+
+默认情况下，sed 从 StdOut 写出数据，也接受来自 StdIn 的数据
+
+-E 使用 Extended RE，而不是 Basic RE 作为 正则表达式的语法
+
+-n 仅将的确被改动的行输出到 StdOut，默认会将所有行输出到 StdOut
+
+-e 后面可以接多个 -e 参数来添加不同的 command
+
+-f 将 command 写入一个文件中，通过这个参数调用文件来执行命令
+
+-i 就地写入（in_place） 将修改写入原文件，若指定了 extension，则原文件的备份将使用 extension 作为扩展名
+
+
+command 部分的
+
+address1,[address2] function[arguments]
+
+address1 address2 限定操作的行数
+
+function 包含如下命令
 
