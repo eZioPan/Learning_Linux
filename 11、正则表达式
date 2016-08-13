@@ -180,13 +180,13 @@ grep 'o\{2,\}' 匹配 2 至 无穷多个 o 连续出现
 
 sed 数据的查找、替换、删除、添加
 
-sed [-En] [command] [文件1] [文件2]...
+sed [-En] '<command>' [文件1] [文件2]...
 
-sed [-En] [[-e command1] [-e command2]...] [-f command_file] [-i extension]  [文件1] [文件2]...
+sed [-En] [[-e '<command1>'] [-e '<command2>']...] [-f command_file] [-i extension]  [文件1] [文件2]...
 
 默认情况下，sed 从 StdOut 写出数据，也接受来自 StdIn 的数据
 
--E 使用 Extended RE，而不是 Basic RE 作为 正则表达式的语法
+-E 使用 Extended RE，而不是 Basic RE 作为 command 中正则表达式的语法
 
 -n 仅将的确被改动的行输出到 StdOut，默认会将所有行输出到 StdOut
 
@@ -199,9 +199,29 @@ sed [-En] [[-e command1] [-e command2]...] [-f command_file] [-i extension]  [�
 
 command 部分的
 
+整个 command 部分必须用 单引号 包括起来
+
 address1,[address2] function[arguments]
 
 address1 address2 限定操作的行数
 
+
 function 包含如下命令
 
+a <string>	在当前操作行的下一行插入 <string>
+c <string>	用 <string> 取代 address1 address2 之间行的内容
+d			删除当前操作行
+i <string>	在当前操作行的上一行插入 <string>
+p			打印当前操作行
+s/<oldString>/<newString>/g	在当前操作行中，用 <newString> 替换 <oldString>
+							若不输入 <newString> 则为删除 <oldString>
+
+eg1.
+
+nl /etc/passwd | sed '3,5d'	在 StdOut 中删除 /etc/passwd 的 第三至第五行
+
+eg2.
+
+ifconfig | grep "192.168." | sed 's/.*inet //g'| sed 's/ net.*//g'
+
+截取当前的 ip 地址
