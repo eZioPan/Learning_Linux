@@ -30,7 +30,7 @@ grep [-AB] [--color=auto] <需匹配的字符串> [文件名]
 
 
 
-RE 的语法
+basic RE 的语法
 
 
 
@@ -225,3 +225,71 @@ eg2.
 ifconfig | grep "192.168." | sed 's/.*inet //g'| sed 's/ net.*//g'
 
 截取当前的 ip 地址
+
+
+
+扩展正则表达式
+
+grep -E 或 egrep 来使用扩展正则表达式
+
+eg.
+
+grep -v '^$' regular_expression.txt | grep -v '^#'
+
+可以被简化为
+
+egrep -v '^$|^#' regular_expression.txt
+
+
+
+extended RE 的语法
+
+<字符>+
+
+该字符 重复了 一次或以上
+
+eg.
+
+egrep 'go+d'
+
+将匹配 god good goood ...
+
+
+
+<字符>?
+
+该字符 没有出现或只出现了一次
+
+eg.
+
+egrep 'go?d'
+
+将匹配 gd god
+
+
+
+<RE1>|<RE2>
+
+将匹配符合 RE1 或 RE2 的字符串
+
+eg.
+
+egrep '^$|^#'
+
+将匹配 空行 或 以 # 开头的行
+
+
+
+(<字符>)
+
+将括号内的字符串作为群组对待
+
+eg.
+
+egrep 'g(la|oo)d'
+
+将匹配 glad 或 good
+
+
+群组字符也可以构成形如 ()+ ()? ()|() 的样式
+
