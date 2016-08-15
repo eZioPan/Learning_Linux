@@ -1,2 +1,4 @@
 lspci 罗列当前所有的 PCI/PCIe 信息
-lsmod
+
+Linux 下的 Disk 工具中的 Restore Disk Image... 会直接将 iso 文件按照原格式覆写至指定磁盘中
+也就是说，若 iso 文件为可启动光盘，则会将 U 盘覆写为 usb-dvd，而且 Windows 无法正确修改这种磁盘分区表
