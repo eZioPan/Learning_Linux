@@ -1,0 +1,125 @@
+博通 BroadCom BCM43** 系列网卡 CentOS7 安装教程
+
+参考文档
+https://wiki.centos.org/HowTos/Laptops/Wireless/Broadcom
+
+
+
+【0】更新 CentOS7，并重启机器
+
+yum upgrade
+shutdown -r
+
+
+【1】查看网卡信号
+
+lspci | grep 'Broadcom'
+
+
+
+【2】下载驱动源码 与 更新补丁
+
+http://www.broadcom.com/support/?gid=1
+
+选择 Linux STA 64-bit driver
+
+https://wiki.centos.org/HowTos/Laptops/Wireless/Broadcom?action=AttachFile&do=get&target=wl-kmod-fix-ioctl-handling.patch
+
+【3】安装编译工具
+
+yum install kernel-headers kernel-devel gcc
+
+
+
+【4】解压源码包
+
+tar -x -f hybrid*** -C ./Drive/
+
+
+
+{第【3】至第【10】步操作均在 ./Driver/ 下完成}
+
+【5】修改源码为正确编译版本
+
+sed -i 's/ >= KERNEL_VERSION(3, 11, 0)/ >= KERNEL_VERSION(3, 10, 0)/' src/wl/sys/wl_cfg80211_hybrid.c
+sed -i 's/ >= KERNEL_VERSION(3, 15, 0)/ >= KERNEL_VERSION(3, 10, 0)/' src/wl/sys/wl_cfg80211_hybrid.c
+sed -i 's/ < KERNEL_VERSION(3, 18, 0)/ < KERNEL_VERSION(3, 9, 0)/' src/wl/sys/wl_cfg80211_hybrid.c
+sed -i 's/ >= KERNEL_VERSION(4, 0, 0)/ >= KERNEL_VERSION(3, 10, 0)/' src/wl/sys/wl_cfg80211_hybrid.c
+
+
+
+【6】为源码打补丁
+
+patch -p1 < [下载的 patch 文件位置]
+
+
+
+【7】开始自动编译
+
+make
+
+
+
+【8】移除驱动中不必要的部分
+
+strip --strip-debug wl.ko
+
+
+
+【9】关闭原有无线驱动
+
+modprobe -r bcm43xx
+modprobe -r b43
+modprobe -r b43legacy
+modprobe -r ssb
+modprobe -r bcma
+modprobe -r brcmsmac
+modprobe -r ndiswrapper
+
+
+
+【10】拷贝驱动至内核文件夹内
+
+cp -vi wl.ko /lib/modules/$(uname -r)/extra/
+
+
+
+【11】获取模块依赖列表
+
+depmod $(uname -r)
+
+
+
+【12】挂载无线驱动
+
+modprobe wl
+
+{至此新的无线驱动就可以正常工作了}
+
+
+
+{以下用于开机自动加载驱动}
+
+【13】创建驱动黑名单，屏蔽旧驱动
+
+创建/追加 /etc/modprobe.d/blacklist.conf
+
+blacklist bcm43xx
+blacklist b43
+blacklist b43legacy
+blacklist bcma
+blacklist brcmsmac
+blacklist ssb
+blacklist ndiswrapper
+
+
+
+【14】创建配置文件，开机自动加载新驱动
+
+#!/bin/bash
+
+for M in lib80211 cfg80211 wl; do
+    modprobe $M &>/dev/null
+done
+
+{至此开机自动加载驱动配置完成}
