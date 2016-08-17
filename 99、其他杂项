@@ -1,4 +1,29 @@
 lspci 罗列当前所有的 PCI/PCIe 信息
 
+
+
 Linux 下的 Disk 工具中的 Restore Disk Image... 会直接将 iso 文件按照原格式覆写至指定磁盘中
 也就是说，若 iso 文件为可启动光盘，则会将 U 盘覆写为 usb-dvd，而且 Windows 无法正确修改这种磁盘分区表
+
+
+
+电源管理/合盖不休眠
+
+/etc/systemd/logind.conf
+
+HandlePowerKey		按下电源键的行为 默认 poweroff
+HandleSuspendKey	按下挂起键的行为 默认 suspend
+HandleHibernateKey	按下休眠键的行为 默认 hibernate
+HandleLidSwitch		合上笔记本的行为 默认 suspend
+
+可以使用的行为有
+
+ignore/poweroff/reboot/halt/suspend/hibernate/hybrid-sleep/lock/exec
+
+合盖不休眠，修改
+
+HandleLidSwitch=lock
+
+再执行
+
+systemctl restart systemd-logind
