@@ -208,13 +208,14 @@ address1 address2 限定操作的行数
 
 function 包含如下命令
 
-a <string>	在当前操作行的下一行插入 <string>
-c <string>	用 <string> 取代 address1 address2 之间行的内容
-d			删除当前操作行
-i <string>	在当前操作行的上一行插入 <string>
-p			打印当前操作行
-s/<oldString>/<newString>/g	在当前操作行中，用 <newString> 替换 <oldString>
-							若不输入 <newString> 则为删除 <oldString>
+a <string>	【add】在当前操作行的下一行插入 <string>
+c <string>	【change】用 <string> 取代 address1 address2 之间行的内容
+d			【delete】删除当前操作行
+i <string>	【insert】在当前操作行的上一行插入 <string>
+p			【print】打印当前操作行
+s/<oldString>/<newString>/g
+			【search】在当前操作行中，用 <newString> 替换 <oldString>
+					 若不输入 <newString> 则为删除 <oldString>
 
 eg1.
 
@@ -453,3 +454,124 @@ Bird2   43000   42000   41000
 
 
 
+文本文件/文件夹差异比较
+
+diff [-y] [-W <width>] [--suppress-common-lines] [file1] [file2]
+diff [-cu] [file1] [file2]
+-y 并列对比模式（side by side）
+-W 定义返回行的总宽度，默认 130 字符，仅在并列对比模式下起效
+--suppress-common-lines 不显示完全相同的行，仅在并列对比模式下起效
+-c, -C <num>, --context[=num] 上下文模式（context）
+-u, -U <num>, --unified[=num] 合并模式（unified）
+
+可接受 StdIn
+
+diff 的排查结果不一定就是最佳人类理解方式，但是是计算机能最快查找到结果的方式
+
+EG.
+
+有如下两个文件
+
+[t.old]
+
+line1
+line2
+line3
+line4
+line5
+
+
+[t.new]
+
+line2
+line2
+line4
+line5
+line6
+line7
+
+eg0.并列模式
+
+[eP@ePCt ~]$ diff -y -W 20 t.old t.new
+
+# 返回
+
+line1 <				# 小于号（<）表示该行只出现在右侧文件
+line2   line2		# 空格表示该行等同
+line3 | line2		# 管线符（|）表示该行介于完全相同和完全不相同之间
+line4   line4
+line5   line5
+      > line6		# 大于号（>）表示该行只出现在左侧文件
+      > line7
+
+
+eg1.普通模式
+
+[eP@ePCt ~]$ diff t.old t.new
+
+# 返回
+
+1d0				# 左侧文件的第 1 行在右侧文件中被删除（deleted），若不删除，应该出现在右侧文件的第 0 行（全文最开始）
+< line1			# 内容 line1 来自左侧文件
+3c2				# 左侧文件的第 3 行被修改（changed），右侧文件的第 2 行被修改（changed）
+< line3			# 内容 line3 来自左侧文件
+---				# 左侧右侧文件分隔符
+> line2			# 内容 line2 来自右侧文件
+5a5,6			# 右侧文件增加（added）了第 5 - 6 行，应该增加在左侧文件的第 5 行之后
+> line6			# 内容 line6 来自右侧文件
+> line7			# 内容 line7 来自右侧文件
+
+
+eg2.上下文模式
+
+[eP@ePCt ~]$ diff -c t.old t.new
+
+# 返回
+
+*** t.old       2016-08-19 16:24:03.380771314 +0800		# 文件1 的名称与修改时间
+--- t.new       2016-08-19 17:40:46.133031752 +0800		# 文件2 的名称与修改时间
+***************
+*** 1,5 ****		# 下方将显示 文件1 的 第 1 - 5 行
+- line1				# 该行在另一个文件中被删除
+  line2				# 该行没有变化
+! line3				# 该行在两个文件中介于完全相同和完全不同之间
+  line4
+  line5
+--- 1,6 ----		# 下方将显示 文件2 的 第 1 - 6 行
+  line2
+! line2
+  line4
+  line5
++ line6				# 该行在这个文件中被添加
++ line7
+
+注意：
+diff -C <num> 定义了除了不同之处最多还有多少行也一同被显示出来，默认 3 行
+
+
+eg3.合并模式
+
+[eP@ePCt ~]$ diff -c t.old t.new
+
+# 返回
+
+--- t.old       2016-08-19 16:24:03.380771314 +0800		# 文件1 的名称与修改时间
++++ t.new       2016-08-19 17:40:46.133031752 +0800		# 文件2 的名称与修改时间
+@@ -1,5 +1,6 @@											#下方显示了 文件1 的 第 1 - 5 行，以及 文件2 的 1 - 6 行
+-line1													# 文件2 中删去了该行
+ line2
+-line3
++line2													# 文件2 中添加了该行
+ line4
+ line5
++line6
++line7
+
+
+
+字节形式的文件差异比较
+
+cmp [-l] file1 file2
+-l, --verbose 输出所有不同字节的位置，以及不同字节的值
+
+默认情况下，只输出寻找到的第一个不同字节的行数与字节位置
