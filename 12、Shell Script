@@ -1,0 +1,50 @@
+Shell Script如果读取到 <CR> 就尝试执行该命令
+
+
+
+.sh 文件可以通过 赋予 rx 权限直接执行
+或者通过 sh shell.sh 或 bash shell.sh 来执行
+
+
+sh的文件结构
+
+
+【1】sh文件的第一行
+
+#!/bin/bash 指定了文件该用哪个 shell 执行，同时也指定了该用什么环境变量来执行（也就是 ~/.bashrc）
+
+
+【2】sh 开头最好写注释
+
+注释内容包括
+
+1、版本与功能
+2、版本信息
+3、作者和联系方式
+4、建立时间
+5、历史记录
+
+
+【3】定义环境变量
+
+比如 PATH 和 LANG
+
+
+【4】程序主要部分
+
+
+【5】程序结束返回码
+
+exit 0
+
+
+
+使用 sh shellscript.sh 或直接执行 ./shellscript.sh 时，会创建一个新的 shell 进程来执行这些操作
+
+而使用 source shellscript.sh 或 . shellscript.sh 来执行命令时，shellscript.sh 的内容会直接在当前进程中执行
+
+
+
+
+
+
