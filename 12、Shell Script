@@ -45,6 +45,19 @@ exit 0
 
 
 
+条件测试命令
 
+test <options>
 
+(1) 文件类型判断，形如 test -e filename
 
+-e	文件名是否存在					（exist）
+-f	文件名是否存在，且为 普通文件	（file）
+-d	文件名是否存在，且为 目录		（directory）
+-b	文件名是否存在，且为 块设备		（block）
+-c	文件名是否存在，且为 字符流设备	（character）
+-S	文件名是否存在，且为 套字节文件	（socket）
+-p	文件名是否存在，且为 管线文件	（FIFO,pipe）
+-L	文件名是否存在，且为 符号链接	（symbolic link）
+
+(2) 当前用户的文件权限判断，形如 test -r filename
