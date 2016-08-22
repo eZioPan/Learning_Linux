@@ -49,6 +49,12 @@ exit 0
 
 test <options>
 
+注意，test 命令只返回 执行结果的返回码，若为真则返回 0，若为假则返回 1。
+所以 test 命令不会在屏幕上显示结果
+需要使用如下形式的方式来显示结果
+
+test -e /home && echo "yes" || echo "no"
+
 (1) 文件类型判断，形如 test -e <filename>
 
 -e	文件名是否存在					（exist）
@@ -60,7 +66,9 @@ test <options>
 -p	文件名是否存在，且为 管线文件	（FIFO,pipe）
 -L	文件名是否存在，且为 符号链接	（symbolic link）
 
+
 (2) 文件权限判断，形如 test -r <filename>
+
 -r	文件名是否存在，且当前用户具有 可读 权限
 -w	文件名是否存在，且当前用户具有 可写 权限
 -x	文件名是否存在，且当前用户具有 可执行 权限
@@ -69,7 +77,103 @@ test <options>
 -k	文件名是否存在，且具有 Sticky Bit 属性
 -s	文件名是否存在，且文件大小不为 0
 
+
 (3) 文件间的比较，形如 test <file1> -nt <file2>
+
 -nt	<file1> 是否比 <file2> 新
--ot <file1> 是否比 <file2> 旧
--ef <file1> 和 <file2> 最终是否指向同一个文件（符号链接也可以）
+-ot	<file1> 是否比 <file2> 旧
+-ef	<file1> 和 <file2> 最终是否指向同一个文件（符号链接也可以）
+
+
+(4) 整数之间的对比，形如 test <num1> -eq <num2>
+
+-eq	<num1> 等于 <num2>
+-ne	<num1> 不等于 <num2>
+-gt	<num1> 大于 <num2>
+-lt	<num1> 小于 <num2>
+-ge	<num1> 大于等于 <num2>
+-le	<num1> 小于等于 <num2>
+
+
+(5) 字符串的判定
+
+-z <str1>	字符串为空
+-n <str1>	字符串非空
+<str1> == <str2>	两字符串相同（注意空格）
+<str1> != <str2>	两字符串不同（注意空格）
+
+
+(6) 复合判断条件
+<exp1> -a <exp2>	当两个表达式都成立时返回 true
+<exp1> -o <exp2>	当两个表达式中有一个成立即返回 true
+! <exp1>			表达式结果取反
+
+
+
+判断符 [ ]
+
+[ ] 在本质上和 test 等价
+
+EG0.Warning
+
+[ -z "${HOME}" ]
+
+注意 [ 之后的空格 以及 ] 之间的空格，若没有空格，则不作为判断符来使用
+
+以及 用双引号 "" 引起来的变量名
+
+EG1.Warning
+
+var1="eZio Pan"
+[ -n ${var1} ]
+
+会返回错误
+因为第二行会被翻译为 [ -n eZio Pan ]
+此时判断符会认为传入了三个参数而报错
+正确写法为
+
+[ -n "${var1}" ]
+
+此时该句会被翻译为 [ -n "eZio Pan" ]
+就不会报错了
+
+
+
+读取传入参数 $<num>
+
+$0 代表要执行的脚本名，注意，无论用 sh shellscript.sh 还是 ./shellscript.sh $0 都是 shellscript.sh
+$1 代表第一个传入参数
+$2 代表第二个传入参数
+...
+$# 代表传入脚本的参数总数
+$* 代表传入脚本的所有参数，输出格式为 "$1$IFS$2$IFS$3$IFS..."， IFS 是 bash 的环境变量，定义了间隔符
+$@ 代表传入脚本的所有参数，输出格式为 "$1" "$2" "$3" ...
+
+
+
+偏移/舍去 传入参数
+
+shift [偏移数量]
+若不指定偏移数量，默认偏移一位
+
+eg.
+
+shift 3
+表示去除 $1 $2 $3，将 $4 作为新的 $1 输出，后方的参数依次前推
+
+
+
+if 条件判断语句
+
+if [ <condition1> ]
+then
+<command1>
+elif [ <condition2> ]
+then
+<command2>
+else
+<command3>
+fi
+
+
+
