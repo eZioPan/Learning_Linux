@@ -1,7 +1,6 @@
 Shell Script如果读取到 <CR> 就尝试执行该命令
 
 
-
 .sh 文件可以通过 赋予 rx 权限直接执行
 或者通过 sh shell.sh 或 bash shell.sh 来执行
 
@@ -166,14 +165,28 @@ shift 3
 if 条件判断语句
 
 if [ <condition1> ]
-then
-<command1>
+	then
+		<command1>
 elif [ <condition2> ]
-then
-<command2>
+	then
+		<command2>
+...
 else
-<command3>
+	<lastCommand>
 fi
 
 
 
+case 条件判断语句
+
+case ${<variableName>} in
+	<case1>)
+		<command1>
+		;;
+	<case2>)
+		<command2>
+		;;
+	...
+	*)
+		<lastCommand>
+esac
