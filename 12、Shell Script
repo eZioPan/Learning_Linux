@@ -190,3 +190,52 @@ case ${<variableName>} in
 	*)
 		<lastCommand>
 esac
+
+
+
+function 函数声明和调用
+
+函数的声明
+
+function <function_name>() {
+<command1>
+}
+
+注意： 在声明函数的时候，不需要设定任何 伪参数，Bash 的函数只接受以位置定义的传入参数
+
+
+函数的调用
+
+<function_name> <参数1> <参数2> <参数3> ...
+
+
+eg.
+
+function PrintOut(){
+	echo "Your 1st parm is "$1		# $1 代表传入函数的第一个参数
+	echo "Your 2nd parm is "$2		# $2 代表传入函数的第二个参数
+}
+
+PrintOut lalala kokoko
+
+# 返回
+Your 1st parm is lalala
+Your 2nd parm is kokoko
+
+
+
+循环
+
+while..do循环，条件成立时循环
+
+while [ condition ]
+do
+	<command>
+done
+
+eg.
+n=0
+while [ ${n} -le 10 ]; do
+	echo ${n}
+	n=$[${n}+1]				# 为什么？
+done
