@@ -459,13 +459,6 @@ eg.
 # 将正常的输出 定向至 list_right 将报错定向至 list_error
 
 
-# 定向 至 变量（内存中）
-
-[ep@epct ~]$ echo "myString" > ${str1}
-
-# 将正常的输出 定向至 变量 str1 中
-
-
 # 二重定向 至 单文件
 [ep@epct ~]$ find /home -name .bashrc > list_all 2>&1
 
