@@ -1,0 +1,7 @@
+Linux 的文件属性里只记录了 UID(user id) 和 GID(group id)
+系统通过查询 /etc/passwd 将 UID 和 GID 对应的 用户名 与 群组名 显示出来
+
+id [-gGu] [userName]/[UID]
+-g, --group  仅显示 user name 所在的 effective group ID
+-G, --groups 显示user name 所在的所有的 group ID
+-u, --user   仅显示 effective user ID
