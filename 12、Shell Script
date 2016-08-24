@@ -224,9 +224,10 @@ Your 2nd parm is kokoko
 
 
 
-循环
+while..do 循环语句
 
-while..do循环，条件成立时循环
+！条件成立时执行循环内语句
+！先执行一次循环才会执行判断
 
 while [ condition ]
 do
@@ -237,5 +238,61 @@ eg.
 n=0
 while [ ${n} -le 10 ]; do
 	echo ${n}
-	n=$[${n}+1]				# 为什么？
+	n=$((${n}+1))
 done
+
+
+
+until..do 循环语句
+
+！条件不成立时结束循环内语句
+！先执行一次循环才会执行判断
+
+until [ condition ];
+do
+	<command>
+done
+
+eg.上述 while 循环可以改写为
+n=0
+until [ ${n} -gt 10 ]; do
+	echo ${n}
+	((n++))			# 注意，不要写成 $((n++))，这会返回计算结果，导致报错
+done
+
+
+
+for..do 循环语句
+
+！已知循环次数的循环语句
+
+for <iter> in <content1> <content2> ...
+do
+	<command>
+done
+
+eg.上述 until 循环等效于
+for n in $(seq 0 10); do
+	echo $n
+done
+
+！for..do 的第二种写法
+
+for ((<起始状态>;<结束状态>;<步幅>))
+do
+	<command>
+done
+
+eg.上述 for 循环可以改写为
+for ((n=0;n<=10;n++)); do	# n<=10 可以改写为 ${n}<=10
+	echo -n ${n}
+done
+
+
+
+shell script 的 debug
+
+sh [-nvx] <script.sh>
+-n 不执行脚本，只检查语法错误
+-v 在执行脚本前打印脚本文件
+-x 返回当前执行的每一行脚本与脚本的输出，脚本以 + 开头
