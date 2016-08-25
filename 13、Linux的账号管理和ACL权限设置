@@ -5,3 +5,35 @@ id [-gGu] [userName]/[UID]
 -g, --group  仅显示 user name 所在的 effective group ID
 -G, --groups 显示user name 所在的所有的 group ID
 -u, --user   仅显示 effective user ID
+
+
+
+/etc/passwd 和 /etc/shadow 的详细信息可以通过 man 5 passwd 和 man 5 shadow 获取
+
+
+/etc/passwd 的文件结构
+
+eg.
+
+[passwd 文件第一行 root 相关信息]
+
+root:x:0:0:root:/root:/bin/bash
+
+第 1 栏：账号名称
+
+第 2 栏：原密码位，现已保存至 /etc/shadow 中，此位使用 x 占位
+
+第 3 栏：UID
+
+UID 的分配
+0				系统管理员 UID （也即 root 级别）
+1 ~ 999			系统内部使用的 UID
+* 1 ~ 200		系统发布者自行使用的 UID
+* 201 ~ 999		使用者需要系统账号时可使用的 UID
+1000 ~ 60000	一般使用者的 UID ， Linux Kernel 3.10.x 中 UID 最多可以开启 2^32-1 个
+
+第 4 栏：GID
+
+第 5 栏：账户说明
+
+第 6 栏：账户主目录路径
