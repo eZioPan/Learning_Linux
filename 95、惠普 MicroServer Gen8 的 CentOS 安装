@@ -1,0 +1,67 @@
+【1】准备工作：
+
+1、一张不少于 32GB 的 TF 卡，作为系统盘
+
+2、CentOS7 的光盘镜像（最好是 Everything 版本）【http://www.centos.org】
+
+3、一支可以被清空的，容量大于 8G 的 U 盘
+
+4、惠普提供的 B120i 阵列卡 RHEL7 的驱动
+
+hpe.com 搜索 B120i，右侧选择 支持，找到 HP Dynamic Smart Array B120i Controller 页面
+驱动程序语言选择英语，操作系统选择 Red Hat Enterprise Linux 7 Server
+下方列表中选择
+（1）驱动程序 - 存储器控制器 -> 安装 CentOS7 之后再安装驱动
+或
+（2）应用软件 - 驱动程序盘 -> 在安装 CentOS7 中就安装驱动
+
+注意选择 rhel7u2 版本
+
+
+【2】HP BIOS Setup
+
+1、在启动阶段，按 F9 进入 HP Rom-Based Setup Utility，选择 Internal Flash Disk 为第一个启动的
+
+2、设置从 External USB Drive 读取启动项
+
+3、在启动阶段，按 F5 进入 B120i 阵列卡配置界面，将四块硬盘组成 RAID 整列
+
+
+【3】制作 USB-ROM 类型的 启动 U 盘
+
+直接使用 mac 或 linux 下 磁盘工具 中的 Restore Disk Image 选项或 dd 命令向 U 盘写入光盘镜像
+
+【4】安装 CentOS7
+
+安装时请勿选择 TF 卡之外的其他磁盘，此时 CentOS 不会识别 RAID 阵列
+
+【5】配置阵列卡㐑
+
+1、更新系统
+
+2、将 B120i 的驱动程序拷贝至机器中，使用 rpm -Uvh <驱动文件> 来安装
+
+3、重启
+
+4、从内存中卸载原有 AHCI 驱动， rmmod ahci
+   同时卸载可能载入内存的 hpvsa 驱动， rmmod hpvsa
+
+5、载入 hpvsa 驱动， modprobe hpvsa
+
+此时用 lsblk 既能发现系统已能正确识别 RAID 设备
+
+6、禁用 ahci 驱动，在 /usr/lib/modprobe.d/dist-blacklist.conf 中添加一行 blacklist ahci
+
+7、禁用 ahci 驱动的开机自动载入，修改 /etc/default/grub 的 GRUB_CMDLINE_LINUX 行，在行尾反引号和最后一个单词之间添加 rd.driver.blacklist=ahci
+
+8、生成新的 grub 以及启动 img， grub2-mkconfig -o /boot/grub2/grub.cfg
+
+9、再次重启，之后就能开始分区及格式化 RAID
+
+【6】双网卡建立 bond 用于传输负载均衡
+
+1、在 gnomeGUI--设置--网络 中，新建一个 绑定网络，并在 绑定网络的配置中，将两张网卡添加至列表中，并将传输模式选择为负载均衡
+
+注意！只有一根网线链接在网口上时，系统只会使用当前真实的网口 MAC 地址获取 IP
+     若将两个网口都插上网线，则系统会自动屏蔽已经加入绑定的真实网口，并用绑定生成的新设备获取 IP
+     者两个 IP 极有可能不一样
