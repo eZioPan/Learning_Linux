@@ -1,0 +1,2 @@
+下载 samba 服务的相关程序
+yum install samba samba-client samba-common
