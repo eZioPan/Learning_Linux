@@ -1,2 +1,108 @@
-下载 samba 服务的相关程序
-yum install samba samba-client samba-common
+Samba 基于 NetBIOS Name 和 Workgroup 来定位计算机名
+
+
+【1】查询与配置客户端的工作组
+
+1.1、Windows 下
+
+计算机,右键--属性--计算机名称、域和工作组设置--工作组
+
+1.2、MAC 下
+
+系统偏好设置--网络--高级...--WINS--工作组
+
+2、将需要加入 samba 服务设置的服务修改为同一工作组
+
+
+【2】安装 Samba 程序，创建全局配置，向系统防火墙中添加允许规则
+
+1、yum install samba samba-client samba-common
+
+2、备份原始 smb.conf 文件
+
+mv /etc/samba/smb.conf /etc/samba/smb.conf.backup
+
+3、新建配置文件
+
+vim /etc/samba/smb.conf
+
+文件内容
+
+[global]
+workgroup = WORKGROUP			# 该名称为工作组名称
+server string = Samba Server %v
+netbios name = centos			# 将是 samba 服务器的使用的名称
+security = user
+map to guest = bad user
+dns proxy = no
+
+4、启动 samba 相关服务
+
+systemctl enable smb.service
+systemctl enable nmb.service
+#systemctl restart smb.service
+#systemctl restart nmb.service
+
+5、在系统防火墙中，将 samba 服务设置为公共区域
+
+firewall-cmd --permanent --zone=public --add-service=samba
+firewall-cmd reload
+
+
+【3】 创建对 工作组 内 所有用户 都开放的 匿名分享
+
+1、创建共享目录，修改 普通权限 和 SELinux 策略
+
+mkdir -p /SAMBA/AnonymousShare
+
+chmod -R 0755 ./AnonymousShare
+chown -R nobody:nobody ./AnonymousShare		# 设置为为无拥有者
+chcon -t samba_share_t ./AnonymousShare
+
+2、在 smb.conf 中 添加 以下字段
+
+[ePAnonymous]					# 这将成为共享名
+path = /SAMBA/AnonymousShare	# 这是共享目录的路径
+browsable =yes
+writable = yes
+guest ok = yes					# 允许无密码无用户名登录
+read only = no
+
+3、重启服务
+
+systemctl restart smb.service
+systemctl restart nmb.service
+
+
+【4】 创建带有用户名和密码的分享
+
+1、创建用于登录 samba 的账户和群组
+
+groupadd ePsmbgrp				# 创建一个群组
+useradd ePSmb -G ePsmbgrp		# 创建一个属于分享群组的用户
+
+2、为用户创建 samba 服务特有的密码
+
+smbpasswd -a ePSmb
+
+3、创建共享目录，修改 普通权限 和 SELinux 策略
+
+mkdir -p /SAMBA/SecureShare
+
+chmod -R 0755 ./SecureShare
+chown -R ePSmb:ePsmbgrp ./SecureShare		# 设置为指定拥有者和群组
+chcon -t samba_share_t ./SecureShare
+
+4、在 smb.conf 中 添加 以下字段
+
+[ePSecureShare]				# 这将成为共享名
+path = /SAMBA/SecureShare
+valid users = @ePsmbgrp		# 设置可用群组
+guest ok = no
+writable = yes
+browsable = yes
+
+5、重启服务
+
+systemctl restart smb.service
+systemctl restart nmb.service
