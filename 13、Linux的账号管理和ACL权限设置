@@ -79,10 +79,10 @@ root:<BlahBlahBlah>::0:99999:7:::
 
 
 /etc/group 的文件结构
-root:x:0:
+
 [group 文件第一行 root 相关信息]
 
-
+root:x:0:
 
 第 1 栏：群组名称
 
