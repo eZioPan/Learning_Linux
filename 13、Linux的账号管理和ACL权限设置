@@ -1,11 +1,6 @@
 Linux 的文件属性里只记录了 UID(user id) 和 GID(group id)
 系统通过查询 /etc/passwd 将 UID 和 GID 对应的 用户名 与 群组名 显示出来
 
-id [-gGu] [userName]/[UID]
--g, --group  仅显示 user name 所在的 effective group ID
--G, --groups 显示user name 所在的所有的 group ID
--u, --user   仅显示 effective user ID
-
 
 
 /etc/passwd 和 /etc/shadow 的详细信息可以通过 man 5 passwd 和 man 5 shadow 获取
@@ -55,7 +50,7 @@ root:<BlahBlahBlah>::0:99999:7:::
 
 第 1 栏：账号名称
 
-第 2 栏：经过加密的密码，CentOS7 常用的加密手段是 SHA
+第 2 栏：经过加密的密码，CentOS7 常用的加密手段是 SHA ，若该栏以感叹号 ! 开头，则该账户的密码是无效的，该账户也将被锁定
 
 查询加密手段： authconfig --test | grep "hashing"
 
@@ -102,9 +97,9 @@ eg. root@x:0:eP,ep
 
 
 
-有效群组（effective group）和初始群组（initial group）
+有效群组（effective group）和初始/主要群组（initial/primary group）
 
-/etc/passwd 的第四栏中的 GID 对应的就是初始群组，也即使用者登录系统就获取的群组
+/etc/passwd 的第四栏中的 GID 对应的就是初始/主要群组，也即使用者登录系统就获取的群组
 
 
 查看用户所在群组
@@ -146,11 +141,11 @@ root:::
 
 用户的新增
 
-useradd [-u <UID>] [-g <初始群组>] [-G <其他群组>] [-m|M] [-c <说明>] [-d <主目录绝对路径>] [-s <使用的 shell>] <新账户名>
+useradd [-u <UID>] [-g <初始/主要群组>] [-G <补充/次要群组>] [-m|M] [-c <说明>] [-d <主目录绝对路径>] [-s <使用的 shell>] <新账户名>
 注意！在使用 useradd 添加用户之后，用户默认是被封锁的，因为还没有设定账户密码
 -u, --uid<UID> 用户指定一个 UID
--g, --gid<GID或GroupName> 用户指定的初始群组，这里可以使用 GID 或 群组名
--G, --groups<Group1>[,<Group2>...] 指定用户需要加入的其他群组，可以使用 GID 或 群组名，多个群组之间用逗号隔开
+-g, --gid<GID或GroupName> 用户指定的初始/主要群组，这里可以使用 GID 或 群组名
+-G, --groups<Group1>[,<Group2>...] 指定用户需要加入的补充/次要群组，可以使用 GID 或 群组名，多个群组之间用逗号隔开
 -m, --create-home 为新用户创建目录（一般账号的默认动作）
 -M 不为新用户创建目录（系统账号的默认动作）
 -c, --comment<Comment> 用户的简短描述，目前标示为完整用户名
@@ -159,3 +154,98 @@ useradd [-u <UID>] [-g <初始群组>] [-G <其他群组>] [-m|M] [-c <说明>] 
 -r 创建系统账户
 -e, --expiredate<YYYY-MM-DD> 指定账户的过期日期
 -f, --inactive<密码过期时间> 指定账户的密码过期天数，0 为立刻失效，-1 为永不失效
+
+
+useradd 默认行为的参考文件
+
+/etc/default/useradd
+
+显示 useradd 的默认行为
+
+useradd -D
+-D, --defaults 查看默认行为
+
+# 返回
+
+GROUP=100
+HOME=/home
+INACTIVE=-1
+EXPIRE=
+SHELL=/bin/bash
+SKEL=/etc/skel
+CREATE_MAIL_SPOOL=yes
+
+
+(1) GROUP 代表初始/主要群组的 GID 为 100，表示 users 这个群组
+     但这个设置在 CentOS 中已经失效了， CentOS 默认以用户名新建一个群组，且将用户的主目录权限设置为 700
+
+(2) HOME 代表主目录的 基准目录（BASE DIR），将在这个目录之下新建一个以账户名为名称的目录，作为使用者的主目录
+
+(3) INACTIVE 代表密码的过期天数， 0 为立刻失效， -1 为永不失效
+
+(4) EXPIRE 代表账户过期日期
+
+(5) SHELL 代表使用的 shell
+
+(6) SKEL 代表创建主目录时，要从何处拷贝初始文件至主目录中（aka.skeleton）
+
+(7) CREATE_MAIL_SPOOL 代表是否创建邮箱
+
+
+
+创建账户时 UID/GID/权限 等默认行为的参考文件
+
+/etc/login.defs
+
+文件内容
+
+MAIL_DIR        /var/spool/mail
+
+PASS_MAX_DAYS   99999
+PASS_MIN_DAYS   0
+PASS_MIN_LEN    5
+PASS_WARN_AGE   7
+
+UID_MIN          1000
+UID_MAX         60000
+SYS_UID_MIN       201
+SYS_UID_MAX       999
+GID_MIN          1000
+GID_MAX         60000
+SYS_GID_MIN       201
+SYS_GID_MAX       999
+
+CREATE_HOME     yes
+UMASK           077
+USERGROUPS_ENAB yes
+ENCRYPT_METHOD SHA512
+
+
+(1) MAIL_DIR 邮箱所在目录
+
+(2) PASS_{MAX,MIN}_DAYS 密码最长、最短使用天数，对应 /etc/shadow 的 第 5 栏 / 第 6 栏
+
+(3) PASS_MIN_LEN 密码的最短长度，现已被 PAM 模块替代，本参数已失效
+
+(4) PASS_WARN_AGE 过期前几天开始提醒，对应 /etc/shadow 的 第 6 栏
+
+(5) {SYS}_{UID,GID}_{MIN,MAX} 系统预留的 UID、SYS_UID、GID 的最大最小值
+    在自动选取 UID GID 时，系统会搜索已经使用的 UID 和 GID，在其后加 1 ，若这个数没有超过 预留范围，则使用这个值作为 UID GID
+
+(6) CREATE_HOME 是否创建主目录
+
+(7) UMASK 主目录的 umask
+
+(8) USERGROUPS_ENAB 若一个群组中不含任何一个用户，则删除这个群组；而创建新用户时，将创建一个同名的群组
+
+(9) ENCRYPT_METHOD 密码加密手段
+
+
+所以在新建一个账户的时候，系统至少会参考以下几个文件
+
+/etc/default/useradd
+/etc/login.defs
+/etc/skel/*
+
+
+
