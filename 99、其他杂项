@@ -22,7 +22,9 @@ ignore/poweroff/reboot/halt/suspend/hibernate/hybrid-sleep/lock/exec
 
 合盖不休眠，修改
 
-HandleLidSwitch=lock
+HandleLidSwitch=ignore
+
+使用 ignore 让屏幕熄灭，但是用户可以登录，使用 lock 会让用户无法登录
 
 再执行
 
