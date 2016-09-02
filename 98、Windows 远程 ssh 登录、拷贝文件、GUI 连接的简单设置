@@ -87,3 +87,48 @@ pscp D:\transferfile.txt ep@192.168.1.101:/home/ep/Desktop/
 4、在正常使用 PuTTY 登录后，就可以在命令行中直接执行带 GUI 的程序，GUI 就会出现在本地屏幕了
 
 # 目前无法成功启用 gnome-session 这个桌面程序，原因和解决方法未知
+
+
+
+PuTTY 使用 SSH Key 免密登录
+
+原理
+
+1、将 RSA 的 公钥 传保存在 服务器 端，将 RSA 的 私钥 保存在 客户机 端
+2、每次登陆时，服务器 向 客户端 发送一段 随机数据，客户机使用 私钥 加密，并传回 服务器
+3、服务器 使用 公钥 进行解密，若成功解密，且与原始数据相同，则认证成功
+
+优势
+
+
+1、不用每次都输入密码，简化了操作，同时也保证了安全
+
+
+注意
+
+1、PuTTY 和 OpenSSH 使用的 SSH Key 有不一样的格式（即使加密方式相同）
+2、Linux 自带的 sshd 使用的是 OpenSSH，所以在生成和使用秘钥的时候需要注意转换文件的问题
+
+
+方案1：在 Windows 上生成秘钥
+
+1、下载 PuTTYgen
+2、在 PuTTYgen 的 Parameters 面板中选择 SSH-2 RSA 这种加密方式
+3、点击 Actions 面板中的 Generate，并在界面中随意晃动鼠标，产生随机数，来生成 Key
+4、点击 Conversions 菜单--Export OpenSSH key 将生成的 Public Key 保存为 OpenSSH 可识别的格式
+5、点击 Actions 面板中的 Save private key 来保存 PuTTY 可识别的 Private Key
+6、将 Public Key 传输至 服务器 要登录账户的 主目录 下的 .ssh 目录下，并将 文件内容追加至 authorized_keys 的文件尾部
+6.1、为了安全，可以将 authorized_keys 的权限修改为 0600
+7、systemctl restart sshd 重启 sshd 服务
+8、在 PuTTY 的 Connection--SSH--Auth--Private key... 中选取刚才生成的 Private Key，并保存设置
+
+
+方案2：在 Linux 上生成秘钥
+
+1、使用 ssh-keygen 命令产生 Public Key 和 Private Key
+2、将 Public Key 移动至 要登录账户 主目录下 .ssh 中，并追加至 authorized_keys 文件末尾
+2.1、为了安全，可以将 authorized_keys 的用户设置为登录用户，并将权限设置为 0600
+3、systemctl restart sshd 重启 sshd 服务
+4、将 Private Key 传输至 客户端
+5、使用 PuTTYgen 的 Actions 面板--Load an exisiting... 读取 Private Key，使用 Save Private key 保存为 PuTTY 可以识别的 pkk 文件
+6、在 PuTTY 的 Connection--SSH--Auth--Private key... 中选取刚才生成的 Private Key，并保存设置
