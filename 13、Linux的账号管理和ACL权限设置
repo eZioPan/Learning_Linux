@@ -311,3 +311,19 @@ usermod [-cefgls] [-d[m]] [-G[a]] [-u[o]] [-L|U] <账户名>
 -u, --uid <UID> 指定新的 UID，系统会自动修改 主目录 和 邮箱 的 UID，其他文件的 UID 需自行修复
                 一般来说 UID 必须唯一，但可以使用 -o, --non-unique 使多个账号名指向同一个 UID
                 这个操作不会参考 /etc/login.defs 的 {SYS}_UID_{MIN,MAX} 设置
+
+
+
+删除账户
+
+userdel [-r] <账户名>
+-r, --remove 连同用户的主目录和邮件目录一同删除
+
+
+
+id [-gGu] [-n] [-r] [<userName>/<UID>]
+-g, --group  仅显示用户的有效群组 ID
+-G, --groups 显示用户所在所有群组的 ID
+-u, --user   仅显示有效用户（比如 su root 之后，有效用户就是 root）
+-n, --name   输出名字，而非号码
+-r, --real   显示账户初始的/首要的/本来的 UID 或 GID
