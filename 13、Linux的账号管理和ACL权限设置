@@ -327,3 +327,33 @@ id [-gGu] [-n] [-r] [<userName>/<UID>]
 -u, --user   仅显示有效用户（比如 su root 之后，有效用户就是 root）
 -n, --name   输出名字，而非号码
 -r, --real   显示账户初始的/首要的/本来的 UID 或 GID
+
+
+
+群组的设置
+
+
+群组的增加
+
+groupadd [-g[o] <GID>] [-r] <新群组名>
+-g, --gid <GID> 设置新群组的 GID，
+                一般 GID 必须唯一，若要将新群组指定为以前有的 GID ，可以使用 -o, -non-unique 来强制指定
+-r, --system 将新群组设置为系统群组
+
+
+
+群组的修改
+
+groupmod [-g[o] <GID>] [-n <新群组名>] <原群组名>
+-g, --gid <GID> 设置新 GID，以该群组为 主要群组 的用户的 GID 将会自动跟新，其他用户则不会
+                可以使用 -o, --non-unique 将不同群组名指向同一个 GID
+                该设置不会参考 /etc/logins.defs 的设置
+-n, --new-name <新群组名> 指定新的群组名
+
+
+
+群组的删除
+
+groupdel <群组名>
+
+注意删除群组前，先确定该群组不是任何一个用户的 主要群组，否则该群组就无法删除
