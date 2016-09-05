@@ -357,3 +357,26 @@ groupmod [-g[o] <GID>] [-n <新群组名>] <原群组名>
 groupdel <群组名>
 
 注意删除群组前，先确定该群组不是任何一个用户的 主要群组，否则该群组就无法删除
+
+
+
+群组管理员
+
+# root 账户的设置项目
+gpasswd <群组名>
+gpasswd [-A user1,user2...] [-M user3,user4...] <群组名>
+gpasswd [-rR] <群组名>
+
+若没有任何参数代表设置群组管理员密码
+-A, --administrators 设置群组管理员，一个群组可以有多个管理员
+-M, --member 设置群组成员
+-r, --remove-password 删除群组密码，仅有群组成员可以使用 newgrp 命令切换至该群组（默认状态）
+-R, --restrict 限制状态，只有具有群组密码的群组成员可以使用 newgrp 命令切换至该群组
+
+# 群组管理员账户的设置项目
+gpasswd [-ad] <user> <群组名>
+-a, --add 将指定用户添加至群组中
+-d, --delete 将指定用户从群组中删除
+
+
+
