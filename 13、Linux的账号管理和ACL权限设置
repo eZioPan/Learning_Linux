@@ -398,3 +398,15 @@ ACL 可以设置的权限类型
 可以使用以下命令查看当前文件系统对 ACL 的支持情况
 
 dmesg | grep -i "acl"
+
+
+
+ACL 的设定与查看
+
+ACL 的设定
+
+setfacl [-bkRd] [[-m|x] <指定的 ACL 参数>] [[-M|X] <ACL 参数文件>] <file1> <file2> ...
+-m, --modify 为 文件/目录 设置指定的 ACL 条目
+-M, --modify-file 为 文件/目录 设置指定的 ACL 条目， ACL 条目来自指定文件的内容，或者 getfacl 的输出（管道输入）
+-x, --remove 为 文件/目录 移除指定的 ACL 条目
+-X, --remove-file 为 文件/目录 移除指定的 ACL 条目， ACL 条目来自指定文件的内容，或者 getfacl 的输出（管道输入）
