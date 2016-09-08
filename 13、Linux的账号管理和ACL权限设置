@@ -410,3 +410,11 @@ setfacl [-bkRd] [[-m|x] <指定的 ACL 参数>] [[-M|X] <ACL 参数文件>] <fil
 -M, --modify-file 为 文件/目录 设置指定的 ACL 条目， ACL 条目来自指定文件的内容，或者 getfacl 的输出（管道输入）
 -x, --remove 为 文件/目录 移除指定的 ACL 条目
 -X, --remove-file 为 文件/目录 移除指定的 ACL 条目， ACL 条目来自指定文件的内容，或者 getfacl 的输出（管道输入）
+-b, --remove-all 移除所有的 ACL 条目，但基础的 所有者、群组、其他 权限都保留
+-k, --remove-default 移除所有的 默认 ACL 条目，若不含有 默认 ACL 条目，则提出警告
+--restore=<ACL 备份文件> 从备份文件中复原文件 ACL 条目
+                         若命令中有 所有者 和 群组 设置，则复原参数指定的设置
+                         若有 SUID SGID SBIT 设置，则复原参数指定的设置
+--test 只输出可能的最终结果，而不真是改变文件属性状态
+-R, --recurisive 遍历所有子目录和子文件
+-d, --default 修改 默认 ACL 条目
