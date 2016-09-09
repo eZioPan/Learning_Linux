@@ -38,6 +38,10 @@ UID 的分配
 若想让某个账户不可以登录 shell ，可以修改这栏为 /sbin/nologin
 
 
+当一个具有 /sbin/nologin 的账号登录 shell 时，系统会提示该账号不可用
+
+可以创建 /etc/nologin.txt 来书写自定义的提示
+
 
 /etc/shadow 的文件结构
 
