@@ -265,7 +265,7 @@ passwd [-l|<u [-f]>] [-d] [--stdin] [-S] [-n <最少使用天数>] [-x <最多�
 -S, --status 罗列指定账户的密码信息
 
 注意在 root 的权限下，密码的修改不需要输入旧密码，而且会无视 PAM 模块对密码强度的限制
-在非 root 的权限下，密码修噶需要输入旧密码，也必须通过 PAM 模块对密码强度的限制
+在非 root 的权限下，密码修改需要输入旧密码，也必须通过 PAM 模块对密码强度的限制
 
 
 eg.
@@ -401,11 +401,37 @@ dmesg | grep -i "acl"
 
 
 
+ACL 基础概念
+
+(1) 每个文件的 ACL 都有一系列 Access Entry 组成
+
+(2) 每个 Access Entry（ACL 条目） 被表示为以下形式：
+	<Entry tag type>:[qualifier]:<permission>
+
+(2.1) Entry tag 可以包含的内容：
+	  ACL_USER_OBJ		代表该行定义 文件所有者 的权限（被写作 user 或 u）
+	  ACL_USER			代表该行定义 指定用户 的权限（被写作 user 或 u）
+	  ACL_GROUP_OBJ	代表该行指定 文件群组 的权限（被写作 group 或 g）
+	  ACL_GROUP			代表该行指定 指定群组 的权限（被写作 group 或 g）
+	  ACL_MASK			代表 ACL_{USER, GROUP_OBJ, GROUP} 能获取的最大权限（被写作 mask 或 m）
+	  ACL_OTHER			代表 未出现 在该文件的 任何 Access Entry 的 用户 或 群组 的权限（被写作 other 或 o）
+
+# 在权限检查的时候
+# Effective UID 会用于 ACL_{USER_OBJ, USER} 条目的判定
+# Effective GID 和 Supplementary GID 会用户 ACL_{GROUP_OBJ, GROUP} 的检查
+
+(2.2) qualifier 只有 ACL_{USER, GROUP} 才能在此处添加内容
+	  指定非文件 拥有者 或 群组 的 用户 或 群组
+
+(2.3) permission 定义该条目定义的 用户 或 群组 具有的权限（rwx）
+
+
+
 ACL 的设定与查看
 
 ACL 的设定
 
-setfacl [-bkRd] [[-m|x] <指定的 ACL 参数>] [[-M|X] <ACL 参数文件>] <file1> <file2> ...
+setfacl [-bkRd] [[-m|x] <Access 条目>] [[-M|X] <ACL 参数文件>] <file1> <file2> ...
 -m, --modify 为 文件/目录 设置指定的 ACL 条目
 -M, --modify-file 为 文件/目录 设置指定的 ACL 条目， ACL 条目来自指定文件的内容，或者 getfacl 的输出（管道输入）
 -x, --remove 为 文件/目录 移除指定的 ACL 条目
@@ -417,4 +443,20 @@ setfacl [-bkRd] [[-m|x] <指定的 ACL 参数>] [[-M|X] <ACL 参数文件>] <fil
                          若有 SUID SGID SBIT 设置，则复原参数指定的设置
 --test 只输出可能的最终结果，而不真是改变文件属性状态
 -R, --recurisive 遍历所有子目录和子文件
--d, --default 修改 默认 ACL 条目
+-d, --default 修改 默认 ACL 条目。该条目只对目录有效，在此目录建立的文件默认都将继承该目录的 默认 ACL 条目
+
+# 在设置 默认 ACL 条目的时候，可以在 ACL 条目前加上 d: 或 default: 来指定
+
+eg.
+setfacl u:user1:rw ./testfile
+setfacl g:group1:rx ./testfile
+setfacl d:u:user1:rw ./testdir
+
+注意！设置了 ACL 权限之后， ls -l 命令会在设置了 ACL 权限的权限后加上一个加号 + ，此时文件的记录的实际权限和显示的权限不相同
+
+
+ACL 的查看
+
+getfacl <文件>
+
+将会按照一条 Access Entry 一行的形式返回 文件 ACL 内容
