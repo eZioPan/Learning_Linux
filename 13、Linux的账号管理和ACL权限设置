@@ -464,3 +464,87 @@ ACL 的查看
 getfacl <文件>
 
 将会按照一条 Access Entry 一行的形式返回 文件 ACL 内容
+
+
+
+su 切换使用者（substitude user）
+
+su [-l|m] [-c "<命令>"] [用户名]
+-, -l, --login 使用 login-shell 的方式切换用户
+			   此动作包含 <1> 清除除 TERM 之外所有的环境变量
+						 <2> 初始化环境变量 HOME, SHELL, USER, LOGNAME, PATH
+						 <3> 进入目标用户的主目录
+						 <4> 将 arg[0] 设置为 - 来模拟 login-shell 的状态
+-m, -p, --preserve-environment 使用 non-login-shell 的方式切换用户：保持所有的环境变量
+-c "<cmmand>", --command="<command>" 将 <command> 传入新的 shell，注意引号的使用
+
+
+
+sudo 使用其他用户来执行命令
+
+sudo [-b] [-u <{username, \#UID}>] <需执行的命令>
+-b 在后台执行这条命令
+-u 切换至的使用者，默认切换至 root ，可以指定 用户名 或 \#UID
+
+
+
+一个账户是否可以执行 sudo，需要查看 /etc/sudoers 来决定
+
+
+
+visudo 专门用于修改 /etc/sudoers 文件的 vim 编辑器
+
+直接执行 visudo 即修改 /etc/sudoers 文件
+
+注意！修改 /etc/sudoers 之后，需要重新登录使之起效
+
+/etc/sudoers 记录了 sudo 的各种规范事项，在用户设定区，以以下的方式表示
+
+root	ALL=(ALL)	ALL
+
+分别代表
+
+使用者账户 登陆者来源的主机名=(可以被切换至的身份) 可以下达的命令
+
+
+1、若 使用者账户 以百分号 % 开头，则表示群组名
+
+%wheel	ALL=(ALL)	ALL
+
+
+2、免除密码输入
+
+%wheel	ALL=(ALL)	NOPASSWD: ALL
+
+
+3、限制可切换至的账户
+
+myuser1	ALL=(root)	ALL
+
+
+4、限制可执行的命令（必须使用绝对路径）
+
+myuser1	ALL=(ALL)	/usr/bin/passwd
+
+
+5、限制传入参数（感叹号 ! 表示不可执行的命令，多个命令条目用逗号 , 隔开，支持 EBNF 匹配）
+
+myuser1	ALL=(ALL)	/usr/bin/passwd [A-Za-z]+, !/usr/bin/passwd root
+
+
+6、/etc/sudoers 的别名设置
+
+sudoers 可设置四类别名，分别为 User_Alias, Runas_Alias, Host_Alias, Cmnd_Alias
+
+语法
+
+<别名种类> <别名> = <原名1>[, <原名2>, <原名3> ...]
+
+
+7、修改 sudo 需要密码的时间间隔
+
+修改 Defaults env_reset 为
+
+Defaults env_reset,timestamp_timeout=<所需分钟数>
+
+# 支持小数
