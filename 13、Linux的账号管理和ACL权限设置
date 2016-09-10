@@ -548,3 +548,162 @@ sudoers 可设置四类别名，分别为 User_Alias, Runas_Alias, Host_Alias, C
 Defaults env_reset,timestamp_timeout=<所需分钟数>
 
 # 支持小数
+
+
+
+PAM 模块
+
+Pluggable Authentication Modules 可嵌入认证模块
+
+统一的认证机制，提供 API 给任何程序以认证账户
+
+PAM 是一系列模块的合称，其中有不同的模块负责不同的工作
+
+
+
+PAM 与 其他程序的互动流程
+
+以 passwd 为例
+
+1、用户调用 passwd 程序，并输入密码
+2、passwd 调用 PAM 模块进行验证
+3、PAM 搜寻 /etc/pam.d/ 下与 passwd 同名的设置文件
+4、依据 /etc/pam.d/passwd 的内容，调用相关的模块进行验证分析
+5、将验证结果传回 passwd
+6、passwd 依据返回结果执行操作（eg. 通过验证/要求重新输入密码）
+
+
+
+/etc/pam.d/ 下的文件内容
+
+以 /etc/pam.d/passwd 为例
+
+#%PAM-1.0												# PAM 的版本说明
+auth       include      system-auth						# 每行都是一次验证
+account    include      system-auth
+password   substack     system-auth
+-password   optional    pam_gnome_keyring.so use_authtok
+password   substack     postlogin
+
+验证类型    控制标准      使用的 PAM 模块与模块的参数
+
+
+第 1 栏位：验证类型（Type）
+
+(1) auth
+	认证，根据选定的验证机制，验证使用者身份
+
+(2) account
+	授权，根据系统设定，给予使用者相应权限
+
+(3) session
+	会话，处理使用者登录后使用前/使用后登出前，需要处理的事项
+
+(4) password
+	密码，修改认证使用的 token
+
+
+第 2 栏位：控制标准（Control）
+
+(1) required
+	验证成功，则返回 success；验证失败，则返回 failure；无论成功失败，都继续执行后续操作
+
+(2) requisite
+	验证成功，则返回 success，并执行后续操作；验证失败，则返回 failure，并立刻结束当前验证流程
+
+(3) sufficient
+	当前验证成功，且前序 required 未出现 failure，则返回 success，并立刻结束当前验证流程；验证失败，则忽视该行，进行下方的验证
+
+(4) optional
+	大多用户显示信息
+
+(5) include
+	将指定的 验证文件 在 主验证 中逐条执行，若 验证文件 出现了 立刻结束当前验证流程 的状态，则结束整个验证
+
+(6) substack
+	将指定的 验证文件 作为 子验证 执行，若 验证文件 出现了 立刻结束当前验证流程 的状态，则结束 子验证，并将结果返回至主验证中
+
+
+
+常用的 PAM 模块 存放的位置及作用
+
+所有 PAM 模块均存储在 /lib64/security/ 目录下
+
+
+pam_securetty.so
+
+root 用户 只能从被认为 安全的 终端登录。安全终端的列表存储在 /etc/securetty 文件里
+
+
+pam_nologin.so
+
+该模块限制非 root 用户的登录，若 /etc/nologin 或 /var/run/nologin 存在，当非 root 用户登录时，显示 nologin 文件内容，并阻止用户登录
+
+
+pam_selinux.so
+
+设置默认的 SELinux 行为
+
+
+pam_console.so
+
+设置物理终端的是否可以取得相应的权限
+
+
+pam_loginuid.so
+
+将使用者的 UID 赋予启动的进程
+
+
+pam_env.so
+
+设定/释放 环境变量，默认使用的设置文件为 /etc/security/pam_env.conf
+
+
+pam_unix.so
+
+早期 密码验证机制
+
+
+pam_pwquality.so
+
+密码质量检测，默认使用的设置文件为 /etc/security/pwquality.conf
+
+
+pam_limits.so
+
+系统最大用量设置，设置文件为 /etc/security/limits.conf
+
+
+
+login 程序的 PAM 验证流程
+
+1、验证阶段
+<1> 调用 pam_securetty.so ，若用户为 root ，参考 /etc/securetty 的设置
+<2> 调用 pam_env.so 设置环境变量
+<3> 调用 pam_unix.so 验证密码
+<3.1> 若成功则返回 login 程序
+<3.2> 若不成功则通过 pam_succeed_if.so 验证 UID 是否大于 1000
+<3.2.1> 若 UID 小于 1000 则返回失败
+<3.2.2> 若 UID 大于 1000 则条用 pam_deny.so 拒绝连线
+
+2、授权阶段
+<1> 调用 pam_nologin.so 判断 /etc/nologin 是否存在，若存在则阻止 非 root 用户登录
+<2> 调用 pam_unix.so 和 pam_localuser.so 进行账号管理
+<3> 调用 pam_succeed_of.so 判断 UID 是否小于 1000 ，小于 1000 则不记录登录信息
+<4> 调用 pam_permit.so 允许账号登录
+
+3、密码阶段
+<1> 调用 pam_pwquality.so 设定密码只能尝试 3 次
+<2> 调用 pam_unix.so 通过 sha256、shadow 等功能进行密码校验
+<2.1> 若通过则返回 login 程序
+<2.2> 若不通过则调用 pam_deny.so 拒绝登录
+
+4、会话阶段
+<1> 调用 pam_selinux.so 暂时关闭 SELinux
+<2> 通过 pam_limits.so 设置好使用者的可以使用的系统资源
+<3> 登录成功后记录相关信息在登录文件中
+<4> 调用 pam_loginuid.so 设置不同 UID 的不同权限
+<5> 调用 pam_selinux.so 重启 SELinux
+
+
