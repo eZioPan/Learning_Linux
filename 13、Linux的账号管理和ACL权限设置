@@ -707,3 +707,18 @@ login 程序的 PAM 验证流程
 <5> 调用 pam_selinux.so 重启 SELinux
 
 
+
+/etc/security/limits.conf 系统级别的用户资源分配配置
+
+eg.
+
+
+# {用户, @群组}名	限制强度	限制项目	限制值
+
+该设置文件会反映在 ulimit -a 上
+
+
+
+/var/log/secure
+/var/log/messages
+存储 PAM 错误的地方，可以用于debug
