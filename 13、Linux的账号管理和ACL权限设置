@@ -722,3 +722,74 @@ eg.
 /var/log/secure
 /var/log/messages
 存储 PAM 错误的地方，可以用于debug
+
+
+
+w, who, last, lastlog 查询使用者
+
+w 命令返回的内容
+
+eg.
+
+ 17:19:54 up 20 min,  1 user,  load average: 0.00, 0.04, 0.10
+USER     TTY      FROM             LOGIN@   IDLE   JCPU   PCPU WHAT
+eP       pts/0    192.168.0.176    17:03    2.00s  0.21s  0.00s w
+
+
+17:19:54 当前时间
+up 20 min 启动后运行时间
+1 user 当前登录总用户数
+load average: 0.00, 0.04, 0.10 CPU平均负载 1分钟 5分钟 15分钟
+USER 用户名
+TTY 登录设备
+FROM 登录位置
+LOGIN@ 登录时间
+IDLE 空闲时间
+JCPU 用户占用CPU时钟
+PCPU 当前进程占用CPU时钟
+WHAT 当前进程
+
+
+
+who 命令返回内容
+
+root     pts/0        2016-09-12 17:24 (192.168.0.176)
+
+root 当前用户名
+pts/0 登录设备
+2016-09-12 17:24 (192.168.0.176) 登录时间及位置
+
+
+
+write, mesg, wall 与当前登录的用户对话
+
+write <用户账号> [用户所在的终端设备]
+write 使用 EOF 作为传送命令的结束标志
+
+
+mesg 是否接受 write 发来的消息
+mesg [y/n]
+
+
+wall 广播信息
+wall ["<消息内容>"]
+
+
+
+mail 命令
+（略）
+
+
+
+账号的检测
+
+pwck 检查 /etc/passwd 的内容是否与主目录匹配。是否与 /etc/shadow 中的匹配
+
+
+grpck 类似 pwck 检测群组问题
+
+
+
+pwconv 将 /etc/passwd 中的密码转移至 /etc/shadow 中
+
+pwuconv pwconv 的逆向操作
