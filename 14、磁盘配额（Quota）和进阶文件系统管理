@@ -44,3 +44,18 @@ Quota 的设置项目
 <3> grace period 提醒时间
     当用户超过软限制时，系统会开始提醒，并开始倒计时。
     若在倒计时之内，用户未能将使用量降至软限制之下，则系统会立刻锁死用户继续扩大磁盘用量
+
+
+
+对文件系统启用 Quota
+
+修改 /etc/fstab 文件
+在 挂载选项的 defaults 后面添加指定的 Quota 选项
+
+可以添加至 /etc/fstab 的 Quota 条目与作用
+
+uquota/usrquota/quota	针对 用户 的 Quota 设定
+gquota/grpquota			针对 群组 的 Quota 设定
+pquota/prjquota			针对 目录 的 Quota 设定
+
+注意 群组 Quota 设定 和 目录 Quota 设定 不可同时出现在同一个 filesystem 中
