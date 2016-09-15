@@ -59,3 +59,16 @@ gquota/grpquota			针对 群组 的 Quota 设定
 pquota/prjquota			针对 目录 的 Quota 设定
 
 注意 群组 Quota 设定 和 目录 Quota 设定 不可同时出现在同一个 filesystem 中
+
+
+
+Quota 的使用
+（略）
+
+
+
+软件 RAID 的使用
+（略）
+
+
+
