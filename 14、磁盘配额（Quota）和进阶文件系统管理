@@ -72,3 +72,33 @@ Quota 的使用
 
 
 
+LVM 逻辑卷管理器（Logical Volume Manager）
+
+LVM 的作用：动态调整卷大小
+
+
+PV, PE, VG, LV 的概念
+
+
+(1) PV, Physical Volume, 物理卷
+
+也就是将真实的 物理磁盘/物理分区 使用 LVM 修改为可以被 LVM 使用的物理分区
+这些分区就被称为 PV
+
+
+(2) VG, Volume Group, 卷群组
+
+将数个 PV 通过 LVM 组合为一个大的分区
+该分区就被称为 VG
+
+
+(3) PE, Physical Extent, 物理扩展
+
+LVM 存储数据的最小单元
+这些单元被称为 PE
+
+
+(4) LV, Logical Volume, 逻辑卷
+
+通过 LVM 分割出的 分区，这些分区最终提供给用户存储数据
+这些分区被称为 LV
