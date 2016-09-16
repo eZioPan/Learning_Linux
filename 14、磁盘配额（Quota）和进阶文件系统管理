@@ -60,10 +60,112 @@ pquota/prjquota			针对 目录 的 Quota 设定
 
 注意 群组 Quota 设定 和 目录 Quota 设定 不可同时出现在同一个 filesystem 中
 
+添加/删除 Quota 选项之后，通过 umount <挂载点> 和 mount <挂载点> 来 启用/禁用 Quota
+
+Quota 似乎并不相应 mount -o remount 指令，原因未知
 
 
-Quota 的使用
-（略）
+
+xfs 文件系统下 Quota 的使用
+
+
+xfs_quota [-x] [-c <cmd>] [path]
+-x 专家模式，所有的 quota 管理员命令将可用
+若不接 -c，则启用 xfs_quota 的交互模式，可直接输出 Quota 命令
+-c 后接 quota 命令，可连续使用多个 -c 指定多个 quota 命令，他们会连续执行
+
+
+常见的 非 专家模式命令（USER COMMANDS）
+
+
+print
+	罗列所有的 挂载点/设备路径 以及启用的 Quota 参数
+
+free [-bir] [-hN] [-f <输出文件>]
+	显示 文件系统 的用量
+	-bir 显示 总计/已用/可用 的 block/inode/realtime block
+	-h 人类可读数据
+	-N 不返回表头
+	-f 将返回的内容导向至某文件
+
+quota [-gpu] [-bir] [-hnNv] [-f <输出文件>] [ID | name]
+	显示某个 群组/目录/用户 的用量和限制
+	-gpu 显示 群组/目录/用户 用量
+	-bir 显示 总计/已用/可用 的 block/inode/realtime block
+	-h 人类可读数据
+	-n 使用 ID 而非 name
+	-N 不返回表头
+	-v 输出更多的信息
+	-f 将返回的内容导向至某文件
+
+help <cmd>
+	显示命令的帮助文件
+
+quit
+	退出 xfs_quota 交互模式
+
+
+常见的 专家模式命令（ADMINISTRATOR COMMANDS）
+
+
+path [num]
+	不加参数时，罗列所有启用了 Quota 的 文件系统 和 目录
+	          并显示 文件系统 和 目录 对应的 Quota 编号，以及当前默认指定的 文件系统 或 目录
+	后接数字时，指定默认要操作的 文件目录 或 目录
+
+report [-gpu] [-bir] [-ahntLNU] [-f <输出文件>]
+	显示一个 文件系统 完整的 Quota 用量信息
+	-gpu 显示 群组/目录/用户 用量
+	-bir 显示 总计/已用/可用 的 block/inode/realtime block
+	-a 显示所有开启 Quota 的 文件系统 的完整 Quota 信息
+	-h 人类可读数据
+	-n 使用 ID 而非 name
+	-t 返回 简短报告
+	-L 指定查询的 ID 的下限
+	-U 指定查询的 ID 的上限
+	-f 将返回的内容导向至某文件
+
+state [-gpu] [-av] [-f <输出文件>]
+	显示 Quota 的总体状态
+	-gpu 显示 群组/目录/用户 的状态
+	-a 显示所有开启 Quota 的 文件系统 的状态
+	-v 输出更多的信息
+	-f 将返回的内容导向至某文件
+
+# 返回的 Accounting 表示是否启用计数，返回的 Enforcement 表示是否启用限制
+
+limit [-gpu] <{b|i|rtb}{soft|hard}>=<num> [-d <ID | name>] [ID | name]
+	设置大小限制
+	-gpu 限制 群组/目录/用户 的大小
+	bsoft/bhard 设置 1K-block 的 软/硬 数量限制
+	isoft/ihard 设置 inode 的 软/硬 数量限制
+	rtbsoft/rtbhard 设置 1K-realtime block 的 软/硬 数量限制
+	以上数据接受 人类可读 单位
+	-d 设置默认要操作的 ID 或 name，若未指定，则每次设置时，必须指定 ID 或 name
+
+timer [-gpu] [-bir] <value>
+	设置超过 soft limit 并小于 hard limit 多少时间后，soft limit 变为 hard limit
+	-gpu 设置 群组/目录/用户 的时间
+	-bir 设置 block/inode/realtime block
+	<value> 默认以 秒 为单位，接受 minutes|m, hours|h, days|d, weeks|w
+
+enable [-gpu] [-v]
+	针对某个 Quota 项目，启用 Quota 限制
+
+disable [-gpu] [-v]
+	针对某个 Quota 项目，临时禁用 Quota 限制（但启用 Quota 计数）
+
+off [-gpu] [-v]
+	针对某个 文件系统，完全关闭 Quota，只有执行 umount 和 mount 命令之后才能重新开启
+
+remove [-gpu] [-v]
+	针对某个 文件系统，完全移除 Quota 的相关条目。该文件系统的 Quota 必须为 off 状态
+
+dump [-gpu] [-f <输出文件>]
+	备份 Quota 配置
+
+restore [-gpu] [-f <输入文件>]
+	还原 Quota 配置
 
 
 
