@@ -213,26 +213,66 @@ LVM 的使用
 1、Disk 阶段
 使用 gdisk 分割磁盘/新建分区，并将分区的 systemID 修改为 8E00，也就是将该分区标注为 Linux LVM
 
+# 注意，以下命令都可以在 lvm 命令下交互使用
+
+
 2、PV 阶段
 pvcreate <设备名> 建立 PV
 pvscan 搜索具有 PV 的分区
 pvdisplay 显示 PV 的详细信息
 pvremove <PV 设备名> 移除指定磁盘的 PV 属性
 
+
 3、VG 阶段
 vgcreate [-s <PE大小>] <VG 名称> <PV 设备名>
+	-s, --physicalextentsize 设置 PE 的大小
 vgscan 搜索具有系统上存在的 VG
 vgdisplay 显示 VG 的详细信息
 vgextend <VG 名称> <PV 设备名> 将指定的 PV 加入 VG，以扩充 VG 容量
 vgreduce <VG 名称> <PV 设备名> 将指定的 PV 移除 VG，以缩减 VG 容量
-vgchange 启动或停用 某个 VG
-vgremove 删除一个 VG
+vgchange [-a <y|n>] 启动或停用 某个 VG
+	-a, --activative
+vgremove [VG 名称] 删除一个 VG
+
 
 4、LV 阶段
-lvcreate 建立 LV
+lvcreate [-L <LVSize> | -l <PENum>] [-n LV 名称] <VG 名称> 建立 LV
+	-L, --size 指定单个 LV 的大小，接受 BKMTPE 作为单位，或 S 代表 512kbytes 扇区
+	-l, --extents <PENum>[%{VG|PVS|FREE|ORIGIN}] 指定使用的 PE 个数
+		%VG 代表使用所有 VG 容量的百分数
+		%PVS 代表使用指定的 PV 的容量
+		%FREE 代表使用剩余 VG 容量的百分数
+		%ORIGIN 代表（快照）将使用原有容量的百分数
+
+# 注意，创建的 LV 设备路径为 /dev/<VG 名称>/<LV 名称>
+
 lvscan 搜索系统上存在的 LV
 lvdisplay 显示 LV 的详细信息
-lvextend 增加 LV 容量
-lveduce 减少 LV 容量
-lvremove 删除 LV
-lvresize 调整 LV 大小
+lvresize [-L <{+|-} LVSize> | -l <{+|-} PENum>] <LV 名|LV 设备路径> 调整 LV 大小
+	-L, --size 指定需要增减的 LV 的大小，接受 BKMTPE 作为单位，或 S 代表 512kbytes 扇区
+	-l, --extents <PENum>[%{VG|PVS|FREE|ORIGIN}] 指定需要增减的 PE 个数
+		%VG 代表使用所有 VG 容量的百分数
+		%PVS 代表使用指定的 PV 的容量
+		%FREE 代表使用剩余 VG 容量的百分数
+		%ORIGIN 代表（快照）将使用原有容量的百分数
+lvremove [LV 名|LV 设备路径] 删除 LV
+
+
+
+# 注意 xfs 文件系统 目前只能扩展，不可以收缩
+
+# xfs_growfs 就是用于扩展 xfs 文件系统 的
+
+xfs_growfs [{-d}|{-D <数据区扩展大小>}] [{-l}|{-L <日志区扩展大小>}]
+	-d 使用所有可用的区域扩展数据区大小
+	-D 限制数据区扩展的大小
+	-l 使用所有可用的区域扩展日志区大小
+	-L 限制日志区扩展的大小
+
+
+
+LVM thin LV 的使用，略
+
+
+
+LVM 的移除，略
