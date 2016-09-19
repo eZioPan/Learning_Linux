@@ -1,0 +1,21 @@
+at 单次任务计划进行
+
+at 命令对应的系统服务为 atd
+
+atd 的 重新启动、自动启动、查询服务状态
+
+systemctl restart atd
+systemctl enable atd
+systemctl status atd
+
+
+限制可执行 at 的用户
+
+/etc/at.allow 与 /etc/at.deny
+
+若 /etc/at.allow 存在，则只允许 /etc/at.allow 内记录的用户执行 at
+
+若 /etc/at.allow 不存在，则查询 /etc/at.deny 内记录的用户，被记录的用户不可使用 at
+若要使所有用户均可执行 at，则创建空的 /etc/at/deny 文件即可
+
+若 /etc/at.allow 或 /etc/at.deny 均不存在，则只有 root 用户才可以执行 at
