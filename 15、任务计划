@@ -19,3 +19,47 @@ systemctl status atd
 若要使所有用户均可执行 at，则创建空的 /etc/at/deny 文件即可
 
 若 /etc/at.allow 或 /etc/at.deny 均不存在，则只有 root 用户才可以执行 at
+
+
+
+单次任务计划 at atq atrm batch
+
+单次任务的创建
+at [-f <输入文件>] [-mMldv] <计划时间>
+-f 从 指定文件 而非 StdIn 读取指令
+-m 当任务完成的时候，发邮件通知使用者
+-M 不发送邮件给使用者
+-l 等价于 atq 命令，罗列当前 at 的任务列表
+-d <Job 编号> 等价于 atrm <Job 编号> 命令，删除一个或多个任务计划
+-v 复杂输出
+-c <Job 编号> 输出一个或多个任务的详细指令
+
+
+batch 仅当系统的 平均 CPU 负载 低于某个指定的数值之后才启动需要执行的任务
+默认为 0.8，可以使用 atd -l <负载值> 来设置
+
+时间格式：
+
+指定时间：
+HH:MM
+HH:MM YYYY-MM-DD
+HH:MM[am|pm] [Month] [Date]
+
+指定延时时间：
+HH:MM + <num> [minutes|hours|days|weeks]
+
+now + <num> [minutes|hours|days|weeks]
+
+eg1. 20:30 + 4 minutes
+eg2. now + 1 days
+
+# 所有的安排只精确至分钟，也就是说，任务会在 每分钟的第 0 秒 开始执行
+
+
+
+注意，at 在执行计划任务的时候，使用的是 at shell，并不在当前使用者所在的 bash
+所以要通过 at 向当前的位置发送一个信息，需要执行如下的命令
+
+echo "echo \"Hello \!\" > /dev/tty0" | at now + 5 minutes
+
+将 at 的输出重导向至 使用者 bash 所在的设备，在上述代码中为 /dev/tty0
