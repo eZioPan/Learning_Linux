@@ -777,7 +777,7 @@ wall ["<消息内容>"]
 
 
 mail 使用者之间的邮件通信
-
+mail <someone>[@<somehost>]
 
 
 
