@@ -147,3 +147,23 @@ eg.
 
 
 命令部分，用 % 表示换行符
+
+
+
+/etc/crontab 系统级别的 crontab 任务
+
+其中要注意的是 MAILTO，它会将执行的 StdOut 和 StdErr 以邮件的形式发给指定的用户
+
+
+/etc/cron.d/* 程序级别的 crontab 任务
+
+# 若有程序要执行 cron 一般会将自身的 crontab 文件放置在这个目录下
+
+其中的 /etc/cron.d/0hourly 会调用 run-parts 执行 /etc/cron.hourly 目录下的文件
+
+/etc/cron.hourly 下有一个叫做 0anacron 的文件，会使用另一个名为 anacron 的 程序来执行命令
+
+这个程序的特点是，若错过执行时间， anacron 依旧会在下次执行之时，执行上次未完成的命令
+
+除了 /etc/cron.hourly/* 是受到 cron 执行的
+/etc/cron.daily/* /etc/cron.weekly/* /etc/cron.monthly/* 都是受到 anacron 执行的
