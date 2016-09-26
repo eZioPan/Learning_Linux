@@ -167,3 +167,18 @@ eg.
 
 除了 /etc/cron.hourly/* 是受到 cron 执行的
 /etc/cron.daily/* /etc/cron.weekly/* /etc/cron.monthly/* 都是受到 anacron 执行的
+
+
+
+注意 anacron 仅仅是一个程序，并不是一个服务， anacron 受到服务 crond 的调用
+
+
+anacron [-sfnu] [-d[q]] [<job>]
+-s 逐次执行指定的文件中的 anacron 条目 ，若未指定则执行 /etc/anacrontab 中的 anacron 条目
+-f 无视时间戳，立刻执行指定的 anacron 条目，若未指定则执行 /etc/anacrontab 中的 anacron 条目
+-n 无视等待时间，立刻执行 本执行周期 中还未执行的指定的 anacron 条目，若未指定则执行 /etc/anacrontab 中还未执行的 anacron 条目
+-u 只刷新 anacron 条目的时间戳，而不实际执行命令
+-d 在前台执行 anacron 条目
+-q 仅在 -d 使用时使用，忽略所有的 StdErr
+
+/etc/anacrontab 的文件格式，见文件本身，解释略
