@@ -22,6 +22,15 @@ Windows 远程 ssh 登录，远程文件传输，远程 GUI 的，简单设置
 2、在 CentOS 中输入 ifconfig 查看当前机器的 IP
 	一般出现在第二行的 inet 字段后
 
+	# ifconfig | grep "inet"
+
+# 同局域网段下 在 客户机 上 猜测 服务器 IP 地址
+# ifconfig | grep "broadcast" 查询 客户机 所在网段的广播地址
+# ping <broadcast IP> 获取当前网段的所有正在使用的 IP
+# arp -a 获取 hostname 和 IP 的对应情况
+# 通过 hostname 寻找 服务器 IP
+
+
 3.0 打开 PuTTY，选择 左侧 Session 标签，在右侧的 Host Name (or IP address) 中输入 刚刚获得的 IP
 	并在下方的 Saved Sessions 中输入名称并按 Save 保存设置
 
