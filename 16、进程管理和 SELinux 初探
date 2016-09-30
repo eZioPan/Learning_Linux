@@ -37,10 +37,84 @@ bash 环境下的工作管理（job control）
 下面所有的 工作管理，都是在 单一 的 bash 中使用的，也就是说 工作管理 不可以跨 tty 或者 bash 使用
 
 
-在命令最后加上 & 符号，可以将该行的命令置入 后台 执行
+在命令最后加上 & 符号，可以将该行的命令置入 bash 后台 执行
 
 eg.
 tar -zpcf /tmp/etc.tar.gz /etc &
 # 立刻返回
 # [1] 5342
 # 表示，这是一个编号为 1 的 job，它对应的 PID 是 5342
+# 一会儿后，会返回
+# tar: Removing leading `/' from member names
+# 这是 后台运行的 tar 程序的 StdOut 和 StdErr
+# 再过一会儿，会返回
+# [1]+ Done		tar -zpcf /tmp/etc.tar.gz /etc &
+# 表示后台 工作编号为 1 的程序 已经完成
+
+
+
+注意，若要将置于 bash 后台中运行的命令不将 StdOut 和 StdIn 显示在前台
+可以使用 数据流重导向
+
+eg.
+tar -zpcvf /etc/etc.tar.gz /etc > /tmp/log.txt 2>&1 &
+
+
+
+Ctrl+z 将前台的命令 暂停 运行，并置入后台
+
+
+
+jobs 观察后台工作状态
+
+jobs [-lrs]
+-l 在列表末尾显示 PID
+-r 只显示 状态为 Running 的 工作
+-s 只显示 状态为 Stopped 的 工作
+
+
+eg.
+jobs -l
+[1]- 14566 Stopped		vim ~/.bashrc
+[2]+ 14567 Stopped		find / -print
+
+# 加号 + 表示 默认情况下 首个 被 fg/bg 命令选择的 工作
+# 减号 - 表示 默认情况下 第二 被 fg/bg 命令选择的 工作
+
+
+
+fg bg 将任务置入 bash 前台/后台 执行
+
+fg [[%]jobNumber]
+
+bg [[%]jobNumber]
+
+eg.
+
+fg 1
+# 等价于
+fg %1
+
+bg 1
+# 等价于
+bg %1
+
+
+
+kill 结束一个进程
+
+kill [-s <SIGNAL> | -<SIGNAL>] <PID| %<jobNumber>>
+kill -l
+
+-l 列出 kill 可以使用的 SIGNAL
+-s 后面接 SIGNAL 的编号，或者 SIGNAL 的名称，也可直接忽略 -s 使用 -SINGAL 的形式
+可以指定 PID 或 jobNumber 来指定进程
+
+
+kill 常见的 SIGNAL 有以下几个
+SIGNAL	SigName		Keyboard	Comment
+1		SIGHUP
+2		SIGINT		Ctrl+C
+9		SIGKILL
+15		SIGTERM
+20		SIGTSTP		Ctrl+Z
