@@ -113,8 +113,25 @@ kill -l
 
 kill 常见的 SIGNAL 有以下几个
 SIGNAL	SigName		Keyboard	Comment
-1		SIGHUP
-2		SIGINT		Ctrl+C
-9		SIGKILL
-15		SIGTERM
-20		SIGTSTP		Ctrl+Z
+1		SIGHUP					普通进程：告知 Session 结束，所有输出至该 Session 的进程结束（HangUp）
+								系统服务进程：重读配置文件（HangUp）
+2		SIGINT		Ctrl+C		键盘中断前台进程（Interrupt）
+9		SIGKILL					中断进程（Kill）
+15		SIGTERM					请求结束进程（Terminate）
+20		SIGTSTP		Ctrl+Z		结束输入，进程转入后台，并暂停（Type Stop）
+
+eg.
+
+kill -9 %1
+kill -SIGTERM 1234
+
+
+
+nohup 指定将要忽略 SIGHUP 的命令
+
+nohup [指令与参数] [&]
+
+当用户登出 bash 时，系统 会发出 SIGHUP 命令来要求关闭以该 bash 作为输出端口的进程
+但是 nohup 会让指定的进程忽略 SIGHUP 而一直执行
+
+若 nohup 后接的指令的 StdOut 和 StdErr 都指向当前的 bash，则会将他们都重导向至 ./nohup.out 文件中
