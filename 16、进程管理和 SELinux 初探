@@ -196,3 +196,25 @@ top 连续观察系统状态
 
 
 
+pstree 进程树状图
+
+pstree 返回值解释
+
+init-+-getty
+     |-getty
+     |-getty
+     --getty
+
+当一个 父进程 下 有同名的 子程序 的时候，会被缩写成
+
+init---4*[getty]
+
+
+init-+-{getty}
+     |-{getty}
+     |-{getty}
+     --{getty}
+
+当一个 进程 下 有同名的 子进程 的时候，会被缩写成
+
+init---4*[{getty}]
