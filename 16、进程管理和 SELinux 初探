@@ -198,6 +198,18 @@ top 连续观察系统状态
 
 pstree 进程树状图
 
+pstree [-aAchHnpsuUZ] [pid,user]
+-a, --arguments 显示命令内容而非进程名
+-c, --compact 不使用同名缩写
+-h, --highlight-all 高亮 当前进程 和其 父、子进程
+-H <PID>, --highlight-pid=<PID> 高亮 指定进程 和其 父、子进程
+-n, --numeric-sort 使用 PID 而非进程名进行排序
+-s, --show-parents 默认仅显示指定进程的 子进程，该命令可以同时显示指定进程的 父进程
+-u 当 某个进程 的 UID 与 父进程 的 UID 不同时，在该进程后显示 用户名
+-A, --ascii 使用 ASCII 字符作为构成树状图的字符
+-U, --unicode 使用 Unicode 字符作为构成树状图的字符
+
+
 pstree 返回值解释
 
 init-+-getty
@@ -205,7 +217,7 @@ init-+-getty
      |-getty
      --getty
 
-当一个 父进程 下 有同名的 子程序 的时候，会被缩写成
+当一个 父进程 下 有同名的 子进程 的时候，会被缩写成
 
 init---4*[getty]
 
@@ -215,6 +227,6 @@ init-+-{getty}
      |-{getty}
      --{getty}
 
-当一个 进程 下 有同名的 子进程 的时候，会被缩写成
+当一个 进程 下 有同名的 子线程 的时候，会被缩写成
 
 init---4*[{getty}]
