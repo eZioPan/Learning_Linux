@@ -65,6 +65,10 @@ Ctrl+z 将前台的命令 暂停 运行，并置入后台
 
 
 
+pidof 获取 pid
+
+
+
 jobs 观察后台工作状态
 
 jobs [-lrs]
@@ -230,3 +234,92 @@ init-+-{getty}
 当一个 进程 下 有同名的 子线程 的时候，会被缩写成
 
 init---4*[{getty}]
+
+
+
+killall 通过匹配指令名称来传递 SIGNAL
+
+killall [-eIirsu] <commandName>
+-e, --exact 只有完全匹配的命令才会被传入 SIGNAL
+-I, --ignore-case 忽略大小写
+-i, --interactive 提示用户是否结束某个进程
+-r, --regexp 使用正则表达式来匹配命令
+-s, --signal <SIGNAL> 指定传入的 SIGNAL
+-u, --user [UserName] 仅对指定用户的程序传入 SIGNAL
+
+
+
+Linux 系统的 进程执行优先级
+
+Linux 内核会动态调整 进程的执行优先级（priority, PRI）
+PRI 数值越低的，优先级越高
+
+
+由于 PRI 是 Linux 内核动态分配的，所以用户不可以直接调整 PRI 值
+但 用户可以通过调整 nice 值（NI） 来调整 优先级，计算公式
+
+Priority(new) = Priority(initial) + nice
+
+所以 任何一个显示的 PRI 值都是计算了当前 nice 值之后的结果
+
+nice 值的调整规则
+
+1、nice 值的取值范围为 -20~19
+2、root 用户可以设置为 -20~19 的任意值
+3、普通用户仅可以设定 自己的进程，而且只能调大 nice 值
+4、nice 的计算都是基于进程在 Linux 内核中初始的 Priority 来计算的
+eg.
+[eP@ePCt~]$ renice +1 <某 PID>
+[eP@ePCt~]$ renice +4 <某 PID>
+# 获得的 <某 PID> 的最终的 NI 为 +4，而非 +5
+
+
+
+nice 设置一个命令的初始 nice 值
+
+nice [-n <nice 值>] [command]
+-n, --adjstment=N 为即将执行的进程添加 nice 值，默认为 +10
+
+
+
+renice 为一个已经运行的进程重新设置 nice 值
+
+nice [-n] <nice 值> [-u <UID>] [-p] <PID>
+-n, --priority <nice 值> 调整 nice 值，作为首位输入的参数，可以省略 -n
+-u, --user <userName>|<UID> 指定用户
+-p, --pid <PID> 指定进程编号
+
+
+
+free 内存用量
+free [[-b|k|m|g|tera]|[-h]] [-t] [-s <间隔秒数>] [-c <输出次数>]
+-b|k|m|g|tera 指定显示单位
+-h 人类可读大小
+-t, --total 显示总计数
+-s, --seconds 多次刷新的间隔数
+-c, --count 多次刷新的总次数
+
+
+
+uname 查看系统信息
+
+
+
+dmesg 查看核心 log
+
+
+
+netstat 查看网络信息
+
+
+
+vmstat 查看系统资源
+vmstat [-afsd] [-S <使用单位>] [-p <分区>] [取样间隔时间] [取样次数]
+-a, --active 使用活跃与否表示内存状态
+-f, --forks 统计本次开机后，系统的总 fork 数量
+-s, --stats 显示发生的事件和内存的统计
+-S, --unit <单位> 用 k(1000bytes),K(1024bytes),m(1000k),M(1024K) 作为显示单位
+-d, --disk 显示磁盘统计
+-p, --partition <dev> 显示分区统计
+
+vmstat 具体的返回内容可以查询帮助
