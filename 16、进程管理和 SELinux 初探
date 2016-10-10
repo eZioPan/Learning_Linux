@@ -323,3 +323,39 @@ vmstat [-afsd] [-S <使用单位>] [-p <分区>] [取样间隔时间] [取样次
 -p, --partition <dev> 显示分区统计
 
 vmstat 具体的返回内容可以查询帮助
+
+
+
+SUID 和 SGID 的真实含义，就是在 fork-and-exec 的 exec 阶段，系统会调用 setuid() 来重新制定 UID
+
+
+
+/proc 目录，用于提供一种方式来访问和修改内核的数据
+
+/proc 是一个 伪目录，它使用名为 procfs 的 伪文件系统，它只存在于 内存 中，并不占用 存储设备资源
+
+/proc 目录下，有很多以纯数字开头的 文件夹，它们就是 进程 PID 对应的 内核目录
+
+
+/proc/[pid]/ 目录下，有一些文件和目录
+
+attr		（目录）进程的安全性设置
+cmdline 	（只读）调用该进程的 完整命令
+comm		与该进程对应的 进程名
+cwd			（符号链接）进程的 工作路径
+environ 	该进程的 环境变量（用 null 字节（\0） 隔开）
+exe			（符号链接）进程实际执行的 命令 的路径
+fd			（目录）程序打开的文件
+			0/1/2 分别代表 StdIn/StdOut/StdErr，其他的数字指向正在使用的其他文件
+fdinfo		（目录）打开文件的信息
+io			IO 统计
+limits		进程能够调用的系统资源的限制信息
+map_files	（目录）内存地址映射的文件
+maps		内存映射的相关属性
+mem			用于存取 进程的内存
+mountinfo	当前进程所在 namespace 的所有的挂载信息
+mounts		当前进程所在 namespace 的已挂载的信息
+...... （太多，略）...... 【详见 man 5 proc】
+
+
+/proc 非 数字 的文件/文件夹 都是系统本身所使用
