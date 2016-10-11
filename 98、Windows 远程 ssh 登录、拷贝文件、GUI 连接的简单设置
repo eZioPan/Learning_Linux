@@ -37,6 +37,11 @@ Windows 远程 ssh 登录，远程文件传输，远程 GUI 的，简单设置
 3.1 点击下方的 Open，就启动了 SSH 的终端，接着就可以正常登陆了
 
 
+# 注意事项（vim 使用）
+# 若要在从 putty 登录的状态下正常使用 Numpad 数字小键盘
+# 将 Terminal -- Features -- Disable application keypad mode 勾选即可
+
+
 # PuTTY 远程管理的好处
 # 1 可以在任意电脑上管理服务器
 # 2 可以在 CLI 中显示多国语言

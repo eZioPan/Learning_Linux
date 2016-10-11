@@ -26,6 +26,11 @@ eg.
 
 
 
+# 有关于 从 putty 中登录，vim 无法正常使用 Numpad 数字小键盘 的解决方法
+# 在 putty 中设置 Terminal -- Features --Disable application keypad mode
+
+
+
 光标移动的方法
 1、上/下/左/右 键 或者 h/j/k/l 移动一个字符
 2、Ctrl + {f|<PageDown>|<SpaceBar>}/{b|<PageUp>}/d/u 向下移动一页/向上移动一页/向下移动半页/向上移动半页
