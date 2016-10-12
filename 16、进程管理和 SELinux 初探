@@ -359,3 +359,25 @@ mounts		当前进程所在 namespace 的已挂载的信息
 
 
 /proc 非 数字 的文件/文件夹 都是系统本身所使用
+主要的文件/文件夹
+
+cmdline		加载 kernel 的时候使用的指令
+cpuinfo		查询与 CPU 相关的信息
+devices		设备的 主装置号（mknod 命令相关）
+filesystems	被系统所支持的 文件系统，若 某文件系统 被标记为 nodev，说明当前没有设备使用该 文件系统
+interrupt	当前 IRQ 分配状态
+ioports		已分配的 <Input>-<Output> 端口对
+kcore		代表 内存 的 伪文件，大小为真实内存大小
+			系统 debug 工具可以通过这个工具 查看内存状况
+loadavg		系统平局负载，分别为
+			1/5/15分钟 CPU 平均负载; 正在运行的进程数/当前进程数总计; 最近一次创建的 PID
+meminfo		内存使用情况
+modules		已经载入内核的 模块
+mounts		内核自身挂载的内容（符号链接至 /proc/self/mounts）
+swaps		系统 swap 所在分区
+partitions	系统中 块设备的 主次设备号/块数量/设备名
+uptime		系统总计运行秒数/CPU核心总空闲秒数
+			*每个CPU核心都会累计计算空闲状态
+version		系统版本
+bus/*		系统总线 信息
+
