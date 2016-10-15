@@ -348,7 +348,7 @@ io			IO 统计
 limits		进程能够调用的系统资源的限制信息
 map_files	（目录）内存地址映射的文件
 maps		内存映射的相关属性
-mem			用于存取 进程的内存
+mem			用于读写 进程的内存
 mountinfo	当前进程所在 namespace 的所有的挂载信息
 mounts		当前进程所在 namespace 的已挂载的信息
 ...... （太多，略）...... 【详见 man 5 proc】
@@ -432,5 +432,30 @@ pidof 找出正在运行的程序的 PID
 pidof [-sx] <程序名1> <程序名2> ...
 -s 仅列出找到的第一个 PID
 -x 同时列出 PPID
+
+
+
+SELinux
+
+SELinux 全称 Security Enhanced Linux，中文译名 安全强化型 Linux
+
+
+传统权限管理 —— DAC
+
+DAC 全称 Discretionary Access Control，中文译名 自主式读写控制
+
+DAC 即是，依据 程序使用者 的权限与 文件内记载 的权限 进行对比，来决定程序对文件的读写权限
+
+DAC 的问题：
+（1） DAC 对已经获取了 root 权限的账户完全无效，也就是说， root 不受 DAC 的控制
+（2） 用户可以通过 特定程序 修改 某个文件 所有的权限，也就是说，错误的权限设置会让系统出现权限漏洞
+
+
+以策略规定的文件读写规则 —— MAC
+
+MAC 全称 Mandatory Access Control，中文译名 委托式读写控制
+
+MAC 会依据 程序 的不同 来限制 程序对文件 的读写权限
+也就是说，即便是以 root 启动某程序，也不能保证可以读写任意一个文件
 
 
