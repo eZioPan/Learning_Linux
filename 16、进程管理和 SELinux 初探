@@ -459,3 +459,12 @@ MAC 会依据 程序 的不同 来限制 程序对文件 的读写权限
 也就是说，即便是以 root 启动某程序，也不能保证可以读写任意一个文件
 
 
+SELinux 的运行机制
+
+<1> 一个 Subject（eg.进程） 需要读写一个 Object（eg.文件）
+<2> 内核检查 AVC（Access Vector Cache） 中缓存的记录
+--<1> 若 AVC 中有该记录
+----<1> 该 AVC 记录指明 该 Subject 可以读写 该 Object，则 SELinux 放行，并进程 传统的 DAC 检查
+----<2> 该 AVC 记录指明 该 Subject 不可读写 该 Object，则 AVC 返回 Denied Message
+--<2> 若 AVC 中没有该记录
+----<1> 在 SELinux 的 Policy 数据库中查询记录，并缓存至 AVC 中，再次进行 AVC 判断
