@@ -521,6 +521,9 @@ SELinux 的规则是由 进程 和 object 的 type 决定的
 
 SELinux 的运行机制
 
+启动一个 二进制文件，二进制文件的 type 会决定 启动的 进程 所对应的 type，
+该 进程的 type 又会决定 该进程能够对 具有哪些 type 的 文件（这些 type 被称为 进程的 domain） 进行何种操作（etc.读/写/删/断开）
+
 <1> 一个 Subject（eg.进程） 需要读写一个 Object（eg.文件）
 <2> 内核检查 AVC（Access Vector Cache） 中缓存的记录
 --<1> 若 AVC 中有该记录
@@ -528,3 +531,56 @@ SELinux 的运行机制
 ----<2> 该 AVC 记录指明 该 Subject 不可读写 该 Object，则 AVC 返回 Denied Message
 --<2> 若 AVC 中没有该记录
 ----<1> 在 SELinux 的 Policy 数据库中查询记录，并缓存至 AVC 中，再次进行 AVC 判断
+
+
+进程 和 文件 的 SELinux Security Context 的查询
+
+ps -Z	查询进程的 Security Context
+ls -Z	查询文件的 Security Context
+
+
+
+SELinux 的 全局策略（全局 Policy）
+
+在 /etc/selinux/config 文件中设置
+
+(1)	SELINUX		设置 SELinux 的启动状态，分别为
+	enforcing	使用 SELinux 控制 进程权限
+	permissive	仅使用 SELinux 检测权限，并在不符合时发出警告，但不限制 进程权限
+	disable		完全关闭 SELinux
+
+(2) SELINUXTYPE	设置 SELinux 的全局策略
+	targeted	限制被标记的程序（大多限制网络服务，本地程序的限制比较少）
+	minimum		targeted 策略的修改版。仅限制被选择的程序
+	mls			Multi Level Security 保护。一种严格的限制策略
+
+
+
+getenforce 查看当前 SELinux 的启动状态
+
+可能的返回值有
+enforcing
+permissive
+disable
+
+
+
+sestatus 查看 SELinux 完整的运行状态
+
+sestatus [-vb]
+不加任何参数时，输出 SELinux 的各项状态
+-v 附加上 /etc/sestatus.conf 中指定的 文件 或 进程的 Security Context
+   若 指定的 文件 是一个 符号链接，则同时显示 符号链接文件 和 目标文件 的 Security Context
+-b 附加上 策略 在当前的启动状态（policy boolean）
+
+sestatus 返回值的含义
+
+SELinux status:                 enabled				# 系统是否启动了 SELinux
+SELinuxfs mount:                /sys/fs/selinux		# SELinux 的文件系统的挂载点
+SELinux root directory:         /etc/selinux		# SELinux 的根目录
+Loaded policy name:             targeted
+Current mode:                   enforcing
+Mode from config file:          enforcing
+Policy MLS status:              enabled
+Policy deny_unknown status:     allowed
+Max kernel policy version:      28
