@@ -409,7 +409,7 @@ c	当前目录
 e	正在运行的可执行文件
 f	已打开的文件
 F	已打开，且用于写入的文件
-r	根目录
+r	系统根目录
 m	已被映射至内存的文件 或 公用的库
 
 这些权限默认紧随 PID 之后
@@ -455,8 +455,68 @@ DAC 的问题：
 
 MAC 全称 Mandatory Access Control，中文译名 委托式读写控制
 
-MAC 会依据 程序 的不同 来限制 程序对文件 的读写权限
-也就是说，即便是以 root 启动某程序，也不能保证可以读写任意一个文件
+MAC 会为 每类 文件（几乎是每个文件）、每类 进程（几乎是每个进程）定义一个独特的 Type
+所有的 Type 和其中 两两对应的 权限关系 组成了一个巨大的矩阵
+当需要的时候，就会从矩阵中计算出对应的权限
+
+
+
+SELinux 的 6 个基本概念
+
+【1】 User
+对应的是 SELinux user，这个字段一般以 _u 作为后缀
+它和系统账户中的 user 并不同
+SELinux user 在一个 user session 中不会改变，即便使用了 sudo 或 su 命令
+一般来说，多个 Linux 系统账户会使用同一个 SELinux user
+
+常见的 SELinux user 有两种
+
+unconfined_u	不受限用户，基本上就是 使用者 创建的文件，或 使用者 启动的进程
+system_u		系统用户，基本上就是 系统 创建的文件，或 系统 启动的进程
+
+
+【2】 Role
+对应的是 SELinux role，这个字段一般以 _r 作为后缀
+一个 SELinux user 会具有一个或多个 SELinux role
+SElinux role 的具体内容由 Policy（策略）来决定
+role 可以是一个 没有优先权的用户、一个网站管理员、一个数据库管理员 等等
+
+常见的 SELinux role 有三种
+
+unconfined_r	不受限角色，也就是不受 SELinux 管控的状态
+system_r		系统角色，可能会受到 SELinux 的管控
+object_r		对象角色，一般附在文件的属性之中，基本上就是一个占位的作用
+
+
+【3】 Type
+一个 type 是 定义权限 的主要手段，这个字段一般以 _t 作为后缀
+一个 进程的 type ，被称为 进程的 域（domain）
+
+各类进程 和 系统文件 都有各自不同的 type
+
+
+【4】 Context
+每个 进程和对象（object）都有一个 context（或称一个 label）
+这个属性用于定义 一个进程 是否可以读写 一个物体
+
+一个 context 的格式：
+<user>:<role>:<type>[:<range>]
+
+其中 <user> <role> <type> 字段与上述的三个内容对应
+<range> 用于 Multi Level Security 的全局策略之下，是一个可选项
+
+文件 的 Context 被记录在对应的 inode 中
+进程 的 Context 被记录在对应的 /proc/[PID]/attr/current 文件中
+
+
+【5】 Object Class
+一个 Object 可以指代 Linux 中任何一个实体
+比如：一个文件、一个文件夹、一个进程、或者是一个 套字节连接
+
+
+【6】 Rule
+SELinux 的规则是由 进程 和 object 的 type 决定的
+
 
 
 SELinux 的运行机制
