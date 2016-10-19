@@ -578,9 +578,9 @@ sestatus 返回值的含义
 SELinux status:                 enabled				# 系统是否启动了 SELinux
 SELinuxfs mount:                /sys/fs/selinux		# SELinux 的文件系统的挂载点
 SELinux root directory:         /etc/selinux		# SELinux 的根目录
-Loaded policy name:             targeted
-Current mode:                   enforcing
-Mode from config file:          enforcing
-Policy MLS status:              enabled
-Policy deny_unknown status:     allowed
-Max kernel policy version:      28
+Loaded policy name:             targeted			# 当前使用 SELinux Policy
+Current mode:                   enforcing			# 当前 SELinux 的运行状态
+Mode from config file:          enforcing			# SELinux 设置文件中定义的 SELinux 运行状态
+Policy MLS status:              enabled				# Multi Level Security 的状态
+Policy deny_unknown status:     allowed				# 是否阻止未知的 Subject 进程
+Max kernel policy version:      28					# 当前 SELinux Policy 的版本号
