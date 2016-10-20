@@ -499,6 +499,8 @@ object_r		对象角色，一般附在文件的属性之中，基本上就是一�
 每个 进程和对象（object）都有一个 context（或称一个 label）
 这个属性用于定义 一个进程 是否可以读写 一个物体
 
+这个 context 又被称为 Security Context
+
 一个 context 的格式：
 <user>:<role>:<type>[:<range>]
 
@@ -516,7 +518,7 @@ object_r		对象角色，一般附在文件的属性之中，基本上就是一�
 
 【6】 Rule
 SELinux 的规则是由 进程 和 object 的 type 决定的
-
+<...>
 
 
 SELinux 的运行机制
@@ -584,3 +586,59 @@ Mode from config file:          enforcing			# SELinux 设置文件中定义的 S
 Policy MLS status:              enabled				# Multi Level Security 的状态
 Policy deny_unknown status:     allowed				# 是否阻止未知的 Subject 进程
 Max kernel policy version:      28					# 当前 SELinux Policy 的版本号
+
+
+
+注意！若 SELinux 要在 开启（Enforce 或 Permissive）和禁用（Disable）之间切换，必须重启电脑
+且当 SELinux 从 禁用状态 切换至 开启状态时，需要重启两次
+第一次重启后，SELinux 会执行 SELinux Relabel 来重新写入 Security Context
+第二重启之后，SELinux 才会完全正常的工作
+
+
+若重启为 Enforcing 状态后，出现系统服务错误，可以切换至 Permissive 模式，
+接着输入 restorecon -Rv / 来还原所有的 SELinux 标签
+然后重新进入 Enforcing 的状态即可
+
+
+
+setenforce 在 Permissive 模式 和 Enforcing 模式下切换
+
+setenforce  <Enforcing>|<Permissive>|<1>|<0>
+设置为 Enforcing 或 1 时，切换为 Enforcing 模式
+设置为 Permissive 或 0 时，切换为 Permissive 模式
+
+
+
+getsebool 查询 Rule 的是否启动
+
+getsebool [-a] [特定规则名]
+-a 罗列 SELinux 所有的 规则，并显示其是否开启
+
+
+
+seinfo sesearch 查询 SELinux Type 的详细信息
+
+注意！seinfo 和 sesearch 两个命令并没有内置在系统中，需要安装 setools-console 才可以使用
+
+yum install setools-console
+
+
+seinfo [-tarub] [-x] [--all]
+--all 这个参数会罗列 SELinux 所有的状态、规则、身份、角色、对象等全部条目
+-x, --expand 扩展显示，与下方的参数搭配使用
+-t[NAME], --type[=NAME]
+	显示所有的 type，或 指定的 type 的名字
+	若使用 -x，显示所有包含该 type 的 attribute
+-a[NAME], --attribute[=NAME]
+	显示所有的 attribute，或 指定的 attribute 的名字
+	若使用 -x，显示 attribute 包含的所有的 type
+-r[NAME], --role[=NAME]
+	显示所有的 role，或 指定的 role 的名字
+	若使用 -x，显示 role 包含的所有的 type
+-u[NAME], --user[=NAME]
+	显示所有的 user，或 指定的 user 的名字
+	若使用 -x，显示 user 包含的所有的 role
+-b[NAME], --bool[=NAME]
+	显示所有的 条件 boolean，或 指定的 条件 boolean 的名字
+	若使用 -x，显示 条件 boolean 默认的启动状态
+
