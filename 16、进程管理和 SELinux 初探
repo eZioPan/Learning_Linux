@@ -518,7 +518,17 @@ object_r		对象角色，一般附在文件的属性之中，基本上就是一�
 
 【6】 Rule
 SELinux 的规则是由 进程 和 object 的 type 决定的
-<...>
+
+一个 AVC rule 的样式
+
+<rule_name> <source_type> <target_type> : <class> <perm_set>
+
+<rule_name> 包含 allow/dontaudit/auditallow/neverallow
+<source_type> 和 <target_type> 写入对应的 type 可以使用 {} 表示多个 type
+								或其他符号 表示 排除（-） 通配（*） 补集（~）
+<class> 也就是 Object class 指明作用的对象是那种类别
+<per_set> 等价于将要执行的操作（etc.读取/写入/删除/开启端口/关闭端口）
+
 
 
 SELinux 的运行机制
@@ -641,4 +651,11 @@ seinfo [-tarub] [-x] [--all]
 -b[NAME], --bool[=NAME]
 	显示所有的 条件 boolean，或 指定的 条件 boolean 的名字
 	若使用 -x，显示 条件 boolean 默认的启动状态
+
+
+sesearch [-A] <Rule_Type> [-s <NAME>] [-t <NAME>] [-b <NAME>]
+-A, --allow 显示被标记为 allow 的 Rule
+--neverallow 显示被标记为 neverallow 的 Rule
+--auditallow 显示被标记为 auditallow 的 Rule
+-D, --dontaudit 显示被标记为 auditallow 的 Rule
 
