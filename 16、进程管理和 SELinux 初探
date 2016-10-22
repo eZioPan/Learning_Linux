@@ -653,9 +653,13 @@ seinfo [-tarub] [-x] [--all]
 	若使用 -x，显示 条件 boolean 默认的启动状态
 
 
-sesearch [-A] <Rule_Type> [-s <NAME>] [-t <NAME>] [-b <NAME>]
+sesearch <-A...> [-s <NAME>] [-t <NAME>] [-c <NAME>] [-b <NAME>]
 -A, --allow 显示被标记为 allow 的 Rule
 --neverallow 显示被标记为 neverallow 的 Rule
 --auditallow 显示被标记为 auditallow 的 Rule
 -D, --dontaudit 显示被标记为 auditallow 的 Rule
 
+-s <NAME>, --source=<NAME>	搜索 SELinux Rule 中， source 字段为 <NAME> 的条目
+-t <NAME>, --target=<NAME>	搜索 SELinux Rule 中， target 字段为 <NAME> 的条目
+-c <NAME>, --class=<NAME>	搜索 SELinux Rule 中， Object Class 字段为 <NAME> 的条目
+-b <NAME>, --bool=<NAME>	搜索 SELinux Rule 中， Rule 名称 为 <NAME> 的条目
