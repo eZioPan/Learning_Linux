@@ -663,3 +663,13 @@ sesearch <-A...> [-s <NAME>] [-t <NAME>] [-c <NAME>] [-b <NAME>]
 -t <NAME>, --target=<NAME>	搜索 SELinux Rule 中， target 字段为 <NAME> 的条目
 -c <NAME>, --class=<NAME>	搜索 SELinux Rule 中， Object Class 字段为 <NAME> 的条目
 -b <NAME>, --bool=<NAME>	搜索 SELinux Rule 中， Rule 名称 为 <NAME> 的条目
+
+
+
+setsebool 设置 SELinux Rule 的 boolean 值（开启或关闭指定的 Rule）
+
+sesebool [-PNV] <SELinux Rule> [[1|true|on] | [0|false|off]]
+若不使用任何参数，则 SELinux Rule 的开关仅在本次关机前有效
+-P 将该 boolean 写入硬盘文件
+-N 不重新载入硬盘中的文件
+-V 复杂的错误输出
