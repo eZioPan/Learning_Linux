@@ -673,3 +673,35 @@ sesebool [-PNV] <SELinux Rule> [[1|true|on] | [0|false|off]]
 -P 将该 boolean 写入硬盘文件
 -N 不重新载入硬盘中的文件
 -V 复杂的错误输出
+
+
+
+chcon 修改文件的 Security Context
+
+chcon [-R[-HLP]] [-h] [-v] [-t <Type>] [-u <User>] [-r <Role>] [-l <Range>] <文件>
+chcon [-R[-HLP]] [-h] [-v] --reference=<参考文件> <目标文件>
+
+-R, --recursive 递归修改指定目录下所有的文件
+-H 【-R 存在时起效】若命令行指定的是一个 符号链接，且符号链接指向一个 目录，则修改 指向的目录
+-L 【-R 存在时起效】解析所有的 符号链接，并修改指向的 文件/目录
+-P 【-R 存在时起效】不解析任何 符号链接（默认）
+
+-h, --no-dereference 若指定的文件是一个 符号链接，则不做解析
+--dereference 解析符号链接，并修改指向的文件（默认）
+
+-u, --user=<User>	修改 SELinux User
+-r, --role=<Role>	修改 SELinux Role
+-t, --type=<Type>	修改 SELinux Type
+-l, --range=<Range>	修改 SELinux Range
+
+--reference=<RFile>	通过参考文件的 Security Context 修改指定的文件
+
+-v, --verbose 输出每一个 文件进展 的诊断内容
+
+
+
+restorecon 将 Security Context 还原至默认状态
+
+
+
+
