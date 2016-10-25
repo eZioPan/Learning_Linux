@@ -561,11 +561,12 @@ SELinux 的 全局策略（全局 Policy）
 	permissive	仅使用 SELinux 检测权限，并在不符合时发出警告，但不限制 进程权限
 	disable		完全关闭 SELinux
 
-(2) SELINUXTYPE	设置 SELinux 的全局策略
+(2) SELINUXTYPE	设置 SELinux 的全局策略（SELinux Policy Store）
 	targeted	限制被标记的程序（大多限制网络服务，本地程序的限制比较少）
 	minimum		targeted 策略的修改版。仅限制被选择的程序
 	mls			Multi Level Security 保护。一种严格的限制策略
 
+这些 SELinux Policy Store 默认放置在 /usr/share/selinux/ 目录下
 
 
 getenforce 查看当前 SELinux 的启动状态
@@ -702,6 +703,93 @@ chcon [-R[-HLP]] [-h] [-v] --reference=<参考文件> <目标文件>
 
 restorecon 将 Security Context 还原至默认状态
 
+restorecon [-R] [-n] [-p] [-v] [-f <列表文件>] [-F] [-e <排除目录>] <路径>
+-e <排除目录> 指定不参与 还原的目录，可以多个 -e 指定多个目录
+-f <列表文件> 指定一个文件，其中包含了所有 需要还原的 文件的路径
+-F 无视自定义的 Security Context Policy，仅使用系统默认的
+-i 忽略不存在的文件
+-n 仅检测还原，而不真实还原文件的 Security Context，若要罗列出将要还原的文件，使用 -v
+-p 显示进程，每次显示 1024 个文件
+-R, -r 递归还原目录下的 文件 和 目录
 
 
 
+EG. Security Context 的修改 实例
+
+## 在 主目录下创建一个名为 checktime 的 cron 文件
+
+vi checktime
+10 * * * * root sleep 60s
+
+
+## 检查它的 Security Context
+
+ls -Z checktime
+
+# 返回
+# -rw-rw-r--. eP eP unconfined_u:object_r:user_home_t:s0 checktime
+
+
+## 将 checktime 移动至 /etc/cron.d/ 目录下，并将普通权限修改至 root:root 644
+
+mv checktime /etc/cron.d/
+cd /etc/cron.d/
+chown root:root checktime
+chmod 644 checktime
+
+
+## 重启 crond 并检查 cron 的 log
+
+systemctl restart crond
+tail /var/log/cron
+
+# 返回中有一行标注为
+# ((null)) Unauthorized SELinux context=system_u:system_r:system_cronjob_t:s0-s0:c0.c1023 file_context=unconfined_u:object_r:user_home_t:s0 (/etc/cron.d/checktime)
+# 指明 SELinux 检查不通过， SELinux context 和 file context 不匹配，这个文件在 /etc/cron.d/checktime
+
+
+## 修改 checktime 的 Security Context
+
+## 方案 1：使用 chcon --reference 来引用正确的文件
+
+chcon --reference=./0hourly checktime
+
+## 方案 2：使用 restorecon 来自动修正
+
+
+## 重启 crond 并检查 cron 的 log
+
+systemctl restart crond
+tail /var/log/cron
+
+# 错误消失
+
+
+
+semanage 管理 SELinux Policy
+
+semanage 能管理很多类型的 Policy，其中包括：
+login,user,port,interface,fcontext,translation
+
+写成 semanage fcontext ...blahblah... 的形式
+
+以 semanage fcontext 为例
+
+semanage fcontext [-n] [-N] [-S <Policy Store>] [-l]
+                  --list [-C]
+                  --add [-t <Type>] [-f <fType>] [-r <Range>] [-s <SEUser>] [-e <参考文件>] <目标文件>
+                  --delete [-t <Type>] [-f <fType>] [-e <参考文件>] <目标文件>
+                  --modify [-t <Type>] [-f <fType>] [-r <Range>] [-s <SEUser>] [-e <参考文件>] <目标文件>
+                  --deleteall
+                  --extract
+
+-n, --noheading 显示列表时，不要输出标题栏
+-N, --noreload 仅将 新 Policy 写入文件，而不重新载入到内核中
+-S <STORE>, --store <STORE> 指定新的 Policy Store 目录
+-C, --locallist 罗列本地 自定义的 内容
+-a, --add
+-d, --delete
+-m, --modify
+-l, --list
+-E, --extract
+-D, --deleteall
