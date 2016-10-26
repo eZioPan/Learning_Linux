@@ -787,9 +787,14 @@ semanage fcontext [-n] [-N] [-S <Policy Store>] [-l]
 -N, --noreload 仅将 新 Policy 写入文件，而不重新载入到内核中
 -S <STORE>, --store <STORE> 指定新的 Policy Store 目录
 -C, --locallist 罗列本地 自定义的 内容
--a, --add
--d, --delete
--m, --modify
--l, --list
+-a, --add 添加条目
+-d, --delete 删除条目
+-m, --modify 修改条目
+-l, --list 罗列所有条目
 -E, --extract
--D, --deleteall
+-D, --deleteall 删除所有的本地自定义项目
+-e, --equal <参考文件> 从指定的样板目录读取 context，并赋予至目标目录
+-f, --ftype <a,f,d,c,b,s,l,p> 指定文件类型，具体查阅 man semanage-fcontext
+-s, --seuser <NAME> 指定 SELinux User 的名称
+-t, --type <TYPE> 指定 对于 Object 的 Type
+-r, --range <RANGE> 指定 MLS 的 Range
