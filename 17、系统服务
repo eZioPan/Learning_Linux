@@ -1,0 +1,56 @@
+系统服务（serive），就是常驻内存的一些程序（daemon）
+
+CentOS7 所使用的启动服务管理机制为 systemd
+
+
+systemd 的新特性
+
+(1) 平行服务启动流程，加速开机
+
+(2) 全局控制，常驻内存，若要启动服务时， 会立刻被 systemd 相应
+
+(3) 自动检查服务相关性，自动启动依赖的服务
+
+(4) 详细的 daemon 分类：将一个服务(service，可能包含多个命令)定义为一个 unit
+						又将不同 unit 分类为不同的 type
+
+(5) 兼容旧版的 init 启动脚本
+
+
+注意！不由 systemctl 命令启动的服务，无法被 systemd 管理
+
+
+
+systemd 的设置文件
+
+/usr/lib/systemd/system/
+每个服务的主要启动配置文件
+
+/run/systemd/system/
+系统在使用过程中产生的服务脚本
+优先级比 /usr/lib/systemd/system/ 的高
+
+/etc/systemd/system/
+管理员为系统创建的服务脚本
+优先级比 /run/systemd/system/ 的高
+
+
+
+systemd 的 unit 的 type 分类
+
+在 /usr/lib/systemd/system/ 下的文件中的 后缀名，就是 unit 的 type
+
+
+.service	系统服务，各种本机服务和网络服务都属于这类，是最常见的类型
+
+.socket		套字节服务，一般用于 监听文件或端口，启动相关的服务
+			（IPC Inter-process communication）
+
+.target		执行环境，设定当前系统运行的状态（会调用相关的 .sevice 和 .socket 服务）
+
+.mount		挂载的相关的服务
+.automount
+
+.path		文件监控服务，比如打印机的队列任务，就需要文件监控服务
+
+.timer		循环执行服务
