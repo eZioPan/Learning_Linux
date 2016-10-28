@@ -54,3 +54,33 @@ systemd 的 unit 的 type 分类
 .path		文件监控服务，比如打印机的队列任务，就需要文件监控服务
 
 .timer		循环执行服务
+
+
+
+systemctl 管理服务的命令
+
+systemctl [option] [command] [unit]
+
+[option]
+
+
+[command] 部分可用命令
+
+start		立即启动指定的 unit
+stop		立即停止指定的 unit
+restart		立即重启指定的 unit（也即 stop 后立刻 start）
+reload		不关闭指定的 unit，但重读设置文件
+enable		开启自动启动指定的 unit
+disable		开机不自动启动指定的 unit
+status		查看指定的 unit 的状态
+is-active	检查指定的 unit 是否运行
+is-failed	检查指定的 unit 是否失败
+is-enabled	检查指定的 unit 是否开机自动启动
+list-dependencies 罗列指定 unit 的依赖 unit
+mask		完全禁止一个 unit 被使用
+			也即，从 /dev/null 软链接至 /etc/systemd/system/ 下一个与指定 unit 同名的文件
+			来屏蔽 unit 的文件
+unmask		解禁一个 unit
+			也即，移除 /dev/null 至 /etc/systemd/system/ 下的链接
+
+
