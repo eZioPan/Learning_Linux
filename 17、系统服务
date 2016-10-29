@@ -72,7 +72,8 @@ restart		立即重启指定的 unit（也即 stop 后立刻 start）
 reload		不关闭指定的 unit，但重读设置文件
 enable		开启自动启动指定的 unit
 disable		开机不自动启动指定的 unit
-status		查看指定的 unit 的状态
+status		以 人类可读 的方式查看指定的 unit 的状态
+show		以 数据列表 的方式查看指定的 unit 的状态
 is-active	检查指定的 unit 是否运行
 is-failed	检查指定的 unit 是否失败
 is-enabled	检查指定的 unit 是否开机自动启动
