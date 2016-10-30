@@ -59,10 +59,17 @@ systemd 的 unit 的 type 分类
 
 systemctl 管理服务的命令
 
-systemctl [option] [command] [unit]
+systemctl [option] [command] [NAME ...]
+
+不加任何参数时，等价于 systemctl list-units
 
 [option]
-
+-t, --type=<type1>[,<type2>,<type3>...]
+	仅显示/修改 指定类型的 unit
+-a, --all
+	显示所有已经 loaded 的 unit
+-n, --lines=<num>
+	与 status 连用，指定 显示多少行 service 的 log
 
 [command] 部分可用命令
 
@@ -72,16 +79,84 @@ restart		立即重启指定的 unit（也即 stop 后立刻 start）
 reload		不关闭指定的 unit，但重读设置文件
 enable		开启自动启动指定的 unit
 disable		开机不自动启动指定的 unit
-status		以 人类可读 的方式查看指定的 unit 的状态
-show		以 数据列表 的方式查看指定的 unit 的状态
-is-active	检查指定的 unit 是否运行
-is-failed	检查指定的 unit 是否失败
-is-enabled	检查指定的 unit 是否开机自动启动
-list-dependencies 罗列指定 unit 的依赖 unit
+
 mask		完全禁止一个 unit 被使用
 			也即，从 /dev/null 软链接至 /etc/systemd/system/ 下一个与指定 unit 同名的文件
 			来屏蔽 unit 的文件
 unmask		解禁一个 unit
 			也即，移除 /dev/null 至 /etc/systemd/system/ 下的链接
+
+status		以 人类可读 的方式查看指定的 unit 的状态
+show		以 数据列表 的方式查看指定的 unit 的状态
+is-active	检查指定的 unit 是否运行
+is-failed	检查指定的 unit 是否失败
+is-enabled	检查指定的 unit 是否开机自动启动
+
+list-units	罗列所有已经 loaded 且处于 active 状态的 unit
+			若加上 -a 参数，罗列所有 loaded 的 unit
+list-unit-files	罗列所有的 unit 文件，以及当前的状态
+list-dependencies 罗列指定 unit 的依赖 unit
+
+get-default	获取启动时默认进入的模式（target）
+set-default	修改启动时默认进入的模式（target）
+isolate		关闭其他的 target，仅加载指定的 target
+
+
+systemctl status 详解
+
+EG. 以 systemctl status 查看 atd 服务的运行状态
+
+systemctl status atd.service
+
+# 返回数据如下
+
+atd.service -Jpb spooling tools
+	Loaded: loaded (/usr/lib/systemd/system/atd.service; enabled; vendor preset: enabled)
+	Active: active (running) since Mon 2016-10-31 13:41:41 CST; 1h 24min ago
+Main PID: 1496 (atd)
+   CGroup: /system.slice/atd.service
+           └─1496 /usr/sbin/atd -f
+
+Oct 31 13:41:41 ePCt.eP systemd[1]: Started Job spooling tools.
+Oct 31 13:41:41 ePCt.eP systemd[1]: Starting Job spooling tools...
+
+
+第 1 行：服务的名字以及简介
+
+第 2 行：服务的加载状态
+			第一个参数：
+				loaded 当前服务未被 mask
+				masked 当前服务被 mask
+			第二个参数：
+				该服务的 配置文件 所在路径
+			第三个参数：
+				enable 该服务 开机 自动加载
+				diable 该服务 开机 不自动加载
+				static 该服务不可自动启动，但可被其他服务唤醒
+			第四个参数：
+				提供商预设（内容未知）
+
+第 3 行：服务的运行状态
+			第一个参数：
+				active (running)	正在运行的服务
+				active (waiting)	等待中的服务
+				active (exited)		运行成功并正常退出的服务
+				active (listening)	服务正在监听端口
+				inactive (dead)		未运行的服务
+				failed (Reslt: exit-code)	运行失败的服务
+			第二个参数：
+				从何时开始进入该状态
+			第三个参数：
+				到目前为止，已经在这个状态停留了多少时间
+
+第 4 行：服务的所使用的主要程序的 PID 以及 进程名
+
+第 5 行：Control Group 的分组状态
+
+第 6 行：该服务使用到的各种程序的 PID 以及对应的 调用命令
+
+第 8 行：会显示最后十个 service 的 log
+
+
 
 
