@@ -70,6 +70,10 @@ systemctl [option] [command] [NAME ...]
 	显示所有已经 loaded 的 unit
 -n, --lines=<num>
 	与 status 连用，指定 显示多少行 service 的 log
+--reverse
+	与 list-dependencies 连用，获取调用了指定 unit 的 unit
+--plain
+	与 list-dependencies 连用，去掉 unit 运行状态灯，用空格表示依赖树
 
 [command] 部分可用命令
 
@@ -100,6 +104,14 @@ list-dependencies 罗列指定 unit 的依赖 unit
 get-default	获取启动时默认进入的模式（target）
 set-default	修改启动时默认进入的模式（target）
 isolate		关闭其他的 target，仅加载指定的 target
+
+poweroff	关机
+reboot		重启
+suspend		挂起：将系统的运行状态存储至 内存 中，并关闭大部分的硬件设备
+hibernate	休眠：将系统的运行状态存储至 硬盘 中，并关闭所有的硬件设备
+rescue		救援
+emergency	紧急救援
+
 
 
 systemctl status 详解
@@ -159,4 +171,56 @@ Oct 31 13:41:41 ePCt.eP systemd[1]: Starting Job spooling tools...
 
 
 
+systemctl list-unit-files 详解
+
+EG.
+
+systemctl list-unit-files
+
+# 返回列表
+
+第 1 列：UNIT FILE 的名称
+
+第 2 列：当前对应的 unit 的状态
+		包含：
+			static	需要被其他服务激活
+			disable	不会自动启动
+			enable	开机自动启动
+			masked	服务被 mask
+			invalid	服务出错，不可用
+
+
+
+systemctl set-default 详解
+
+EG.
+
+## 1 获取系统可以进入的模式
+
+systemctl list-units --type=target --all
+
+# 返回值有 30 行，其中与 User Interface 相关的有
+
+# graphical.target	文字+图形界面，已包含 multi-user.target 模式
+# multi-user.target	纯文字模式
+# rescue.target		救援模式，systemd 会启动一个与原系统无关的系统，
+					并赋予用户 root 权限，以便管理者修复系统
+# emergency.target	当 rescue.target 模式也无法使用时，最后一个可以启动，并修复的模式
+# shutdown.target	开始关机流程
+# getty.target		与 tty 数量设置相关
+
+# default.target	未列出的 target，表示当前默认的 target
+
+## 2 获取当前系统开机时默认进入的 target
+
+systemctl get-default
+
+
+## 3 设置系统开机时默认进入的 target
+
+systemctl set-default <.target>
+
+## 4 在不重启的情况下切换 target
+
+systemctl isolate <.target>
 
