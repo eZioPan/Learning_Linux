@@ -100,6 +100,7 @@ list-units	罗列所有已经 loaded 且处于 active 状态的 unit
 			若加上 -a 参数，罗列所有 loaded 的 unit
 list-unit-files	罗列所有的 unit 文件，以及当前的状态
 list-dependencies 罗列指定 unit 的依赖 unit
+list-sockets 罗列 socket 类型的 unit 的数据
 
 get-default	获取启动时默认进入的模式（target）
 set-default	修改启动时默认进入的模式（target）
@@ -223,4 +224,33 @@ systemctl set-default <.target>
 ## 4 在不重启的情况下切换 target
 
 systemctl isolate <.target>
+
+
+
+systemctl list-dependencies 详解
+
+systemctl list-dependencies [-reverse] [--plain]
+
+将以树状图形式返回 依赖关系
+
+疑问？如果修改过系统 list-dependencies 的返回会立刻变化么？好像并不会
+
+
+
+systemd 会使用到的其他文件
+
+除了
+	/usr/lib/systemd/system/
+	/run/systemd/system/
+	/etc/systemd/system/
+之外
+
+还有
+
+/etc/sysconfig/* 服务初始的一些参数将会放置在这个目录下面
+
+/var/lib/ 会产生不断积累的数据的服务，会将这些数据放置在这个目录下面
+
+/run/ 各类服务的 daemon 的临时数据会存放的地方
+
 
