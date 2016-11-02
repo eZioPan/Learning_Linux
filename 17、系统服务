@@ -254,3 +254,28 @@ systemd 会使用到的其他文件
 /run/ 各类服务的 daemon 的临时数据会存放的地方
 
 
+
+/etc/services 存放服务于端口号对应表的地方
+！不建议修改这个文件
+
+
+
+自定义 服务设置 的存放位置
+
+/etc/systemd/system/<unit 名称>.d/<customName>.conf
+
+自定义的 设置文件，使用时，将在 原始设置文件 读取之后，以追加的方式读取
+
+/etc/systemd/system/<unit 名称>.wants/*
+
+下面放置 可能会 使用到该 unit 的 unit 的链接文件
+
+/etc/systemd/system/<unit 名称>.requires/*
+
+下面放置 启动该 unit 必须的 unit 的链接文件
+
+
+
+unit 主设置文件的详解
+
+以 /usr/lib/systemd/system/sshd.service 为例
