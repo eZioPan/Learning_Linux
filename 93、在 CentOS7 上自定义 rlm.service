@@ -1,0 +1,11 @@
+/usr/lib/systemd/system/RLM.service
+
+[Service]
+ExecStart=/opt/RLM/rlm -dlog +/var/log/dlog/main.dlog
+ExecReload=/bin/kill -SIGHUP $MAINPID
+ExecStop=/bin/kill -SIGTERM $MAINPID
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
