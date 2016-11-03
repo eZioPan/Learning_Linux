@@ -268,7 +268,7 @@ systemd 会使用到的其他文件
 
 /etc/systemd/system/<unit 名称>.wants/*
 
-下面放置 可能会 使用到该 unit 的 unit 的链接文件
+下面放置 该 unit 启动之后，最好也一同启动的 unit
 
 /etc/systemd/system/<unit 名称>.requires/*
 
@@ -279,3 +279,41 @@ systemd 会使用到的其他文件
 unit 主设置文件的详解
 
 以 /usr/lib/systemd/system/sshd.service 为例
+
+# 以下为文件内容
+
+[Unit]											# 与 unit 的 type 无关的 通用信息
+Description=OpenSSH server daemon
+Documentation=man:sshd(8) man:sshd_config(5)
+After=network.target sshd-keygen.service
+Wants=sshd-keygen.service
+
+[Service]
+EnvironmentFile=/etc/sysconfig/sshd
+ExecStart=/usr/sbin/sshd -D $OPTIONS
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+Restart=on-failure
+RestartSec=42s
+
+[Install]										# 仅在 unit 被安装/卸载时使用（也即 unit 被 enable 或 disable）
+WantedBy=multi-user.target
+
+
+！完整的说明可以查阅 man systemd.unit 以及 man systemd.<unit type>
+
+[Unit] 部分：用于写入与 unit 的 type 无关的 通用信息
+[Service] 部分：用于写入与 unit 的 type 相关的 信息
+[Install] 部分：用于写入 unit 的安装信息，systemctl enable/disable 时会使用
+
+
+
+
+
+
+
+unit 的主配置文件中的每种条目只有最后一个会起效
+
+eg.
+若 系统预设的 After 条目有内容，而管理员又再次定义了 After 条目
+则只有系统管理员定义的 After 条目会起效
