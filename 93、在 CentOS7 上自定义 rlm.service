@@ -1,7 +1,14 @@
-/usr/lib/systemd/system/RLM.service
+(1) 在 /opt/ 文件夹下新建 RLM 目录
+
+(2) 将需要的 rlm 二进制文件和 .lic .set .opt 拷贝至 /opt/RLM/ 目录下
+
+(3) 在 /var/log/ 下新建 RLM 文件夹
+
+(4) 在 /usr/lib/systemd/system/ 目录下新建 RLM.service 文件，写入如下内容
 
 [Service]
-ExecStart=/opt/RLM/rlm -dlog +/var/log/dlog/main.dlog
+Environment="LANG=C"
+ExecStart=/opt/RLM/rlm -dlog +/var/log/RLM/main.dlog
 ExecReload=/bin/kill -SIGHUP $MAINPID
 ExecStop=/bin/kill -SIGTERM $MAINPID
 Restart=on-failure
@@ -9,3 +16,11 @@ RestartSec=5s
 
 [Install]
 WantedBy=multi-user.target
+
+(6) 使用 systemctl daemon-reload 重载 unit 的配置文件
+
+(7.1) systemctl start RLM 来启动服务
+(7.2) systemctl reload RLM 重读 RLM 引用的文件
+(7.3) systemctl stop RLM 来关闭服务
+
+(8) 【未完成】若要让局域网内机器都可验证，请关闭防火墙 systemctl stop firewalld
