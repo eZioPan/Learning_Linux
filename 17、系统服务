@@ -307,7 +307,7 @@ WantedBy=multi-user.target
 [Install] 部分：用于写入 unit 的安装信息，systemctl enable/disable 时会使用
 
 
-[Unit]部分的条目
+[Unit]区块的部分条目
 
 Description
 	Unit 的描述
@@ -317,17 +317,17 @@ Documentation
 	以 空格 区分不同的文档
 
 Requires
-	启动 被配置 Unit 所需要先启动的其他 Unit
+	启动 被配置 Unit 所需要先启动 这个列表中的 Unit
 	若 依赖的 Unit 没有被启动，则会尝试同时启动 依赖的 Unit 和 被配置 Unit
 	若 依赖的 Unit 启动失败，则不会启动 被配置 Unit
 
 Requisite
-	启动 被配置 Unit 所需要先启动的其他 Unit
+	启动 被配置 Unit 所需要先启动 这个列表中的 Unit
 	若 依赖的 Unit 没有已经在运行，则会立刻终止启动 被配置 Unit，并返回错误
 
 Wants
 	弱版的 Requires
-	当 被配置 Unit 被启动时，会一同启动该列表中的 Unit，但不会管 列表中的 Unit 是否启动成功
+	当 被配置 Unit 被启动时，会一同启动 该列表中的 Unit，但不会管 列表中的 Unit 是否启动成功
 
 BindsTo
 	除了 Requires 里的内容，也包含以下内容
@@ -338,14 +338,34 @@ PartOf
 	当且仅当本列表中的任何一个 Unit 被 停止 或被 重启，被配置 Unit 会同时被 停止 或 重启
 
 Conflicts
+	被配置的 Unit 启动的时候，会停止 该列表中的 任何一个 已经被启动的 Unit，反之亦然
 
 After
+	列表中的 Unit 将在 被配置的 Unit 成功启动之后启动
+	并在 被配置的 Unit 成功结束之后才可以被终止
 
 Before
+	被配置的 Unit 将在 列表中的 Unit 成功启动之后启动
+	并在 列表中的 Unit 成功结束之后才可以被终止
+
+OnFailure
+	当 被配置的 Unit 进入 failed 状态时候，应该启动的 Unit
 
 
-unit 的主配置文件中的每种条目只有最后一个会起效
 
-eg.
-若 系统预设的 After 条目有内容，而管理员又再次定义了 After 条目
-则只有系统管理员定义的 After 条目会起效
+
+
+[Install]区块的部分条目
+
+WantedBy
+	当 被配置的 Unit 被 enable 时，将创建 符号链接 至 列表中的 Unit 的 .want 文件夹下
+	当 被配置的 Unit 被 disable 时，将移除 该符号链接
+
+RequiredBy
+	当 被配置的 Unit 被 enable 时，将创建 符号链接 至 列表中的 Unit 的 .requires 文件夹下
+	当 被配置的 Unit 被 disable 时，将移除 该符号链接
+
+Also
+	当 被配置的 Unit enable/disable 时，也同时 enable/disable 列表中的 Unit
+
+
