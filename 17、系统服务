@@ -301,13 +301,16 @@ WantedBy=multi-user.target
 
 
 ！完整的说明可以查阅 man systemd.unit 以及 man systemd.<unit type>
+！若某区块的某个条目允许多个值，值与值之间用空格隔开
+！若某区块的某个条目允许多行命令，则命令以分号隔开
+！若某个值使用了 Boolean 值，则 1 yes true on 是等价的，0 no false off 也是等价的
 
-[Unit] 部分：用于写入与 unit 的 type 无关的 通用信息
-[Service] 部分：用于写入与 unit 的 type 相关的 信息
-[Install] 部分：用于写入 unit 的安装信息，systemctl enable/disable 时会使用
+[Unit] 区块：用于写入与 unit 的 type 无关的 通用信息
+[Service] 区块：用于写入与 unit 的 type 相关的 信息
+[Install] 区块：用于写入 unit 的安装信息，systemctl enable/disable 时会使用
 
 
-[Unit]区块的部分条目
+[Unit] 区块的部分条目
 
 Description
 	Unit 的描述
@@ -352,10 +355,86 @@ OnFailure
 	当 被配置的 Unit 进入 failed 状态时候，应该启动的 Unit
 
 
+[Service] 区块的部分条目
+
+Type
+	设置 Service 启动的方式，一共有 6 种
+		simple
+			若定义了 ExecStart 但未定义 Type 和 BusName 时的默认的启动方式
+			此种状态下 ExecStart 条目后定义的程序将是该 Service 的主程序
+			若使用了 Socket 或其他 通信方式，需要先于 Service 启动
+		forking
+			此种状态下 ExecStart 条目后定义的程序将 fork 出该 Service 的主程序
+			并为 Service 建立好了相关的通信途径
+			之后 ExecStart 条目后定义的程序将退出
+		oneshot
+			若未定义 ExecStart 和 Type 时的默认启动方式
+			此种状态下， Service 将在随后的 Unit 启动之前先行结束
+		dbus
+			???
+		notify
+			???
+		idle
+			???
+
+RemainAfterExit
+	需要一个 Boolean 值
+	若为 true，则该 Service 的进程都结束之后， Service 仍会被认为是 active 状态的
+	默认为 false
+	若 ExecStart 未被指定，则必须将该值指定为 true
+
+ExecStart
+	启动服务时，实际执行的命令
+	这里必须写入可执行的文件的绝对路径和其相关的参数
+	若 Type 不为 oneshot，则有且仅有一条命令可写在这里
+	若 任何一条绝对路径 之前 有 @ 符号，则传入的第一个参数将是 绝对路径 本身
+	若 任何一条绝对路径 之前 有 - 符号，则无视 exit code，都认为其执行成功
+	若 任何一条绝对路径 之前 有 + 符号，则用 full privileges 启动它
+
+Environment
+	定义环境变量名
+	用于 ExecStart ExecStartPre ExecStartPost ExecReload ExecStop ExecStopPost 条目
+	用引号将赋值语句引用起来
+	接受 转义字符、数据重导向符 以及 后台运行控制符，其他控制符一律不接受
+	eg.
+	Environment="LANG=C" "Var1=Man in boots"
+	ExecStart=/bin/echo ${Var1}
+
+ExecStartPre
+	在 ExecStart 执行之前，将会被执行的命令，与 ExecStart 的语法类似
+	允许多个命令
+	若 ExecStartPre 的任何一个语句返回了 fail（没有 - 符号）\
+	则 Service 就会进入 failed 状态
+	仅当 ExecStartPre 语句中所有的命令的进程都结束，且返回 success 时，才会执行 ExecStart 中的语句
+
+ExecStartPost
+	在 ExecStart 成功执行之后执行的命令，与 ExecStart 的语法类似
+	允许多个命令
+
+！注意，若 ExecStartPre ExecStart ExecStartPost 的任何一个进入了 fail 状态 \
+！或 Service 本身执行超时 \
+！Service 都会跳过 ExecStop 条目，而直接执行 ExecStopPost 条目
+
+ExecReload
+	重载服务时，实际执行的命令
+	可使用多行命令，基本语法参照 ExecStart
+	自带一个变量 $MAINPID ，指向 该 Service 的主程序的 PID
+	可供参考的语句 /bin/kill -HUP $MAINPID
+
+ExecStop
+	停止服务时，实际执行的命令
+	可使用多行命令，基本语法参照 ExecStart
+	自带一个变量 $MAINPID ，指向 该 Service 的主程序的 PID
+	可供参考的语句 /bin/kill -TERM $MAINPID
+
+ExecStopPost
+	服务停止后，将执行的语句（包括： ExecStop 执行之后、未定义 ExecStop、异常退出）
+	可使用多行命令，基本语法参照 ExecStart
+	自带变量 $SERVICE_RESULT $EXIT_CODE $EXIT_STATUS
 
 
 
-[Install]区块的部分条目
+[Install] 区块的部分条目
 
 WantedBy
 	当 被配置的 Unit 被 enable 时，将创建 符号链接 至 列表中的 Unit 的 .want 文件夹下
