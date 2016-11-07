@@ -6,6 +6,9 @@
 
 (4) 在 /usr/lib/systemd/system/ 目录下新建 RLM.service 文件，写入如下内容
 
+[Unit]
+Description=Reprise License Manager
+
 [Service]
 Environment="LANG=C"
 ExecStart=/opt/RLM/rlm -dlog +/var/log/RLM/main.dlog
@@ -23,4 +26,6 @@ WantedBy=multi-user.target
 (7.2) systemctl reload RLM 重读 RLM 引用的文件
 (7.3) systemctl stop RLM 来关闭服务
 
-(8) 【未完成】若要让局域网内机器都可验证，请关闭防火墙 systemctl stop firewalld
+(8) systemctl enable/disable RLM 来 开启/关闭 RLM 的开机自动启动
+
+(9) 【未完成】若要让局域网内机器都可验证，请关闭防火墙 systemctl stop firewalld
