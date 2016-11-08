@@ -1,0 +1,280 @@
+自定义 服务设置 的存放位置
+
+/etc/systemd/system/<unit 名称>.d/<customName>.conf
+
+自定义的 设置文件，使用时，将在 原始设置文件 读取之后，以追加的方式读取
+
+/etc/systemd/system/<unit 名称>.wants/*
+
+下面放置 该 unit 启动之后，最好也一同启动的 unit
+
+/etc/systemd/system/<unit 名称>.requires/*
+
+下面放置 启动该 unit 必须的 unit 的链接文件
+
+
+
+unit 主设置文件的详解
+
+以 /usr/lib/systemd/system/sshd.service 为例
+
+# 以下为文件内容
+
+[Unit]											# 与 unit 的 type 无关的 通用信息
+Description=OpenSSH server daemon
+Documentation=man:sshd(8) man:sshd_config(5)
+After=network.target sshd-keygen.service
+Wants=sshd-keygen.service
+
+[Service]
+EnvironmentFile=/etc/sysconfig/sshd
+ExecStart=/usr/sbin/sshd -D $OPTIONS
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+Restart=on-failure
+RestartSec=42s
+
+[Install]										# 仅在 unit 被安装/卸载时使用（也即 unit 被 enable 或 disable）
+WantedBy=multi-user.target
+
+
+！完整的说明可以查阅 man systemd.unit 以及 man systemd.<unit type>
+！有关 kill 部分的说明，可以查阅 man systemd.kill
+！若某区块的某个条目允许多个值，值与值之间用空格隔开
+！若某区块的某个条目允许多行命令，则命令以分号隔开
+！若某个值使用了 Boolean 值，则 1 yes true on 是等价的，0 no false off 也是等价的
+
+[Unit] 区块：用于写入与 unit 的 type 无关的 通用信息
+[Service] 区块：用于写入与 Service 这种的 type 相关的 信息
+[Install] 区块：用于写入 unit 的安装信息，systemctl enable/disable 时会使用
+
+
+[Unit] 区块的部分条目
+
+Description
+	Unit 的描述
+
+Documentation
+	Unit 相关的文档，以 URI 的方式标注
+	以 空格 区分不同的文档
+
+Requires
+	启动 被配置 Unit 所需要先启动 这个列表中的 Unit
+	若 依赖的 Unit 没有被启动，则会尝试同时启动 依赖的 Unit 和 被配置 Unit
+	若 依赖的 Unit 启动失败，则不会启动 被配置 Unit
+
+Requisite
+	启动 被配置 Unit 所需要先启动 这个列表中的 Unit
+	若 依赖的 Unit 没有已经在运行，则会立刻终止启动 被配置 Unit，并返回错误
+
+Wants
+	弱版的 Requires
+	当 被配置 Unit 被启动时，会一同启动 该列表中的 Unit，但不会管 列表中的 Unit 是否启动成功
+
+BindsTo
+	除了 Requires 里的内容，也包含以下内容
+	若 本列表中任何一个 Unit 消失，则 被配置 Unit 会被 停止
+
+PartOf
+	除了 Requires 里的内容，也包含以下内容
+	当且仅当本列表中的任何一个 Unit 被 停止 或被 重启，被配置 Unit 会同时被 停止 或 重启
+
+Conflicts
+	被配置的 Unit 启动的时候，会停止 该列表中的 任何一个 已经被启动的 Unit，反之亦然
+
+After
+	列表中的 Unit 将在 被配置的 Unit 成功启动之后启动
+	并在 被配置的 Unit 成功结束之后才可以被终止
+
+Before
+	被配置的 Unit 将在 列表中的 Unit 成功启动之后启动
+	并在 列表中的 Unit 成功结束之后才可以被终止
+
+OnFailure
+	当 被配置的 Unit 进入 failed 状态时候，应该启动的 Unit
+
+
+[Service] 区块的部分条目
+
+Type
+	设置 Service 启动的方式，一共有 6 种
+		simple
+			若定义了 ExecStart 但未定义 Type 和 BusName 时的默认的启动方式
+			此种状态下 ExecStart 条目后定义的程序将是该 Service 的主程序
+			若使用了 Socket 或其他 通信方式，需要先于 Service 启动
+		forking
+			此种状态下 ExecStart 条目后定义的程序将 fork 出该 Service 的主程序
+			并为 Service 建立好了相关的通信途径
+			之后 ExecStart 条目后定义的程序将退出
+		oneshot
+			若未定义 ExecStart 和 Type 时的默认启动方式
+			此种状态下， Service 将在随后的 Unit 启动之前先行结束
+		dbus
+			???
+		notify
+			???
+		idle
+			???
+
+RemainAfterExit
+	需要一个 Boolean 值
+	若为 true，则该 Service 的进程都结束之后， Service 仍会被认为是 active 状态的
+	默认为 false
+	若 ExecStart 未被指定，则必须将该值指定为 true
+	对 OneShot 类型的服务比较有效
+
+ExecStart
+	启动服务时，实际执行的命令
+	这里必须写入可执行的文件的绝对路径和其相关的参数
+	若 Type 不为 oneshot，则有且仅有一条命令可写在这里
+	若 任何一条绝对路径 之前 有 @ 符号，则传入的第一个参数将是 绝对路径 本身
+	若 任何一条绝对路径 之前 有 - 符号，则无视 exit code，都认为其执行成功
+	若 任何一条绝对路径 之前 有 + 符号，则用 full privileges 启动它
+
+Environment
+	定义环境变量名
+	用于 ExecStart ExecStartPre ExecStartPost ExecReload ExecStop ExecStopPost 条目
+	用引号将赋值语句引用起来
+	接受 转义字符、数据重导向符 以及 后台运行控制符，其他控制符一律不接受
+	eg.
+	Environment="LANG=C" "Var1=Man in boots"
+	ExecStart=/bin/echo ${Var1}
+
+ExecStartPre
+	在 ExecStart 执行之前，将会被执行的命令，与 ExecStart 的语法类似
+	允许多个命令
+	若 ExecStartPre 的任何一个语句返回了 fail（没有 - 符号）\
+	则 Service 就会进入 failed 状态
+	仅当 ExecStartPre 语句中所有的命令的进程都结束，且返回 success 时，才会执行 ExecStart 中的语句
+
+ExecStartPost
+	在 ExecStart 成功执行之后执行的命令，与 ExecStart 的语法类似
+	允许多个命令
+
+！注意，若 ExecStartPre ExecStart ExecStartPost 的任何一个进入了 fail 状态 \
+！或 Service 本身执行超时 \
+！Service 都会跳过 ExecStop 条目，而直接执行 ExecStopPost 条目
+
+ExecReload
+	重载服务时，实际执行的命令
+	可使用多行命令，基本语法参照 ExecStart
+	自带一个变量 $MAINPID ，指向 该 Service 的主程序的 PID
+	可供参考的语句 /bin/kill -HUP $MAINPID
+
+ExecStop
+	停止服务时，实际执行的命令
+	可使用多行命令，基本语法参照 ExecStart
+	自带一个变量 $MAINPID ，指向 该 Service 的主程序的 PID
+	可供参考的语句 /bin/kill -TERM $MAINPID
+
+ExecStopPost
+	服务停止后，将执行的语句（包括： ExecStop 执行之后、未定义 ExecStop、异常退出）
+	可使用多行命令，基本语法参照 ExecStart
+	自带变量 $SERVICE_RESULT $EXIT_CODE $EXIT_STATUS
+
+SuccessExitStatus
+	默认情况下，服务主进程被认为是成功退出的状态有
+	exit code 0, SIGHUP, SIGINT, SIGTERM, SIGPIPE
+	除此之外，在这个条目里定义 其他被认为是成功退出的 exit code 和 SIGNAL
+
+Restart
+	若服务不是被 systemd 停止的，就可能会激活 Restart 状态
+	这种停止包括 服务主进程 的停止，或在执行 ExecStart{Pre|Post} ExecStop[Post] ExecReload 过程中
+	可使用的选择有
+		no
+			默认状态，无论如何都不触发 Restart
+		always
+			无论何种状态，只要停止运行，就触发 Restart
+		on-success
+			仅当被标注为 成功退出的 exit code 或 SIGNAL，就触发 Restart
+		on-failure
+			只要未出现 被标注为 成功退出的 exit code 或 SIGNAL，就触发 Restart
+		on-abnormal
+			只要是被 未被标注为 成功退出的 SIGNAL 或 Timeout 状态 或 Watchdog 状态退出，就触发 Restart
+		on-abort
+			仅当使用了 未被标注为 成功退出的 SIGNAL 退出，就触发 Restart
+		on-watchdog
+			仅当被 Watchdog 退出时，就触发 Restart
+
+RestartPreventExitStatus
+	无视 Rstart 的设置，只要出现列表中指定的 exit code 或 SIGNAL 就不触发 Restart
+
+RestartForceExitStatus
+	无视 Rstart 的设置，只要出现列表中指定的 exit code 或 SIGNAL 就触发 Restart
+
+RestartSec
+	重启服务前，应该延迟的时间
+	不加单位时，使用 秒 作为单位，可使用形如 5min20s 的时间作为 延迟
+	默认使用 100ms
+
+TimeoutStartSec
+	若一个服务启动时间超过 TimeoutStartSec，则被认为启动失败，并使服务进入 failed 状态
+	不加单位时，使用 秒 作为单位，可使用形如 5min20s 的时间作为 延迟
+	可使用 infinity 关闭这个选项
+	默认定义的时间在 manager configuration file 的 DefaultTimeoutStartSec 条目中
+
+TimeoutStopSec
+	类似 TimeoutStartSec
+	若超出一个 TimeoutStopSec 定义的时间，则会使用 SIGTERM 来关闭服务
+	若依旧没有关闭
+	则在超出第二个 TimeoutStopSec 定义的时间之后，会使用 SIGKILL 来关闭服务
+
+TimeoutSec
+	同时配置 TimeoutStartSec 和 TimeoutStopSec
+
+RuntimeMaxSec
+	配置一个服务可持续运行的最大时间
+	若一个服务超时运行，则会进入 failure 状态
+	可使用 infinity 关闭这个选项
+
+
+<systemd.kill 相关，可写在 [Service] 区块>
+
+KillMode
+	定义该服务下的多个进程如何被关闭
+	可选的选项有
+		control-group
+			默认选项，当 unit 被 停止 时，其下的整个 control group 都会被关闭
+		process
+			只有 unit 的主进程会被关闭
+		mixed
+			会使用 SIGTERM 关闭主进程，接着会使用 SIGKILL 关闭 control group 中的剩余进程
+		none
+			会执行 unit stop 动作，但不会有任何进程被结束
+
+KillSignal
+	定义第一次尝试关闭进程时将使用的 SIGNAL
+	在这个 SINGAL 发出之后， systemd 一定会再发出一个 SINCONT \
+	保证该 control group 中 被挂起 的任务也被完全结束了
+
+SendSIGHUP
+	Boolean 值
+	定义 是否在 发出 KillSignal 定义的 SINGAL 之后，立刻发送 SIGHUP
+	这常被 shell 和 shell-like 程序表示他们的通信已经中断
+	默认是 no
+
+SendSIGKILL
+	Boolean 值
+	定义在 两次超时之后，是否要发出 SINGKILL 来终止未退出的程序
+	默认是 yes
+
+
+[Install] 区块的部分条目
+
+Alias
+	该 Unit 的别名
+	也就是说，当 enable 这个条目种定义的某个 Unit，则会立刻创建一个 符号链接
+	从 那个被启动的 Unit 链接至 本 Unit
+
+WantedBy
+	当 被配置的 Unit 被 enable 时，将创建 符号链接 至 列表中的 Unit 的 .want 文件夹下
+	当 被配置的 Unit 被 disable 时，将移除 该符号链接
+
+RequiredBy
+	当 被配置的 Unit 被 enable 时，将创建 符号链接 至 列表中的 Unit 的 .requires 文件夹下
+	当 被配置的 Unit 被 disable 时，将移除 该符号链接
+
+Also
+	当 被配置的 Unit enable/disable 时，也同时 enable/disable 列表中的 Unit
+
+
