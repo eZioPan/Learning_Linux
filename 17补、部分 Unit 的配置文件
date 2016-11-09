@@ -94,6 +94,30 @@ OnFailure
 	当 被配置的 Unit 进入 failed 状态时候，应该启动的 Unit
 
 
+Unit 的一些内置变量名
+
+%n	Unit 的全名
+%N	同 %n 但未进行字符转义
+%p	Unit 的前缀名（文件名 @ 之前，或者 . 之前的部分）
+%P	同 %P 但未进行字符转义
+%i	Unit 实例名（实例名中 介于 @ 与 . 之间的部分）
+%I	同 %i 但未进行字符转义
+%f	以 / 为开头，后接 实例名 或 Unit 前缀名
+%c	Unit 所在的 control group 的路径（去掉了 /sys/fs/cgroup/systemd/ 这个前缀）
+%r	Unit 所在 Slice 的 control group 的路径（去掉了 /sys/fs/cgroup/systemd/ 这个前缀）
+%R	Unit 和 Slice 所在的 根 control group 路径
+%t	Unit 运行目录，一般是 /run 或是 $XDG_RUNTIME_DIR 中定义的路径
+%u	运行 Unit 的用户名
+%U	运行 Unit 的 PID
+%h	运行 Unit 的用户的主目录
+%s	运行 Unit 的用户所使用的 Shell
+%m	正在运行的 Machine ID
+%b	正在运行的 Boot ID
+%H	加载 Unit 文件时，系统的主机名
+%v	同 uname -r 的输出
+%%	输出一个 % 号
+
+
 [Service] 区块的部分条目
 
 Type
