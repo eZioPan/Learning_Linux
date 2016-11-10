@@ -302,4 +302,26 @@ Also
 	当 被配置的 Unit enable/disable 时，也同时 enable/disable 列表中的 Unit
 
 
-[timer] 区块的部分条目
+[Timer] 区块的部分条目
+
+#1 Timer 默认将启动与自身同名的 Unit
+
+#2 如果将要被启动的 Unit 已经是 启动状态，则不会被重启或者产生新的实例
+
+OnActive
+	本 Timer 自身启动后的秒数（机器读秒，非真实秒数）
+
+OnBootSec
+	机器启动后的秒数（机器读秒，非真实秒数）
+
+OnStartupSec
+	systemd 第一次启动后的秒数（机器读秒，非真实秒数）
+
+OnUnitActiveSec
+	本 Timer 所在 Unit 最后一次启动后的秒数（机器读秒，非真实秒数）
+
+OnUnitInactiveSec
+	本 Timer 所在 Unit 最后一次关闭后的秒数（机器读秒，非真实秒数）
+
+OnCalendar
+	日历事件，详见 下方说明，以及 man systemd.time
