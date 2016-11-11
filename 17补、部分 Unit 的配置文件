@@ -325,3 +325,34 @@ OnUnitInactiveSec
 
 OnCalendar
 	日历事件，详见 下方说明，以及 man systemd.time
+
+AccuracySec
+	在上述 6 中时间定义之后，给定一个最大延迟时间，Unit 会在这段时间内被启动
+	不同的 Unit 可能会被一起启动，以减少 CPU 的唤醒次数
+	默认值为 1min
+
+RandomizedDelaySec
+	这个条目定义了一段时间， Unit 会在该时间之内启动
+	若有多个 Unit 同时启动，则会依据这个条目定义的时间，等距的分布这些 Unit 的启动，防止资源冲突
+	默认值为 0
+
+Unit
+	自定义需要启动的 Unit 的名称
+
+Persistent
+	若设置为 yes, Timer 会将上次成功启动的时间点记录在 硬盘上
+	当 Timer 被启动时，检测到最近有启动失败的状况，则会立刻启动 Unit
+	默认值为 no
+
+WakeSystem
+	若设置为 yes，Timer 会唤醒正在休眠的系统来执行 Unit
+	默认为 no
+
+RemainAfterElapse
+	若设置为 no ，当 Timer 过期且不会再执行时，将会使 Timer 进入 unloaded 状态
+	若设置为 yes ，即便 Timer 过期且不再会被执行，也会保留 loaded 状态
+	默认为 yes
+
+
+
+有关 systemd.time 中 Calendar Event 的说明
