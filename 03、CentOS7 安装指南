@@ -7,16 +7,16 @@ CentOS7安装指南
 或者明确支持 Linux 启动方式的启动制作器
 
 开源虚拟机--Oracle VM VirtualBox
-注意事项，需要开启Host机器的Intel虚拟化技术才能正常使用虚拟机的功能
+注意事项，需要开启 Host 机器的 Intel 虚拟化技术才能正常使用虚拟机的功能
 
-Oracle VM VirtualBox默认创建的是IDE设备，需要配置为SATA设备
+Oracle VM VirtualBox 默认创建的是IDE设备，需要配置为SATA设备
 
-对于小于2TB的硬盘/虚拟硬盘，CentOS默认会使用MBR模式
-此时可以在CentOS光盘的引导模式的选项后添加 inst.gpt 来强制使用GPT分区
+对于小于 2TB 的硬盘/虚拟硬盘，CentOS 默认会使用 MBR 模式
+此时可以在CentOS光盘的引导模式的选项后添加 inst.gpt 来强制使用 GPT 分区
 
 ----以下均在 Legacy BIOS + GPT 的环境下配置----
 
-CentOS的安装第一界面如下所示
+CentOS 的安装第一界面如下所示
 
 Install CentOS 7
 Test this media & install CentOS 7
@@ -38,12 +38,12 @@ vmlinux initrd=initrd.img inst.stage2=hd:LABEL=CentOS\x207\x20x86_64 quiet
 
 （1）在 键盘布局 选项中，点击右侧的 选项 按钮以选择一个切换键盘布局的快捷键
 
-（2）在 软件选择 中，选择带GUI的服务器作为选项，并在右侧 已选环境的附加选项 中勾选 开发工具 选项
+（2）在 软件选择 中，选择带 GUI 的服务器作为选项，并在右侧 已选环境的附加选项 中勾选 开发工具 选项
 
 （3）在 安装位置 中，选择需要安装系统的硬盘，并选中下方的 其他存储选项--分区--我要配置分区(I)。 单选框，并单击完成
 
 （4）此时进入 手动分区 页面
-<1> 设备类型 选择 标准分割，为GPT添加 biosboot 分区，大小 2M （注意设定大小的时候，可以输入字母） 这个是为了做与 Legacy BIOS 兼容而划分的分区
+<1> 设备类型 选择 标准分割，为 GPT 添加 biosboot 分区，大小 2M （注意设定大小的时候，可以输入字母） 这个是为了做与 Legacy BIOS 兼容而划分的分区
     若分割成功，则不存在挂载点，且文件系统为 BIOS Boot
 <2> 挂载 /boot 分区，大小 1G ，文件系统 使用 xfs
 
@@ -59,7 +59,7 @@ vmlinux initrd=initrd.img inst.stage2=hd:LABEL=CentOS\x207\x20x86_64 quiet
    所以 CentOS 已经使用 xfs 作为默认的文件系统格式
    vfat 是兼容 Windows 而使用的一种文件系统格式
 
-（5）KDUMP 将开启崩溃后的内存转储，有助于Debug（对一般用户来说无效）
+（5）KDUMP 将开启崩溃后的内存转储，有助于 Debug（对一般用户来说无效）
 
 （6）在 网络和主机名 中，开启 以太网 的链接，并在 配置（O）...--常规 中勾选 可用是自动链接到这个网络，这样可以使网络自动链接
 
