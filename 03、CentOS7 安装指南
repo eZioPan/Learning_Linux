@@ -1,6 +1,10 @@
 CentOS7安装指南
 
-若要安装在除了虚拟机之外的地方，请使用 Linux 或 mac 下的 磁盘工具 的 恢复磁盘镜像/Restore Disk Images... 或者 dd 命令刻录 U 盘，切勿使用其他引导工具制作启动 U 盘
+若要安装在除了虚拟机之外的地方
+请使用 RAW 格式的写入方式刻录 U 盘：Linux 或 mac 下的 磁盘工具 的 恢复磁盘镜像/Restore Disk Images...
+								  或者 dd 命令
+								  或者支持 RAW 格式的写入的启动盘制作器
+或者明确支持 Linux 启动方式的启动制作器
 
 开源虚拟机--Oracle VM VirtualBox
 注意事项，需要开启Host机器的Intel虚拟化技术才能正常使用虚拟机的功能
