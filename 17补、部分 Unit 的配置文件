@@ -44,6 +44,8 @@ WantedBy=multi-user.target
 ！若某区块的某个条目允许多行命令，则命令以分号隔开
 ！若某个值使用了 Boolean 值，则 1 yes true on 是等价的，0 no false off 也是等价的
 
+！非官方中文翻译详见 www.jinbuguo.com
+
 [Unit] 区块：用于写入与 unit 的 type 无关的 通用信息
 [Service] 区块：用于写入与 Service 这种的 type 相关的 信息
 [Install] 区块：用于写入 unit 的安装信息，systemctl enable/disable 时会使用
@@ -356,3 +358,64 @@ RemainAfterElapse
 
 
 有关 systemd.time 中 Calendar Event 的说明
+
+1、绝对时间格式
+
+星期 年-月-日 时:分:秒 UTC
+
+eg.
+Sun 2016-11-13 20:12:13 UTC
+2016-11-13 20:12:13			# 不使用 UTC 时表示使用本地时间
+11-13
+20:12
+
+使用 逗号 , 表示罗列指定的时间戳
+
+eg.
+10,12-13
+
+使用 两个点号 .. 表示连续的一段时间戳
+
+eg.
+10..12-13
+
+使用 星号 * 表示任意时间戳
+
+eg.
+12:*:01
+
+使用 斜线 / 表示间隔指定的时间
+
+eg.
+2016-11-1/3
+
+
+2、相对时间格式
+
++/- 时间长度
+
+时间长度 left
+
+时间长度 ago
+
+或 @ 后接距离 1970-1-1 00:00:00 的时长
+
+可用单位
+
+nsec, ns 纳秒
+usec, us 微秒
+msec, ms 毫秒
+seconds, second, sec, s 秒
+minutes, minute, min, m 分钟
+hours, hour, hr, h 小时
+days, day, d 天
+weeks, week, w 周
+months, month, M 月
+years, year, y 年
+
+其他可用关键字
+
+now
+today		（00:00:00)
+yesterday	（00:00:00)
+tomorrow	（00:00:00)
