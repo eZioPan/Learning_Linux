@@ -19,15 +19,15 @@ lspci | grep 'Broadcom'
 
 【2】下载驱动源码 与 更新补丁
 
-http://www.broadcom.com/support/?gid=1
-
-选择 Linux STA 64-bit driver
+http://www.broadcom.com/support/?gid=1 选择 Linux STA 64-bit driver
 
 https://wiki.centos.org/HowTos/Laptops/Wireless/Broadcom?action=AttachFile&do=get&target=wl-kmod-fix-ioctl-handling.patch
 
+
+
 【3】安装编译工具
 
-yum install kernel-headers kernel-devel gcc
+yum groupinstall "Development Tools"
 
 
 
@@ -115,6 +115,8 @@ blacklist ndiswrapper
 
 
 【14】创建配置文件，开机自动加载新驱动
+
+创建文件 /etc/sysconfig/modules/kmod-wl.modules
 
 #!/bin/bash
 
