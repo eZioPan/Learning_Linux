@@ -305,3 +305,35 @@ systemctl start getty@tty7.service
 NAutoTs=6		#默认会自动启动的 TTY 数量
 ReserveVT=6		#保留的可另外启动的 TTY 数量
 
+
+
+CentOS7 常见的默认服务
+
+abrtd 程序错误报告工具
+accounts-daemon 【可关闭】由 AccountsService 提供的 Gnome Desktop 下的 通过 D-Bus 服务的 账户信息查询
+alsa-* 【可关闭】音频卡相关的服务
+atd 单次任务计划
+auditd 与 SELinux 的 审计记录 相关
+avahi-daemon 【可关闭】提供 mDNS 服务（在 Apple 中称为 Bonjour）
+
+brandbot 各种开机检测脚本和网络控制
+rhel-* 同上
+
+chronyd 网络时间同步服务
+ntpd 同上
+ntpdate 同上
+
+cpupower 检测 CPU 状态与查询 CPU 信息
+crond 计划任务服务
+cups 【可关闭】打印机服务，支持网络打印机
+dbus 程序间信息交换服务
+
+dm-event 设备映射表（device mapper）的主要服务
+multipathd 同上
+
+dmraid-activation 软件 RAID 相关服务
+mdmonitor 同上
+
+dracut-shutdown 处理 initramfs 相关行为，与开机流程相关
+ebtables 网络桥接过滤表，规定了桥接模式下 对数据包的行为
+
