@@ -337,3 +337,36 @@ mdmonitor 同上
 dracut-shutdown 处理 initramfs 相关行为，与开机流程相关
 ebtables 网络桥接过滤表，规定了桥接模式下 对数据包的行为
 
+emergency 进入紧急模式或救援模式所需要的服务
+rescue 同上
+
+firewalld 系统防火墙（取代以前的 iptables）
+gdm GNOME 桌面管理器
+getty@ 与 TTY 相关的服务
+
+hyper* 【可关闭】与虚拟机相关的服务
+ksm* 同上
+libvirt 同上
+vmtoolsd 同上
+
+irqbalance 多核心 CPU 的硬件中断自动分配
+iscsi* 挂载网络磁盘，或在机器内模拟 SAN 网络磁盘
+kdump 【可关闭】记录核心 Dump
+lvm2-* 与 LVM2 相关的服务
+mircrocode 额外的 Inter CPU 微指令集 服务，若没有使用额外的 微指令集 可不启用
+
+ModemManager 与网络连接和设置相关的服务
+NetworkManager* 同上
+network 【可关闭】被 NetworkManager 这类服务替代
+
+quotaon 与 Quota 配额相关的服务
+rc-local 老旧的 SystemV 服务启动服务
+rsyslog 记录系统日志
+smartd 自动检测硬盘错误，并自动向系统管理员报告错误
+systat 将 sar 命令检测到的系统用量写入 系统日志中
+systemd-* 最基层的系统运行所需服务
+
+plymount* 与 GUI 相关的服务
+upower 同上
+
+
