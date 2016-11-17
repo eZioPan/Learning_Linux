@@ -370,3 +370,19 @@ plymount* 与 GUI 相关的服务
 upower 同上
 
 
+其他常用的服务
+
+dovecot 与 POP3/IMAP 电子邮件服务相关
+httpd 与 www 服务相关
+named 与 DNS 服务相关
+
+nfs Unix-Like 系统下的网络磁盘服务
+nfs-server 同上
+
+smb samba 相关服务
+nmb
+
+vsftpd FTP 相关服务
+sshd SSH 相关服务
+rpcbind RPC 协议相关服务
+postfix mail 服务，包括系统发送给 root 账户的信息
