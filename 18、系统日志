@@ -1,0 +1,30 @@
+系统日志一般被设计为只有 root 权限才能查看
+
+系统日志 主要存储在如下几个地方
+
+/var/log/boot.log
+本次开机过程中，内核检测与启动硬件、启动内核相关程序 的日志
+
+/var/log/cron
+crontab 的日志
+
+/var/log/dmesg
+开机硬件检测信息
+
+/var/log/lastlog
+系统中，各种用户最后一次登录系统的 设备 IP 时间
+
+/var/log/maillog 或 /var/log/mail/*
+邮件往来信息，主要记录 postfix（SMTP 服务） 和 dovecot（POP3 服务） 产生的信息
+
+/var/log/messages
+系统错误信息
+
+/var/log/secure
+只要涉及到“输入密码”这项操作，就会被记录到这个日志里面
+
+/var/log/wtmp /var/log/failog
+记录 成功/失败 登录系统的账号信息
+
+/var/log/httpd/* /var/log/samba/*
+httpd 与 samba 网络服务的日志
