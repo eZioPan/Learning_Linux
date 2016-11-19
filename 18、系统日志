@@ -28,3 +28,22 @@ crontab 的日志
 
 /var/log/httpd/* /var/log/samba/*
 httpd 与 samba 网络服务的日志
+
+
+
+与日志相关的服务和命令
+
+systemd-journald.service 由 systemd 提供的，系统级别的日志记录服务
+rsyslog.service 与 登录 和 网络服务 相关的信息
+logrotate 日志轮替工具
+
+以及部分程序会自定义自身的日志记录方法
+
+
+
+一条日志，一般包含以下内容
+
+<1> 事件发生的日期与时间
+<2> 发生事件的主机名
+<3> 启动该事件的 服务名/指令/函数
+<4> 实际记录的信息
