@@ -47,3 +47,36 @@ logrotate 日志轮替工具
 <2> 发生事件的主机名
 <3> 启动该事件的 服务名/指令/函数
 <4> 实际记录的信息
+
+
+
+rsyslog.service 的 配置文件 /etc/rsyslog.conf
+
+以 mail 行为例
+
+mail.*		-/var/log/maillog
+
+<服务名称>.[=!]<日志等级> <记录日志的文件路径/设备名/主机名>
+
+
+1、服务名称（facility）
+
+kernel 中 syslog 函数内置的几类 facility
+
+auth		安全/认证信息
+authpriv	安全/认证信息（私有内容）
+cron		计划任务类的信息
+daemon		系统服务类的信息
+ftp			与 FTP 相关的信息
+kern		内核信息（不可从用户进程中产生）
+local0 至 local7		预留给本机使用的 facility 类别
+lpr			打印机相关的信息
+mail		邮件相关的信息
+news		与网络新闻相关的信息
+syslog		由 syslogd 内部产生的信息
+user		【默认】通用用户信息
+uucp		Unix to Unix Copy Protocol 早期的 Unit 系统间程序信息交换
+
+如果不同的程序要使用 syslog 函数来记录日志，就会将自己定义为上述某个 facility
+
+
