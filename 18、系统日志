@@ -80,3 +80,20 @@ uucp		Unix to Unix Copy Protocol 早期的 Unit 系统间程序信息交换
 如果不同的程序要使用 syslog 函数来记录日志，就会将自己定义为上述某个 facility
 
 
+2、日志等级（level/priority）
+
+kernel 中 syslog 函数内置的几类 level/priority
+
+emerg	0	系统不可用
+alert	1	需要立刻获得反应
+crit	2	严重错误
+err		3	错误状态
+warning	4	警告状态
+notice	5	重要的信息
+info	6	一般的信息
+debug	7	查错级别信息
+
+
+特殊的符号
+* 表示所有的 facility 或 priority
+none 表示不含指定的 facility 的任何一个 priority
