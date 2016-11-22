@@ -97,3 +97,37 @@ debug	7	查错级别信息
 特殊的符号
 * 表示所有的 facility 或 priority
 none 表示不含指定的 facility 的任何一个 priority
+
+
+3、分隔符与其扩展
+.	facility 和 priority 之间的间隔，任何 priority 大于指定 priority 的日志都会被记录
+.=	仅记录指定的 priority
+.!	仅记比指定等级低的日志
+
+
+4、多 facility 与 多 priority 定义
+
+eg1.多 facility 同 priority 同文件
+cron,mail,daemon.err	/var/log/errors
+
+eg2.多 facility 多 priority 同文件
+cron.debug;mail.err,daemon.info /var/log/messup
+
+
+5、记录日志的文件路径/设备名/主机名
+
+日志文件的绝对路径 比如 /var/log/maillog 表示记录到文件中
+日志文件的输出设备 比如 /dev/lp0 表示从打印机输出
+使用者名 比如 eP 表示显示给用户
+远程主机 比如 @eP.ePCt 表示输出至支持 syslog 的远程主机
+* 表示输出至当前在线的所有人（类似 wall 命令）
+
+在路径前加 - 表示每次有 写操作 时，仅存在 buffer 中，不立刻 sync 入硬盘
+在 syslog 的 v3 版本之后，这个是默认操作（可在 $ActionFileEnableSync 中定义）
+
+
+6、三个相关的名词 syslog rsyslogd rsyslog.service
+
+syslog 内核的函数
+rsyslogd 将 syslog 产生的 message 记录成为日志
+rsyslog.service 由 systemd 总控下的 rsyslogd 服务的配置文件
