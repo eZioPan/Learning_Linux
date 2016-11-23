@@ -288,9 +288,9 @@ eg.
 
 设置隐藏属性
 
-chattr [+-=] [AadiS]
+chattr [+-=][AadiS]
 
-A 若有存取文件/目录，则该文件/目录的atime不变
+A 若有存取文件/目录，则该文件/目录的 atime 不变
 
 a 文件内容只可以被追加，不可以被修改或删除
 
@@ -407,7 +407,7 @@ find [path] [option] [action]
 
 （3） 与文件名称以及权限相关的参数
 -name filename 搜索文件名为 filename 的文件
--size [+-]Size 搜索比 Size 要大（+）或小（-）的文件，大小后缀 c 表示byte，大小后缀 k 表示kbyte
+-size [+-]Size 搜索比 Size 要大（+）或小（-）的文件，大小后缀 c 表示 byte，大小后缀 k 表示 kbyte
 -type Type 搜索文件类型为 正常文件（f），设备文件（b,c），目录（d），链接（l），套字节（s），FIFO（p）
 -perm mode 搜索权限恰好为 mode 的文件
 -perm -mode 搜索权限包含 mode 的文件
