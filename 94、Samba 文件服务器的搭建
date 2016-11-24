@@ -46,7 +46,7 @@ systemctl enable nmb.service
 5、在系统防火墙中，将 samba 服务设置为公共区域
 
 firewall-cmd --permanent --zone=public --add-service=samba
-firewall-cmd reload
+firewall-cmd --reload
 
 
 【3】 创建对 工作组 内 所有用户 都开放的 匿名分享
