@@ -35,7 +35,7 @@ hpe.com 搜索 B120i，右侧选择 支持，找到 HP Dynamic Smart Array B120i
 
 安装时请勿选择 TF 卡之外的其他磁盘，此时 CentOS 不会识别 RAID 阵列
 
-【5】配置阵列卡㐑
+【5】配置阵列卡
 
 1、更新系统
 
