@@ -129,12 +129,12 @@ PuTTY 使用 SSH Key 免密登录
 1、下载 PuTTYgen
 2、在 PuTTYgen 的 Parameters 面板中选择 SSH-2 RSA 这种加密方式
 3、点击 Actions 面板中的 Generate，并在界面中随意晃动鼠标，产生随机数，来生成 Key
-4、点击 Conversions 菜单--Export OpenSSH key 将生成的 Public Key 保存为 OpenSSH 可识别的格式
+4、将 Key 文本框中 以 "ssh-rsa" 开头的所有文字另存为 Public Key 文件
 5、点击 Actions 面板中的 Save private key 来保存 PuTTY 可识别的 Private Key
 6、将 Public Key 传输至 服务器 要登录账户的 主目录 下的 .ssh 目录下，并将 文件内容追加至 authorized_keys 的文件尾部
-6.1、为了安全，可以将 authorized_keys 的权限修改为 0600
-7、systemctl restart sshd 重启 sshd 服务
-8、在 PuTTY 的 Connection--SSH--Auth--Private key... 中选取刚才生成的 Private Key，并保存设置
+7、将 authorized_keys 的权限修改为 0600
+8、systemctl restart sshd 重启 sshd 服务
+9、在 PuTTY 的 Connection--SSH--Auth--Private key... 中选取刚才生成的 Private Key，并保存设置
 
 
 方案2：在 Linux 上生成秘钥
