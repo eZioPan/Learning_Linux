@@ -159,8 +159,46 @@ logrotate 日志的轮替
 请注意 rsyslogd 是由 systemd 控制的，也就是说，一旦有日志需要被产生， rsyslogd 就起作用
 而 logrotate 则是由 cron 控制的，也就是在 固定的时间点 进行 日志轮替
 具体的命令行存在于 /etc/cron.daily/logrotate 文件中
+也就是说，logrotate 默认是一个每日执行的任务
 
 
 logrotate 的配置文件
 /etc/logrotate.conf 主要配置文件
 /etc/logrotate.d/ 增补配置内容
+
+<1> 局部配置将 override 全局配置
+<2> 后续的配置条目将 override 先前的配置的条目
+
+EG.
+
+# sample logrotate configuration file		<= 这里是注释
+compress									<= 全局配置
+
+/var/log/messages {							<= 针对指定 log 文件的配置
+	rotate 5
+	weekly
+	postrotate
+		/sbin/killall -HUP syslogd
+	endscript
+}
+
+"/var/log/httpd/access.log" /var/log/httpd/error.log {		<= 多重 log 文件相同配置，可用 空格 或 回车 隔开
+	rotate 5													+ 可使用引号屏蔽空格转义，可使用反斜线来转义
+	mail www@my.org												+ 可以使用 星号 来进行通配
+	size=100k
+	sharedscripts
+	postrotate
+		/sbin/killall -HUP httpd
+	endscript
+}
+
+/var/log/news/news.crit {
+	monthly
+	rotate 2
+	olddir /var/log/news/old
+	missingok
+	postrotate
+		kill -HUP `cat /var/run/inn.pid`
+	endscript
+	nocompress
+}
