@@ -202,3 +202,45 @@ compress									<= 全局配置
 	endscript
 	nocompress
 }
+
+
+logrotate 配置文件的关键字
+
+compress
+	旧版 log 文件 将被压缩，默认使用 gzip
+
+compresscmd
+	自定义 压缩 将使用的 命令
+
+uncompresscmd
+	自定义 解压缩 将使用的 命令，默认使用 gunzip
+
+compressext
+	自定压缩后文件的后缀名，默认是 压缩命令 定义的后缀名
+
+compressoptions
+	将传入 压缩命令 的参数
+	若使用默认的 gzip ，则默认传入的参数是 “-9”（也即最大压缩）
+
+copy
+	不变更当前的 log 文件，仅将当前的 log 文件做一个拷贝（类似于 snapshot）
+	此选项将使 create 选项无效化
+
+copytruncate
+	为当前的 log 文件做一个备份，并截短 当前的 log 文件
+	此选项将使 create 选项无效化
+	有别于普通的 将当前的 log 文件变成备份文件，并创建新的 当前 log 文件
+	用于部分程序不能关闭自身的 log 文件
+
+create <mode> <owner> <group> 或 create <owner> <group>
+	当 轮替动作 结束后，立刻（先于 postrotate 脚本）创建一个 与被轮替文件名相同的文件
+	<mode> 定义了新文件的基础权限（同 chmod）
+	<owner> 定义了文件的所有者
+	<group> 定义了文件的所有组
+	若三个参数中的任何一个未被定义，则使用 被轮替之前 文件的参数
+
+createolddir <mode> <owner> <group>
+	如果被 olddir 选项定义的目录并不存在，就创建之
+	<mode> 定义了目录的基础权限（同 chmod）
+	<owner> 定义了目录的所有者
+	<group> 定义了目录的所有组
