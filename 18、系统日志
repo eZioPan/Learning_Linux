@@ -244,3 +244,38 @@ createolddir <mode> <owner> <group>
 	<mode> 定义了目录的基础权限（同 chmod）
 	<owner> 定义了目录的所有者
 	<group> 定义了目录的所有组
+
+daily
+	每日轮替文件
+
+dateext
+	轮替的旧文件将用时间戳（YYYYMMDD）作为后缀，而非简单的增量数值
+	时间戳的形式可以使用 dateformat 和 dateyesterday 选项定义
+
+dateformat <formate string>
+	指定 时间戳 后缀的日期格式
+	可使用的变量有
+	%Y 四位数字形式年份
+	%m 数字形式月份
+	%d 数字形式日期
+	%s 从 1970-01-01 00:00:00 至今的秒数
+	若要使 %s 正常工作，需要将系统时间设置在 2001年9月9日之后
+	请使用顺次排序时间单位的方法排序时间，因为 logrotate 会直接排序文件名来决定文件的新旧
+
+
+dateyesterday
+	使用昨天而非当下的时间戳
+	这样可以使文件的时间戳和最后一条日志的时间戳处在同一天
+
+delaycompress
+	将 log 文件的 压缩 延迟到下个 轮替循环 中执行
+	仅在 和 compress 连用下有效
+	防止部分程序不能关闭 log 文件而造成的压缩后依旧在写入 log 文件
+
+extension <ext>
+	log 文件在轮替后将赋予的后缀名，若使用了压缩，则压缩名将出现在 该后缀名 之后
+
+hourly
+	每小时执行轮替
+	这个设置需要同时修改 cron 中对 logrotate 的设置，才能使其正常工作
+
