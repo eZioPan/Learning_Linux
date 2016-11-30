@@ -279,3 +279,89 @@ hourly
 	每小时执行轮替
 	这个设置需要同时修改 cron 中对 logrotate 的设置，才能使其正常工作
 
+ifempty
+	即使 log 文件是空的也进行轮替动作
+	将 override notifempty 选项
+	ifempty 是默认值
+
+include <文件或目录>
+	将指定的文件/目录中的文件的内容当成 行内选项 传入
+	若文件非 regular file 将被忽略
+	若文件以 tabooext 中定义的某个后缀作为后缀，则也会被忽略
+	include 不可以出现在对 log file 的单独定义中
+
+mail <address>
+	当 轮替的文件 被轮替至移出硬盘时，会发送给指定的地址
+	nomail 可以让 mail 无效化
+
+mailfirst
+	与 mail 连用
+	将刚轮替的最新文件发送给指定的地址
+
+maillast
+	与 mail 连用
+	将即将过期（即将被移出硬盘）的轮替文件发给指定的地址
+
+maxage <count>
+	当轮替发生时，移除/邮寄大于 <count> 天数 的旧文件
+
+maxsize <size>
+	当文件大小大于 <size> 的时候，就会执行轮替动作
+	同时会重置轮替时间间隔，让其以本次轮替作为轮替的开始计时时间
+
+minsize <size>
+	若达到轮替的时间间隔，但文件大小未达到 <size> 的时候，就不执行轮替动作
+
+missingok
+	若 log 文件丢失，也执行下去，而不报错
+
+monthly
+	每月轮替文件
+
+nocompress
+	旧的 log 文件将不会被压缩
+
+nocopy
+	不要复制原始 log 文件
+	override copy 选项
+
+nocopytruncate
+	在创建备份之后，不要截短原始 log 文件
+	override copytruncate 选项
+
+nocreate
+	不要创建新文件
+	override create 选项
+
+nocreateolddir
+
+nodelaycompress
+	不要延迟压缩
+	override delaycompress 选项
+
+nodateext
+	不要使用 时间戳 作为 旧文件的后缀
+	override dateext 选项
+
+nomail
+	不要发送邮件
+
+nomissingok
+	如果一个 log 文件丢失了，就发布错误
+	默认设置
+
+noolddir
+	在 log 所在的目录存储的 旧文件
+
+nosharedscripts
+	只要轮替一个 log 文件，就执行一遍 prerotate 和 postrotate 中的脚本
+	若执行出现错误，则仅有针对该 log 文件的剩余操作不会被执行
+	默认参数
+	override sharedscripts 选项
+
+noshred
+	在删除旧文件时，不使用 shred 命令
+
+notifempty
+	如果 log 文件为空，则不执行轮替
+	override ifempty 选项
