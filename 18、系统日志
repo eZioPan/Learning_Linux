@@ -365,3 +365,79 @@ noshred
 notifempty
 	如果 log 文件为空，则不执行轮替
 	override ifempty 选项
+
+olddir <目录>
+	已经被轮替的旧 log 文件将放置于这个目录中
+	默认使用相对于 被轮替的 log 文件的相对路径
+	可以使用绝对路径
+	可被 nooldir 选项
+
+postrotate/endscript
+	在 上述两个名称之间的行
+	会在 log 文件被轮替 之后 执行
+	log 文件的绝对路径会作为第一个参数传入定义的脚本中
+	这个选项 必须 被定义在 针对 指定 log 的配置中
+
+prerotate/endscript
+	若 log 文件的轮替 将实际被执行
+	在 上述两个名称之间的行
+	会在 log 文件实际轮替 之前 执行
+	log 文件的绝对路径会作为第一个参数传入定义的脚本中
+	这个选项 必须 被定义在 针对 指定 log 的配置中
+
+firstaction/endscript
+	若有至少一个 log 文件将要被轮替
+	则在 prerotate 字段执行前被执行
+	log 文件的绝对路径会作为第一个参数传入定义的脚本中
+	若执行出现错误，则不会继续执行任何操作
+	这个选项 必须 被定义在 针对 指定 log 的配置中
+
+lastaction/endscript
+	若有任何一个 log 文件被轮替
+	则在 postrotate 字段执行后被执行
+	log 文件的绝对路径会作为第一个参数传入定义的脚本中
+	这个选项 必须 被定义在 针对 指定 log 的配置中
+
+preremove/endscript
+	若有一个旧 log 文件将被移除
+	则在移除动作前执行
+	log 文件的绝对路径会作为第一个参数传入定义的脚本中
+	这个选项 必须 被定义在 针对 指定 log 的配置中
+
+rotate <count>
+	log 文件将经历 <count> 次操作后被移除或邮寄
+	如果 <count> 为 0，则旧文件会直接移除，而非轮替
+
+size <size>
+	当文件大小大于 <size> 的时候就会被轮替
+	默认使用的单位为 bytes，可使用的单位有 k M G
+	这个操作独立于时间间隔轮替操作
+
+sharedscripts
+	对于多个轮替的 log 文件，只执行一次 prerotate 和 postrotate
+	若执行出现错误，则剩余的操作都不会被执行
+	log 文件的路径会顺次作为参数传入脚本中
+
+shred
+	在删除 log 文件的时候，使用 shred -u 命令复写数据块并删除，而非 unlink() 函数
+	这保证了 log 文件在删除之后不可被还原
+
+shredcycles <count>
+	在使用 shred 复写删除的时候，指定复写的次数
+
+start <count>
+	若使用数字作为后缀名，则定义起始的编号为 <count>
+
+su <user> <group>
+	使用自定义的 用户 和 组 来执行轮替工作
+
+tabooext [+] <list>
+	替换当前的 taboo 列表内容，作用见 include 选项
+	若使用了 加号，则表示向 taboo 列表中增加内容
+	默认的后缀列表见帮助文件
+
+weekly
+	每周进行轮替操作
+
+yearly
+	每年进行轮替操作
