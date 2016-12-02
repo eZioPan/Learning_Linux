@@ -441,3 +441,19 @@ weekly
 
 yearly
 	每年进行轮替操作
+
+
+
+logrotate 命令——手动执行 log rotate
+
+logrotate [-dv] [-f] [-m <command>] [-s <file>] <config file> ..
+-d, --debug 除错模式，自带 -v 参数，不会对 log 文件和 logrotate 状态文件（state file）做任何实际的更改
+-f, --force 强制执行 logrotate，完全无视一个 log 文件是否需要被执行轮替
+-m, --mail <command> 当 logrotate 执行邮寄 log 任务时，实际执行的命令
+					 <command> 需要接受两个参数，第一个是信息的主题，第二个是收信人
+					 接着这个命令就会从 StdIn 读取信息，并邮寄给收信人
+					 默认使用 /bin/mail -s
+-s, --state <state file> 使用指定的文件作为 logrotate 的 state 文件（其中记录了最后一次 log 文件被轮替的时间）
+						 默认使用 /var/lib/logrorate.status
+--usage 输出一段用量信息
+-v, --verbose 使用详细输出
