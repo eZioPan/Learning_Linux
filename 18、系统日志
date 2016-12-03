@@ -457,3 +457,18 @@ logrotate [-dv] [-f] [-m <command>] [-s <file>] <config file> ..
 						 默认使用 /var/lib/logrorate.status
 --usage 输出一段用量信息
 -v, --verbose 使用详细输出
+
+
+
+systemd-journald.service
+
+systemd-journald 使用内存来记录 log，所以这个 log 只能存留在本次关机之前的 log
+
+将 systemd-journald 的 log 文件从 /run/log/ 移动至硬盘中
+
+只需要在指定目录新建文件夹，接着修改目录的权限即可
+
+EG.
+mkdir /var/log/journal
+chown root:systemd-journal /var/log/journal
+chmod 2775 /var/log/journal
