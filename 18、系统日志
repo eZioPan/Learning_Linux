@@ -472,3 +472,18 @@ EG.
 mkdir /var/log/journal
 chown root:systemd-journal /var/log/journal
 chmod 2775 /var/log/journal
+
+
+
+journalctl 罗列 systemd-journald 记录的内容
+
+journalctl [OPTIONS...] [MATCHES...]
+[OPTIONS]常用参数
+-n, --lines=<num>
+	显示最新的 <num> 行，若不指定，则默认使用 10 行
+-r, --reverse
+	从新至旧输出 systemd log，默认是从旧向新输出
+-p, --priority=
+	仅输出比指定 log 等级（参见上文 日志等级）相同或更高（数值小）的日志
+-f, --follow
+	不断刷新显示最新的日志，内含 -n 选项
