@@ -487,3 +487,36 @@ journalctl [OPTIONS...] [MATCHES...]
 	仅输出比指定 log 等级（参见上文 日志等级）相同或更高（数值小）的日志
 -f, --follow
 	不断刷新显示最新的日志，内含 -n 选项
+
+[MATCHES]常用参数
+_SYSTEMD_UNIT=
+	仅输出 指定的 Unit 名 所产生的 log
+_COMM=
+	仅输出 指定 进程名 所产生的 log
+_EXE=
+	仅输出 指定的 二进制文件 产生的 进程 所产生的 log
+_CMDLINE=
+	仅输出 指定的 命令行 产生的 进程 所产生的 log
+_SELINUX_CONTEXT=
+	仅输出 带有指定的 SELinux Context 的 log
+_PID=
+	仅输出 指定的 PID 产生的 log
+_UID=
+	仅输出 具有指定 UID 的进程 产生的 log
+_GID=
+	仅输出 具有指定 GID 的进程 产生的 log
+_HOSTNAME=
+	仅输出 指定的 主机名 产生的 log
+SYSLOG_FACILITY=
+	仅输出 指定的 facility （参见上文 服务名称）产生的 log
+
+# [MATCH]字段的使用规则
+# 对于同一个 字段，反复指定表示 或，也就是只要符合其中一个就输出
+	eg. SYSLOG_FACILITY=cron SYSLOG_FACILITY=daemon
+		表示只要是 cron 类型或 daemon 类型的 log 都输出
+# 对于不同的 字段，多重指定表示 且，也就是必须全部符合才能输出
+	eg. _SYSTEMD_UNIT=crond.service _UID=0
+		表示仅显示由 root 权限执行的 Unit 名为 crond 输出的 log
+# 可以使用 加号 + 作为 或 链接符使用
+	eg. MATCH1 + MATCH2 MATCH3 + MATCH4 MATCH5
+		表示 (MATCH1) OR (MATCH2 MATCH3) OR (MATCH4 MATCH5)
