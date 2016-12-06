@@ -520,3 +520,15 @@ SYSLOG_FACILITY=
 # 可以使用 加号 + 作为 或 链接符使用
 	eg. MATCH1 + MATCH2 MATCH3 + MATCH4 MATCH5
 		表示 (MATCH1) OR (MATCH2 MATCH3) OR (MATCH4 MATCH5)
+
+
+
+logger 将自定义的信息记录至 log 中
+
+logger [-p <服务名称>.<等级>] "<log 内容>"
+
+eg.
+[eP@ePCt ~]$ logger -p user.info "Whoo~Ho~"
+[eP@ePCt ~]$ journalctl SYSLOG_FACILITY=1 -n 3
+# 返回的最后一行是：
+# 12月 07 18:48:04 ePCt eP[2922]: Whoo~Ho~
