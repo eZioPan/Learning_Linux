@@ -1,0 +1,12 @@
+主流 Linux 的发行版本使用的 Boot Loader 大多为 grub2
+
+CentOS7 的开机流程概述
+1. 加载 BIOS 中对于硬件的设置，并进行自我检测，接着获取第一个可开机的设备
+2. 读取并执行第一个开机装置内的 boot loader（也就是 grub2 ）
+3. 依据 boot loader 中的设置加载指定的 kernel 文件，kernel 开始检测硬件，并载入对应的驱动
+4. 硬件驱动加载结束之后，kernel 会调用 systemd 程序，并以 default.target 定义的流程启动其他的程序
+	<1> systemd 执行 sysinit.target 初始化系统，以及 basic.target 准备操作系统
+	<2> systemd 执行 multi-user.target 下的本机服务和服务器服务
+	<3> systemd 执行 multi-user.target 下的 /etc/rc.d/rc.local 文件
+	<4> systemd 执行 multi-user.target 下的 getty.target 以及用户登录服务
+	<5> systemd 执行 graphical.target 下的其他服务
