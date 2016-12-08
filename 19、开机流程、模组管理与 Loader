@@ -10,3 +10,30 @@ CentOS7 的开机流程概述
 	<3> systemd 执行 multi-user.target 下的 /etc/rc.d/rc.local 文件
 	<4> systemd 执行 multi-user.target 下的 getty.target 以及用户登录服务
 	<5> systemd 执行 graphical.target 下的其他服务
+
+
+
+BIOS,POST,MBR/GPT
+
+开机第一步，载入 BIOS 并将 BIOS CMOS 中的硬件设置载入系统
+硬件设置包含 各种硬件的工作频率、开机设备、磁盘大小和类型
+					 系统时间、总线、PnP 设备、设备 IO 地址
+					 CPU 的 硬件中断 指令
+					 等等
+
+接着进行 开机自我检测（POST,Power-On Self Test）
+以及设置 可开机装置
+
+通过 INT 13 中断 从可开机设备中读取 MBR 中的 Boot Loader
+
+
+Boot Loader 的功能
+
+<1> 提供启动选项，也即多重开机功能的界面
+<2> 载入某系统对应的 loader，转交开机工作
+<3> 也可直接载入 系统内核 来启动系统
+
+
+！注： MBR 存在于硬盘的第一个扇区
+	  系统的 loader 存在于系统分区的第一个扇区
+	  系统的 kernel 可以存在在系统分区的任何一个扇区
