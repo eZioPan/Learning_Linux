@@ -37,3 +37,28 @@ Boot Loader 的功能
 ！注： MBR 存在于硬盘的第一个扇区
 	  系统的 loader 存在于系统分区的第一个扇区
 	  系统的 kernel 可以存在在系统分区的任何一个扇区
+
+
+kernel 的读取和系统启动
+
+当 kernel 被载入之后，会接过 BIOS 的管理，并重新检测所有的硬件
+在 Linux 中，kernel 文件一般为 /boot/vmlinuz*
+
+eg.
+[eP@ePCt ~]$ ls -F /boot
+
+#返回
+
+config-3.10.0-327.el7.x86_64							<= 该版本内核编译时启用的功能和模块的设置文件
+grub/													<= 【已废弃】grub1 使用的文件夹
+grub2/													<= grub2 使用的文件夹
+initramfs-0-rescue-773a4477ef4d409cb280f237ffb5fd5a.img	<= 救援用 虚拟 文件系统 文件
+initramfs-3.10.0-327.el7.x86_64.img						<= 正产启动时 使用的 虚拟 文件系统 文件
+initramfs-3.10.0-327.el7.x86_64kdump.img				<= 出现问题时 使用的 虚拟 文件系统 文件
+initrd-plymouth.img										<= 提供一个开机动画
+symvers-3.10.0-327.el7.x86_64.gz						<= 模块编译时的记录文件存档
+System.map-3.10.0-327.el7.x86_64						<= 内核变量在内存地址的映射表
+vmlinuz-0-rescue-773a4477ef4d409cb280f237ffb5fd5a*		<= 救援时 使用的 内核文件
+vmlinuz-3.10.0-327.el7.x86_64*							<= 正常启动时 使用的 内核文件
+
+从 vmlinuz-3.10.0-327.el7.x86_64 中我们可以看到 我们使用的 系统的版本号是  3.10.0-327.el7.x86_64
