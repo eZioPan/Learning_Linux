@@ -180,7 +180,7 @@ wodim
 
 其他压缩备份资料的方法
 
-dd if=<input file> of=<outputfile> bs=<blocksize> count=<block>
+dd if=<input file> of=<outputfile> bs=<blocksize> count=<block> skip=<N block>
 
 dd 是一个较为底层的命令，它的 操作单位 是磁盘的 扇区
 
