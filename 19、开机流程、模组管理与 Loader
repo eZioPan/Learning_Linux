@@ -55,13 +55,20 @@ grub2/													<= grub2 使用的文件夹
 initramfs-0-rescue-773a4477ef4d409cb280f237ffb5fd5a.img	<= 救援用 虚拟 文件系统 文件
 initramfs-3.10.0-327.el7.x86_64.img						<= 正产启动时 使用的 虚拟 文件系统 文件
 initramfs-3.10.0-327.el7.x86_64kdump.img				<= 出现问题时 使用的 虚拟 文件系统 文件
-initrd-plymouth.img										<= 提供一个开机动画
+initrd-plymouth.img										<= 提供一个开机主题（也即开机动画，CentOS7 默认是 数字7 和一个 loading bar）
 symvers-3.10.0-327.el7.x86_64.gz						<= 模块编译时的记录文件存档
 System.map-3.10.0-327.el7.x86_64						<= 内核变量在内存地址的映射表
 vmlinuz-0-rescue-773a4477ef4d409cb280f237ffb5fd5a*		<= 救援时 使用的 内核文件
 vmlinuz-3.10.0-327.el7.x86_64*							<= 正常启动时 使用的 内核文件
 
+
 从 vmlinuz-3.10.0-327.el7.x86_64 中我们可以看到 我们使用的 系统的版本号是  3.10.0-327.el7.x86_64
+
+
+# Tip：修改开机动画
+[eP@ePCt ~]$ plymouth-set-default-them --list	# 罗列当前可以使用的开机主题
+[eP@ePCt ~]$ plymouth-set-default-them <theme>	# 修改为指定的开机主题
+[eP@ePCt ~]$ dracut -f		# 需要等待一段时间	# 将设置更新至 boot loader
 
 
 对于非必须的功能，一般来说，Linux 的发行版本 将他们设计为独立的 内核模块（module），在系统启动时，会被 内核 加载至系统中
