@@ -151,3 +151,50 @@ lrwxrwxrwx   1 root     root            6 Nov 23 14:49 var/run -> ../run
 同时要注意 Early CPIO image 是另一组数据，需要提前去除
 
 【操作有疑问，已提问鸟哥，暂时忽略】
+
+
+
+在 内核加载、硬件检测结束、基础内核模块加载结束之后，此时硬件就就绪了，会调用 systemd 来执行软件部分的准备
+
+systemd 则会根据 /etc/systemd/system/default.target 来执行后续的启动
+
+
+
+通过 systemctl list-dependencies graphical.target 的输出，我们可以大致的判断
+CentOS7 的 systemd 开机流程大致为
+
+1、local-fs.target + swap.target：挂载 /etc/fstab 内所定义的文件系统挂载设置
+2、sysinit.target：检测硬件，加载 内核模块
+3、basic.target：加载周边设备的 内核模块，并启动 防火墙 等服务
+4、multi-user.target 下的 一般 系统服务 和 网络服务
+5、图形界面服务和 gdm.service 等服务
+
+
+
+用于 初始化系统 的 sysinit.target
+
+其中的内容可以分为如下几类
+
+1、特殊文件系统设备的挂载：包括 dev-hugepages.mount dev-mqueue.mount 等
+						主要和 大内存页 相关
+						挂载成功后，会在 /dev 下建立 /dev/hugepages/ 和 /devmqueue/ 等目录
+
+2、特殊文件系统的启动：包括 RAID、ISCSI、LVM、nultipath 等等
+
+3、开机信息传递和开机动画： plymouthd 服务和 plymouth 命令
+
+4、日志记录： systemd-journald 服务
+
+5、其他 内核模块 的载入：通过 /etc/modules-load.d/*.conf 文件
+
+6、其他 内核 参数设置：包括 /etc/sysctl.conf 和 /etc/sysctl.d/*.conf
+
+7、启动随机数生成器
+
+8、设置 console 使用的字体
+
+9、动态设备管理器：udevd 服务，将 设备 动态的映射为某个 文件，方便系统使用
+
+
+
+用于建立基础的操作系统 basic.target
