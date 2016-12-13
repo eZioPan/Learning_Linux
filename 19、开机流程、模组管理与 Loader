@@ -197,4 +197,40 @@ CentOS7 的 systemd 开机流程大致为
 
 
 
-用于建立基础的操作系统 basic.target
+用于 建立基础的操作系统 的 basic.target
+
+1、加载 alsa 音频驱动
+
+2、加载 firewalld 防火墙服务
+
+3、加载 CPU 微指令集
+
+4、启动与设置 文件 的 SELinux security context
+   当 SELinux 由 disable 变为 enable 时，或 系统管理员强制刷新 security context 的时候就会使用
+
+5、到目前为止的 开机日志 全部写入 /var/log/dmesg 文件中
+
+6、依据 /etc/sysconfig/modules/*.modules 和 /etc/rc.modules 加载管理员指定的 内核模块
+
+7、加载 systemd 的 timer 功能
+
+
+
+systemd 启动 multi-user.target 下的服务
+
+大多数需要被 multi-user.target 启动的服务，都放置于下面的文件夹中
+/etc/systemd/system/multi-user.target.wants/
+
+
+systemd 为了兼容旧的 SystemV 的启动脚本，有一个 rc-local.service 服务来负责 SystemV 的内容
+rc-local.service 会自动检测 .etc/rc.d/rc.local 的可执行权限（x），若具有可执行权限，则会执行其中内容
+
+
+multi-user.target 还会提供 tty 与 登录界面，与之相关的服务为
+getty.target 和 systemd-logind.service systemd-user-sessions.service 等
+
+
+
+systemd 启动 graphical.target 下的服务
+
+包括 用户管理服务 和 图形界面管理器（gdm.service）
