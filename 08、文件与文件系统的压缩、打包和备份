@@ -180,12 +180,89 @@ wodim
 
 其他压缩备份资料的方法
 
-dd if=<input file> of=<outputfile> bs=<blocksize> count=<block> skip=<N block>
 
-dd 是一个较为底层的命令，它的 操作单位 是磁盘的 扇区
+dd 以数据块（block）作为单位 读取 转换 写入 数据 （data definition）
 
-#！注意，dd 可以拷贝分区/磁盘
-#！dd 在拷贝 分区/磁盘 的时候会 无视 扇区是否 存储数据，而将 整个 分区/磁盘的 所有 扇区复制下来
+dd [OPERAND]...
+dd <OPTION>
+! dd 将以数据块或 newline 作为每一笔 记录（record） 的终止
+bs=<BYTES>
+	单个数据块读取和写入 <BYTES> 的字节
+cbs=<BYTES>
+	单个数据块转换 <BYTES> 的字节
+conv=<CONVS>
+	将字节在不同编码下转换（具体列表见下文 CONV 部分）
+	无空格逗号作为多个参数的分隔
+count=<N>
+	仅操作 <N> 个输入的数据块
+ibs=<BYTES>
+	单个数据块读取 <BYTES> 的字节（默认 512）
+if=<FILE>
+	从文件 <FILE> 而非 StdIn 读取数据
+iflage=<FLAGS>
+	读入文件使用的标记（具体列表见下文 FLAG 部分）
+	无空格逗号作为多参数的分隔
+obs=<BYTES>
+	单个数据块写入 <BYTES> 的字节
+of=<FILE>
+	写入文件 <FILE> 而非 StdIn
+oflag=<FLAGES>
+	写入文件使用的标记（具体列表见下文 FLAG 部分）
+	无空格逗号作为多参数的分隔
+seek=<N>
+	输出时，略过 <N> 个 obs 参数中定义的数据块
+skip=<N>
+	读取时，略过 <N> 个 ibs 参数中定义的数据块
+status=<LEVEL>
+	输出至 StdErr 的信息级别
+	“none” 除了 错误信息，其他都不输出
+	“noxfer” 不显示 最后传输统计信息
+	“progress” 显示每轮的传输统计
+
+<N> 和 <BYTES> 可以使用以下单位：c=1, w=2, b=512,
+							   kB=1000, K=1024,
+							   MB=1000^2, M=1024^2,
+							   GB=1000^3, G=1024^3,
+							   同理： T P E Z Y
+
+<CONV> 可用
+	ascii		EBCDIC -> ASCII
+	ebcdic		ASCII -> EBCDIC
+	ibm			ASCII -> alternate EBCDIC
+	block		将用 newline 结尾的数据块，用 NUL 填充至 cbs 规定的大小
+	unblock		将 cbs 最后用 NUL 填充的数据块，用 newline 来替换
+	lcase		大写转小写
+	ucase		小写转大写
+	sparse		输出时，跳过全 NUL 的数据块
+	swab		传入每一个输入的字节（即便它没有成组）
+	sync		用 NUL 将每个 读入的记录 填充至 ibs 定义的数据块大小
+				若使用了 block 或 unblock 参数，则使用 空格 填充
+	[下面是针对文件的 flag，和内部处理无关]
+	excl		若输出文件已存在，则返回 操作失败
+	nocreat		不要 新建 输出文件，输出文件必须已经存在
+	notrunc		不要 截短 输出文件
+	noerror		读取到错误也继续读取
+	fdatasync	结束操作前，将数据 sync 至硬盘中
+	fsync		结束操作前，不仅将数据 sync 写入硬盘中，也将 元数据（metadata）写入硬盘中
+
+<FLAG> 可用
+	append		附加模式，数据将会附加至文件尾部
+	direct		不使用 缓存数据，而直接执行 I/O
+	directory	除了 文件夹，对其他文件的操作都返回 失败
+	dsync		使用 sync 过的数据
+				对于 输出文件，这将强制让文件 sync 入硬盘
+				对于 输入文件，这将处理不断被 sync 至本地的数据
+	fullblock	对于输入的数据，
+				若数据量不足以填充一个 block，就接着读取，直到填充满 block
+	nonblock	使用 非阻断式 IO
+	noatime		不要更新文件的 access time
+	nocache		不对文件使用缓存
+	nofollow	不要解析 符号链接
+	count_bytes	将 count 部分解释为 字节数，而非 数据块数
+	skip_bytes	将 skip 部分解释为 字节数，而非 数据块数
+	seek_bytes	将 seek 部分解释为 字节数，而非 数据块数
+
+将 SIGUSR1 送入 dd，可让 dd 将当前的 I/O 统计 输出至 StdErr，并继续剩下的操作
 
 
 
