@@ -29,3 +29,9 @@ HandleLidSwitch=ignore
 再执行
 
 systemctl restart systemd-logind
+
+
+CentOS7 下对于 exFAT 文件格式的支持
+
+在 http://li.nux.ro/download/nux/dextop/el7/x86_64/ 中搜索
+exfat-utils 和 fuse-exfat
