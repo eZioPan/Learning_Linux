@@ -35,3 +35,8 @@ CentOS7 下对于 exFAT 文件格式的支持
 
 在 http://li.nux.ro/download/nux/dextop/el7/x86_64/ 中搜索
 exfat-utils 和 fuse-exfat
+下载 rpm 包
+并使用 yum localinstall 安装本地 rpm 包即可
+
+主要问题：
+CentOS7 无法正确识别 exFAT 的文件系统，需要使用 mount -t exfat <device> <directory> 手动指定文件系统
