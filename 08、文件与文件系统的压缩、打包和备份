@@ -266,23 +266,17 @@ status=<LEVEL>
 
 
 
-cpio -ovcB > [存档文件|存档设备]		备份数据
-cpio -ivcdu < [存档文件|存档设备]		还原数据
-cpio -ivct < [存档文件|存档设备]		查看备份
+cpio 从存档（archive）内拷入或拷出文件
 
-cpio 是一个借助 stdin 与 stdout 为界面的 备份/还原 命令
+在 copy-out 模式中，cpio 将文件拷入 存档 中。它将从 StdIn 中读取文件名列表，每个一行。然后将压缩包输出至 StdOut。
 
--o, --create 也就是 copy-out 模式，将数据拷贝至存档中
--B 将 data block 的大小设置为 5120 bytes，默认的 data block 大小为 512 bytes
+在 copy-in 模式中，cpio 将文件从 指定存档 或 一系列存档 中拷贝出来。它从 StdIn 读取 存档文件。
+任何 非选项的命令行 都会作为 文件路径通配符，在 存档 中，仅有匹配上 至少一个 通配符 的文件才会被拷贝出来。
+文件名起始处的 “.” 可以作为一个 通配符，文件名中的 “/” 可以匹配多个 通配符。
 
--i, --extract 也就是 copy-in 模式，将备份的数据还原出来
--d, --make--directories 还原模式下，自动创建目录
+在 copy-pass 模式中， cpio 将 文件 从一个目录拷贝至另一个目录中，它连续使用 copy-out 和 copy-in，而不实际产生一个 存档包。
+它从 StdIn 处读取一些列需要拷贝的文件，而拷贝至的目录作为 非选项的 参数出现。
 
--v, --verbose 输出详细信息
--c 使用 SVR4 格式 作为存档格式，该格式支持多于 2^16 个 inode
-
-
-
-
-
-
+cpio 接受以下的 存档格式 ： binary, old ASCII, new ASCII, crc, HPUX binary, HPUX old ASCII, old tar, POSIX.1 tar
+copy-out 模式下，使用 binary 格式作为 存档格式，作为和老版 cpio 的兼容措施
+copy-in 模式下，会自动识别 存档的格式
