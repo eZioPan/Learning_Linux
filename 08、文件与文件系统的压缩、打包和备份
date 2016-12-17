@@ -280,3 +280,36 @@ cpio 从存档（archive）内拷入或拷出文件
 cpio 接受以下的 存档格式 ： binary, old ASCII, new ASCII, crc, HPUX binary, HPUX old ASCII, old tar, POSIX.1 tar
 copy-out 模式下，使用 binary 格式作为 存档格式，作为和老版 cpio 的兼容措施
 copy-in 模式下，会自动识别 存档的格式
+
+！以下内容，在定义何种模式可以使用时， copy-in copy-out copy-pass 简称 in out pass
+
+-0, --null 【in/out】
+	使用 null 而非 newline 作为路径的终止符号，这样可以将路径包含 newline 的文件也 打包进来
+	find 命令就可以产生以 null 作为结尾的文件列表
+-a, --reset-access-time
+	在读取文件之后重置它们的 access time，这样可以让它们看起来不是刚刚被存取过
+--append 【out】
+	将输出 附加 在 旧有存档 之后，旧有存档 必须是磁盘上的文件，且必须用 -O 或 -F 参数指定
+-b, --swap 【in】
+	反转 字节/字符 的高低位。等价于 -sS 命令。
+	用于在 big-endian 和 little-endian 的机器上做转换
+-B
+	将 I/O 块 的大小变为 5120 bytes。默认使用的是 512 bytes
+--block-size=<count>
+	将 I/O 块 的大小变为 <count> * 512 bytes
+-c
+	等价于 “-H newc”，使用新的（SVR4）格式，若要使旧的（ASCII）格式，则使用 “-H odc”
+-C <IO-SIZE>, --io-size=<IO-SIZE>
+	将 I/O 块 的大小设置为 <IO-SIZE> bytes
+-d, --make-directories
+	当需要时，创建前序 目录
+-E <FILE>, ppattern-file=<FILE> 【in】
+	从文件 <FILE> 中读取附加的 文件路径匹配样式。附加的匹配样式将作为 非选项参数 传入
+-f, --nomatching
+	仅拷贝不和任何样式匹配的文件
+-F, --file=<archive>
+	使用指定的 存档文件 来代替 StdIn 和 StdOut。
+	在路径前增加“<HOSTNAME>:” 来指定输出至远程主机的磁带上
+	<HOSTNAME> 部分，使用 “<用户名>@<主机名>” 来指定使用的远程用户
+--force-local
+	在使用 -F, -I, -O 时，即便出现了分号 : 也识别为本地文件
