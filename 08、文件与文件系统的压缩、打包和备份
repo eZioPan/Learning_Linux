@@ -313,3 +313,27 @@ copy-in 模式下，会自动识别 存档的格式
 	<HOSTNAME> 部分，使用 “<用户名>@<主机名>” 来指定使用的远程用户
 --force-local
 	在使用 -F, -I, -O 时，即便出现了分号 : 也识别为本地文件
+-H <FORMAT>, --format=<FORMAT>
+	使用指定的 存档文件 格式。可用的列表见下文，接受 全部大写 和 全部小写 的参数
+	bin		旧的二进制格式
+	odc		旧的（POSIX.1）可移植格式
+	newc	新的（SVR4）可移植格式，支持单一文件系统超过 2^16 个 inode
+	crc		新的（SVR4）可移植格式，同时添加了 Sum32 校验
+	tar		旧的 tar 格式
+	ustar	POSIX.1 tar 格式。也可用于 GUN tar 存档
+	hpbin	HPUX 上的 cpio 命令使用的旧的二进制格式
+	hpodc	HPUX 上的 cpio 使用的可移植格式
+-i, --extract 【in】
+	指定 cpio 在 copy-in 模式下运行
+-I <archive>
+	使用指定的 存档文件 来替代 StdIn。
+	其他解释同 -F <archive>
+-l, --link
+	当可用时，仅产生文件之间的链接，而非拷贝它们
+-L, --dereference
+	拷贝符号链接指向的原文件，而非符号链接本身
+-m, --preserve-modification-time
+	在创建文件时，保持原文件原有的修改时间
+-M <MESSAGE>, --message=<MESSAGE>
+	当备份的媒体空间使用完毕时，输出 <MESSAGE> 提示用户插入一个新的媒体
+	可使用 %d 来代指当前的卷编号（从 1 开始）
