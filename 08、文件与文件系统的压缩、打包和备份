@@ -337,3 +337,24 @@ copy-in 模式下，会自动识别 存档的格式
 -M <MESSAGE>, --message=<MESSAGE>
 	当备份的媒体空间使用完毕时，输出 <MESSAGE> 提示用户插入一个新的媒体
 	可使用 %d 来代指当前的卷编号（从 1 开始）
+-n, --numeric-uid-gid
+	当使用 --verbose 选项的时候，用 UID 和 GID 代替 用户名和群组名
+--no-absolute-filenames
+	在 copy-in 模式下，即便文件以绝对路径书写，也放置在相对于当前路径的位置下
+--absolute-filenames
+	【默认选项】不从 文件路劲中移除 以 “..” 或 “/” 开头的路径
+	也即使用文件定义的绝对路径
+--no-preserve-owner 【in/pass】
+	不要修改文件的所有者，让解开文件的使用者成为文件的拥有者。
+	者对于非 root 用户而言是默认值
+-o, --create
+	指定 cpio 在 copy-out 模式下运行
+-O <archive>
+	使用指定的 存档文件 来替代 StdOut。
+	其他解释同 -F <archive>
+--only-verify-crc
+	仅校验 crc 存档 中的每个文件，而不实际解压它们
+-p, --pass-through
+	指定 cpio 在 copy-pass 模式下运行
+--quiet
+	不要输出 已拷贝的 块数量
