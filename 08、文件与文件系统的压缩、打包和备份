@@ -358,3 +358,31 @@ copy-in 模式下，会自动识别 存档的格式
 	指定 cpio 在 copy-pass 模式下运行
 --quiet
 	不要输出 已拷贝的 块数量
+-r, --rename
+	交互式重命名文件
+-R [user][:.][group], --owner [user][:.][group] 【out/pass】
+	修改文件的 所有者 和 群组
+	若 群组 未指定，而又有 : 或 . ，则使用给定的 用户 的 登录群组 作为 群组
+--rsh-command=<COMMAND>
+	提示 cpio 使用 <COMMAND> 命令与 远程设备沟通
+-s, --swap-bytes 【in】
+	交换字符的高低位
+--sparse 【in/pass】
+	使用大量的 以 0 填充的 块，来创建出离散文件
+-t, --list
+	打印一个输入内容的列表
+--to-stdout 【in】
+	将文件输出至 StdOut
+-u, --unconditional
+	直接覆盖文件，而不提示是否用旧文件覆盖新文件
+-v, --verbose
+	罗列每个被处理的文件
+	与 -t 选项连用时，给出类似 ls -l 样式的文件列表
+	当处理 ustar 格式的 存档文件时，不存在于该系统的 用户和群组
+	将依据文件记录的 UID 和 GID 映射至本系统的 用户 与 群组
+-V, --dot
+	每处理一个文件，就输出一个 “.”
+-W, --warning
+	控制警告显示。当前的 FLAG 是下述的一个 “none”“truncate”“all”
+--usage
+	给出一个简短的用量信息
