@@ -301,7 +301,7 @@ uname 查看系统信息
 
 
 
-dmesg 查看核心 log
+dmesg 查看内核 log
 
 
 
