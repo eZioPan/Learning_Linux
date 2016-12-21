@@ -267,3 +267,78 @@ getty.target 和 systemd-logind.service systemd-user-sessions.service 等
 systemd 启动 graphical.target 下的服务
 
 包括 用户管理服务 和 图形界面管理器（gdm.service）
+
+
+
+启动时会使用的配置文件
+
+/etc/sysconfig/*
+/etc/modules-load.d/*.conf
+/etc/modprobe.d/*.conf
+
+
+/etc/sysconfig/*
+
+systemd 有自己的配置文件，但为了和老的 SystemV 相兼容，依旧会读取位于 /etc/sysconfig/ 文件夹下的配置文件
+其中比较重要的几个配置文件
+
+authconfig
+	规定用户验证机制，不要手动修改，使用 authconfig-tui 命令来调整
+
+cpupower
+	启动 cpupower.service 服务的配置文件，这个服务用于定义 CPU 的节能/性能状态
+
+firewalld, iptables-config, ip6tables-config
+	防火墙 相关的参数
+
+network-scripts/
+	网卡设置
+
+
+/etc/modules-load.d/*.conf
+
+开机时，需要载入的 模块文件 列表，此 conf 文件每行写入一个 模块的名称
+以 # 或 ; 开头的行为注释行
+/etc/modules-load.d/*.conf 优先于 /run/modules-load.d/*.conf 优先于 /usr/lib/modules-load.d/*.conf
+
+
+/etc/modprobe.d/*.conf
+
+modprobe 命令可以使用的配置文件，开机时，系统也会调用 modprobe 来 设置模块
+/etc/modprobe.d/*conf 优先于 /run/modprobe.d/*conf 优先于 /usr/lib/modprobe.d/*conf
+以 # 开头的行都被认为是 注释行
+以 \ 结尾的行会延续至下一行
+
+关键字
+
+alias <别名> <模块名>
+	设置模块的别名，这样 modprobe 就可以使用 modprobe <别名> 来启动模块
+	<别名> 部分可以使用 Shell 使用的通配符，形如 alias my-mod* long-mod-name
+	可使用 modprobe my-mod-blahblah 启动相关的模块
+	一个模块内部也会带有别名，一般用于指明它们支持的硬件
+	而 modprobe.d/*.conf 的 alias 会 override 模块内部的 别名
+	不可以 alias <别名的别名> <别名>
+
+blacklist <模块名>
+	忽略 指定的 模块名 和 模块内部别名 对应的模块
+	当出现 两个模块 支持 同一个硬件，或者 一个模块 支持了一个它并不支持的硬件
+	就使用这个字段来屏蔽这个模块
+
+install <模块名> <命令...>
+	当使用 modprobe <模块名> 的 时候
+	使用 自定义的命令行 运行 模块，而不用 系统默认 的 加载方式
+	比如，使用 mod2 替换 mod1 成为加载项目
+	可以使用 install mod1 /sbin/modprobe mod2; /sbin/modprobe --ignore-install mod1 完成
+
+options <模块名> <选项...>
+	每当模块被载入（无论是直接载入还是被依赖载入）内核的时候，就将这些 选项 传入模块中
+	无论是从 option 定义的还是从 alias 定义的或是 从 命令行 定义的 选项，都会一并传入 模块
+
+remove <模块名> <命令...>
+	当使用 modprobe -r <模块名> 的 时候
+	使用 自定义的命令行 卸载 模块，而不用 系统默认 的 卸载方式
+
+softdep <模块名> pre: <模块...> post: <模块...>
+	对于指定的 模块，可选的 一同 加载/卸载 的模块
+	pre: 和 post: 仅定义这些可选的模块是在 指定模块 之前或之后 被执行了和 指定模块同样的命令
+	对于相同的模块 softdep 优先于 install 和 remove
