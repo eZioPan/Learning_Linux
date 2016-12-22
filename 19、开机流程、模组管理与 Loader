@@ -342,3 +342,62 @@ softdep <模块名> pre: <模块...> post: <模块...>
 	对于指定的 模块，可选的 一同 加载/卸载 的模块
 	pre: 和 post: 仅定义这些可选的模块是在 指定模块 之前或之后 被执行了和 指定模块同样的命令
 	对于相同的模块 softdep 优先于 install 和 remove
+
+
+
+内核 与 内核模块 文件的 存放位置
+
+内核：		/boot/vmlinuz 或 /boot/vmlinuz-<内核版本号>
+RAM Disk：	/boot/initramfs 或 /boot/initramfs-<内核版本号>
+内核模块：	/lib/modules/<内核版本号>/kernel
+内核源码：	/usr/src/kernels/ 或 /usr/src/linux （默认不安装）
+
+若内核被成功加载，则会有以下的内容被记录下来
+
+内核版本：	/proc/version
+内核调试：	/proc/sys/kernel/
+
+
+若出现新的硬件无法被支持，则可使用以下两种方式解决
+
+1、直接将硬件驱动写入内核源码，并重新编译内核
+2、将硬件驱动编译为模块，在开机时载入内核
+
+
+
+内核模块和依赖性
+
+
+内核模块存放在 /lib/modules/<内核版本>/kernel/ 目录中
+
+arch	与硬件平台相关的内容，比如 CPU 的构架
+crypto	内核支持的加密技术，比如 md5 或者 des 等等
+drivers	硬件驱动程序
+fs		内核支持的文件系统
+lib		常用的函数
+net		与网络设置相关的配置，以及基础防火墙（net/ipv4/netfilter/*）配置
+sound	与声音相关的模块
+
+
+模块依赖性记录文件
+
+/lib/modules/<内核版本>/modules.dep
+
+Linux 的内核模块可以提供一些服务（被称为 symbols）供其他模组使用
+若一个 模块的 symbol 被另一个 模块使用，则可以确定，后者是依赖于前者的
+
+depmod 自动解析内核模块的依赖性
+
+depmod 命令会自动读取 /lib/modules/<version>/ 下的内核，并分析它们提供的 symbol 以及它们需要的 symbol
+默认情况下写入 modules.dep 文件中，并生成一个 哈希二进制的版本 modules.dep.bin。
+如果在 depmod 命令后追加了 模块的路径，则只分析该模块的依赖关系（不常用）
+同时 depmod 也会生成一个 modules.symbols 文件，来记录当前模块可以提供的 symbols，以及一个 哈希二进制版本 modules.symbols.bin
+若一个模块支持特殊的设备名（devname），将在启动时被置入 /dev/ 目录下，则 depmod 会创建一个 modules.<devname> 的文件
+如果内核版本 <version> 被指定，则对指定的内核模块进行分析，而非使用当前的内核模块
+
+depmod [-b <basedir>] [-e] [-E <Module.symvers>] [-F <System.map>] [-n] [-v] [-A]
+	   [-P <prefix>] [-w] [version]
+
+depmod [-e] [-E <Module.symvers>] [-F <System.map>] [-m] [-n] [-v] [-P <prefix>] [-w]
+	   [version] [filename...]
+
