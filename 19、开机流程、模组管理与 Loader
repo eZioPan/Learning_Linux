@@ -401,3 +401,14 @@ depmod [-b <basedir>] [-e] [-E <Module.symvers>] [-F <System.map>] [-n] [-v] [-A
 depmod [-e] [-E <Module.symvers>] [-F <System.map>] [-m] [-n] [-v] [-P <prefix>] [-w]
 	   [version] [filename...]
 
+-a, --all
+	检查所有的模块，若没有指定模块文件名，则此参数默认启用
+
+-A, --quick
+	先检查是否有模块比 modules.dep 文件要新，若没有，则不会执行任何其他的操作
+
+-b <basedir>, --basedir <basedir>
+	若 模块 不在 /lib/modules/<version> 文件夹下
+	则指定一个 父级目录，使 modprobe 从指定的目录读取 模块
+	此时， <basedir> 会自动从 modules.dep 中的每个条目中去除
+	以方便以后将 模块 移动至正常的目录下后，不用重新执行 depmod
