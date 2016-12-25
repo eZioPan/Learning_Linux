@@ -133,6 +133,7 @@ PuTTY 使用 SSH Key 免密登录
 5、点击 Actions 面板中的 Save private key 来保存 PuTTY 可识别的 Private Key
 6、将 Public Key 传输至 服务器 要登录账户的 主目录 下的 .ssh 目录下，并将 文件内容追加至 authorized_keys 的文件尾部
 7、将 authorized_keys 的权限修改为 0600
+   将 .ssh 文件夹的权限修改为 0700
 8、systemctl restart sshd 重启 sshd 服务
 9、在 PuTTY 的 Connection--SSH--Auth--Private key... 中选取刚才生成的 Private Key，并保存设置
 
@@ -141,8 +142,9 @@ PuTTY 使用 SSH Key 免密登录
 
 1、使用 ssh-keygen 命令产生 Public Key 和 Private Key
 2、将 Public Key 移动至 要登录账户 主目录下 .ssh 中，并追加至 authorized_keys 文件末尾
-2.1、为了安全，可以将 authorized_keys 的用户设置为登录用户，并将权限设置为 0600
-3、systemctl restart sshd 重启 sshd 服务
-4、将 Private Key 传输至 客户端
-5、使用 PuTTYgen 的 Actions 面板--Load an exisiting... 读取 Private Key，使用 Save Private key 保存为 PuTTY 可以识别的 pkk 文件
-6、在 PuTTY 的 Connection--SSH--Auth--Private key... 中选取刚才生成的 Private Key，并保存设置
+3、将 authorized_keys 的将权限设置为 0600
+   将 .ssh 文件夹的权限设置为 0700
+4、systemctl restart sshd 重启 sshd 服务
+5、将 Private Key 传输至 客户端
+6、使用 PuTTYgen 的 Actions 面板--Load an exisiting... 读取 Private Key，使用 Save Private key 保存为 PuTTY 可以识别的 pkk 文件
+7、在 PuTTY 的 Connection--SSH--Auth--Private key... 中选取刚才生成的 Private Key，并保存设置
