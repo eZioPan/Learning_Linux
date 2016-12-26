@@ -412,3 +412,34 @@ depmod [-e] [-E <Module.symvers>] [-F <System.map>] [-m] [-n] [-v] [-P <prefix>]
 	则指定一个 父级目录，使 modprobe 从指定的目录读取 模块
 	此时， <basedir> 会自动从 modules.dep 中的每个条目中去除
 	以方便以后将 模块 移动至正常的目录下后，不用重新执行 depmod
+
+-C, --config <文件 或 目录>
+	重新指定配置文件或配置文件所在目录
+	默认在 /etc/depmod.d/ 下
+
+-e, --errsyms
+	可与与 -F 连用
+	若有任何 模块 需要的 symbol 未被任何 模块 或 内核 提供，它就会提示错误
+
+-E, --symvers <Module.symvers>
+	可与 -e 连用
+	若有任何 模块 提供的 symbol 的版本与 内核记录在 Module.symvers 的不同，它就会提示错误
+	它与 -F 互不兼容
+
+-F, --filesyms <System.map>
+	当编译内核时，使用指定的 System.map
+	与 -e 连用时，可以报告未解析的 symbol
+	它与 -E 互不兼容
+
+-n， --show， --dry-run
+	将生成的 modules.dep 和其他各种 map 文件 输出至 StdOut 而非写入 模块文件夹中
+
+-P <prefix>
+	有些构架会在 symbol 前写入一个无关的字符。
+	这里可以定义个字符来跳过它
+
+-v, --verbose
+	depmod 会打印所有的 模块 需要的 symbol，以及提供这个 symbol 的 模块 的文件名
+
+-w
+	对重复的 依赖、别名、 symbol 版本 等作出警告
