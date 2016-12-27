@@ -443,3 +443,33 @@ depmod [-e] [-E <Module.symvers>] [-F <System.map>] [-m] [-n] [-v] [-P <prefix>]
 
 -w
 	对重复的 依赖、别名、 symbol 版本 等作出警告
+
+
+
+lsmod 罗列当前内核中的模块的状态
+返回值包含
+模块的名称 大小 被依赖的数量 被依赖的模块名
+
+
+
+modinfo 显示一个 内核模块的信息
+
+模块的文件名 虽然不是 模块的属性（field），但也会显示为模块的一个“属性”
+
+modinfo [-0] [-F <field>] [-k <kernel>] [modulename|filename...]
+
+-F, --field <field>
+	仅显示 模块的 指定属性
+	属性名 是大小写敏感的
+	常见的属性名包括
+	 author, description, license, parm, depends, alias
+
+-b <basedir>, --basedir <basedir>
+	模块的根目录
+	默认为 /
+
+-k <kernel>
+	用指定的 内核版本 而非当前使用的 内核版本
+
+-0, --null
+	使用 NUL 而非 <new line> 来区分 属性值
