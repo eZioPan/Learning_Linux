@@ -473,3 +473,101 @@ modinfo [-0] [-F <field>] [-k <kernel>] [modulename|filename...]
 
 -0, --null
 	使用 NUL 而非 <new line> 来区分 属性值
+
+
+
+modprobe 从 内核 中添加或移除 模块
+
+modprobe 会从 /etc/modprobe.d/ 下读加载配置文件
+
+可以在命令行中使用 <module>.<option> 以及 modprobe.blacklist=<module> 来传入附加的参数
+
+modprobe 需要 depmod 生成的 modules.dep.bin 文件
+
+modprobe [-v] [-V] [-C <config-file>] [-n] [-i] [-q] [-b] [modulename] [module parm]
+
+modprobe [-r] [-v] [-n] [-i] [modulename...]
+
+modprobe [-c]
+
+modprobe [--dump-modversions] [filename]
+
+-a, --all
+	将命令行上输入的每个 模块 都加载进内核中
+
+-b, --use-blacklist
+	让 modprobe 命令参考 *.conf 中的 blacklist
+
+-C, --config
+	指定配置文件目录的位置（默认为 /etc/modprobe.d/）
+	这个参数会以 全局变量 MODPROBE_OPTIONS 的身份传入 配置文件的 install 和 remove 字段中
+
+-c, --showconfig
+	从配置文件目录 显示 有效的配置文件
+
+--dump-modversions
+	答应给出的 模块文件 所需要的 模块以及它们的版本号
+	常用于发行商
+
+-d, --dirname
+	模块的根目录，默认为 /
+
+--first-time
+	默认情况下，如果要求 modprobe 载入一个已经载入的模块，或卸载一个已经卸载的模块
+	modprobe 会正常退出
+	但如果指定这个参数， modprobe 就会返回失败
+
+--force-vermagic
+	【危险参数，慎用】
+	每个模块都包含一小段重要字符串，比如，内核版本和编译器版本
+	若在载入模块时，内核返回了 version magic 不匹配，可以用这个参数 屏蔽此类错误
+	这会传递给参数所在命令行指定的 模块和别名，以及他们的 依赖模组
+
+--force-modversion
+	【危险参数，慎用】
+	当模组编译时使用了 CONFIG_MODVERSIONS 时，模组需要的版本号和提供的版本号就会被创建
+	若在载入模块时，内核返回了 接口版本 不匹配，可以用这个参数 屏蔽此类错误
+	这会传递给参数所在命令行指定的 模块和别名，以及他们的 依赖模组
+
+-f, --force
+	【危险参数，慎用】
+	忽略所有的 版本不合 错误，等同于 连用 --force-vermagic 和 --force-modersion
+	这会传递给参数所在命令行指定的 模块和别名，以及他们的 依赖模组
+
+-i, --ignore-install, --ignore-remove
+	使 modprobe 暂时忽略 配置文件的 install 和 remove 字段
+
+-n, --dry-run, --show
+	仅将要执行的操作输出至屏幕上，而不实际执行它
+	和 -v 连用用于查错
+
+-q, --quiet
+	当 modprobe 执行错误时，不会提示错误信息，但在执行完毕之后会返回一个非 0 的返回值
+
+-R, --resolve-alias
+	将符合该 别名 的 所有 模块 全部罗列出来
+
+-r, --remove
+	将 模块 从 内核 中移除，若 模块 所依赖的模块 没有被其他模块使用，则会一同移除
+
+-S, --set-version
+	指定 要操作的内核版本
+
+--show-depends
+	罗列出指定的 模块/别名 自己和它所依赖的模块。
+	若一行以 insmod 开头，则它将被一同包括进 initramfs 文件中
+	若一个行以 install 开头，则它是配置文件中 install 字段定义的
+
+-s, --syslog
+	使用 syslog 而非 StdErr 来记录 modprobe 产生的错误
+	记录类型是 LOG_DAEMON 级别是 LOG_NOTICE
+	当 StdErr 不可用时，将会自动启用这个选项
+	这个选项将通过 MODPROBE_OPTIONS 环境变量传递给 install 或 remove 的其他 模块
+
+-v, --verbose
+	详细输出
+	这个选项将通过 MODPROBE_OPTIONS 环境变量传递给 install 或 remove 的其他 模块
+
+
+
+Boot Loader: Grub2
