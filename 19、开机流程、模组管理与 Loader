@@ -571,3 +571,22 @@ modprobe [--dump-modversions] [filename]
 
 
 Boot Loader: Grub2
+
+boot loader 具有 启动选项、加载核心、移交控制权 等功能
+但 MBR 仅有 446 bytes，GPT 也仅有不大的容量，如何写入这么多功能呢？
+
+Linux 将 boot loader 的 程序 和 配置 分为两个阶段（stage） 来执行
+
+
+Stage 1：执行 boot loader 的主程序
+
+boot loader 的主程序必须安装在 MBR 或 boot sector
+由于 MBR 仅有 446 bytes，所以其中的 boot loader 仅为最小化程序，不包含任何配置
+
+
+Stage 2：boot loader 加载其他配置文件
+
+boot loader 会加载所有的 配置文件 和 环境参数配置（包含 文件系统配置 和 主配置文件 grub.cfg）
+一般来说，这些文件都放置在 /boot 目录下
+
+如果使用 grub2 作为 boot loader，则它的配置文件都放置在 /boot/grub2/ 目录下
