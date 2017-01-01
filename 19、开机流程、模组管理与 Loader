@@ -635,3 +635,45 @@ EG.
 <8> 【不常用】若一个分区下有子分区，则也用 英文逗号 , 隔开
 
 # 注意，对于 MBR 硬盘上的 逻辑分区，由于 主分区为 1~4，所以第一个逻辑分区的编号为 msdos5
+
+
+
+grub.cfg 文件非常不建议手动修改，但需要知道其中的一些内容
+
+
+EG.
+[eP@ePCt ~]$ less /boot/grub2/grub.cfg
+
+（...省略...）
+
+### BEGIN /etc/grub.d/00_header ###			<= 以下操作将读去 /etc/grub.d/00_header 这个文件，并进行操作
+set pager=1									<= 使用翻页，若显示内容超过一屏，则等待用户翻页
+
+if [ -s $prefix/grubenv ]; then				<= 若存在 grubenv 文件，则从其中 载入环境变量
+  load_env
+fi
+if [ "${next_entry}" ] ; then				<= 设置默认要启动的选项
+   set default="${next_entry}"
+   set next_entry=
+   save_env next_entry
+   set boot_once=true
+else
+   set default="${saved_entry}"
+fi
+
+（...省略...）
+
+terminal_output console						<= 设置默认的显示输出
+if [ x$feature_timeout_style = xy ] ; then
+  set timeout_style=menu					<= 设置屏显的样式（菜单/仅倒计时/什么也不显示）
+  set timeout=5								<= 设置倒计时秒数
+# Fallback normal timeout code in case the timeout_style feature is
+# unavailable.
+else
+  set timeout=5								<= 若无法使用屏显样式则倒计时的秒数
+fi
+### END /etc/grub.d/00_header ###
+
+（...省略...）
+
+### BEGIN /etc/grub.d/10_linux ###			<= 以下内容读取 /etc/grub.d/10_linux 的配置
