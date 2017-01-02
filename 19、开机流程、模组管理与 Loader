@@ -677,3 +677,31 @@ fi
 （...省略...）
 
 ### BEGIN /etc/grub.d/10_linux ###			<= 以下内容读取 /etc/grub.d/10_linux 的配置
+menuentry 'CentOS Linux (3.10.0-514.2.2.el7.x86_64) 7 (Core)' --class centos --class gnu-linux --class gnu --class os --unrestricted $menuentry_id_option 'gnulinux-3.10.0-514.el7.x86_64-advanced-62b42a34-27ef-41ff-aa79-1078f09a7dc9' {
+											<= menuentry 指示下面定义的是 grub 选项的条目的参数
+        load_video
+        set gfxpayload=keep
+        insmod gzio
+        insmod part_gpt
+        insmod xfs
+        set root='hd0,gpt2'					<= 设置环境变量 root ，在 grub 定义下， grub 应该使用的 根目录 所在分区
+        if [ x$feature_platform_search_hint = xy ]; then
+          search --no-floppy --fs-uuid --set=root --hint-bios=hd0,gpt2 --hint-efi=hd0,gpt2 --hint-baremetal=ahci0,gpt2 --hint='hd0,gpt2'  a8b9240e-52b2-474f-bcb0-9563cfe788f1
+        else
+          search --no-floppy --fs-uuid --set=root a8b9240e-52b2-474f-bcb0-9563cfe788f1
+        fi
+        linux16 /vmlinuz-3.10.0-514.2.2.el7.x86_64 root=/dev/mapper/centos7-root ro crashkernel=auto rd.lvm.lv=centos7/root rd.lvm.lv=centos7/swap rhgb quiet LANG=zh_CN.UTF-8
+        									<= linux16 表示（在 x86 构架下）强制以 16 位的模式加载内核
+        									<= linux16 为了防止 环境变量 vga 以及 gfxpayload 设置在 32 位的启动状态下无效的问题
+        									<= 第二个参数为 系统内核文件的 路径，这个路径是相对于上面 grub 定义的根目录的路径
+        									<= 后面的参数都是 kernel-command-line ，也即传入 系统内核的参数
+        									<= 这里的 root 表示 操作系统 使用的 根目录 所在的装置（一定是所在装置）
+        initrd16 /initramfs-3.10.0-514.2.2.el7.x86_64.img
+        									<= 若使用了 linux16 ，则读取 InitRamDisk 的时候也需要制定为 initrd16 模式
+}
+
+（...省略...）
+
+
+
+官方文档不建议我们直接修改 grub.cfg 文件来修改启动配置，转而修改 另外一些文件，并通过特定的命令来生成 grub.cfg
