@@ -1,0 +1,24 @@
+参考网址 https://dev.gentoo.org/~floppym/grub.html
+
+/etc/default/grub grub2-mkconfig 的配置文件
+
+GRUB_DEFAULT
+	默认进入的菜单选项。
+	可以是一个从 0 开始的选项序号
+	或是一个 menuentry 的 title
+	或是特殊的字符串 "saved"
+	若定义了 menuentry 的 id （不一定是一个数字），也可以指定为其 id
+	在 grub.cfg 中 $menuentry_id_option 或者 --id 后接的就是 menuentry 的 id
+	如果使用的是 saved ，则默认选项会被 GRUB_SAVEDEFAULT 参数或 grub2-set-default 命令定义
+	# 默认值为 0
+
+GRUB_SAVEDEFAULT
+	若被设置为为 true，则上次选择的选项将作为下次的默认选项
+	# 默认为 未设置
+
+GRUB_TIMEOUT
+	在进入默认设置的启动条目前的倒计时秒数
+	若有任何按键按下，则会停止倒计时
+	设置为 0 将不进行倒数，直接进入默认选项
+	设置为 -1 将永久等待用户选择
+	# 默认值是 5

@@ -705,3 +705,6 @@ menuentry 'CentOS Linux (3.10.0-514.2.2.el7.x86_64) 7 (Core)' --class centos --c
 
 
 官方文档不建议我们直接修改 grub.cfg 文件来修改启动配置，转而修改 另外一些文件，并通过特定的命令来生成 grub.cfg
+
+/etc/default/grub grub2-mkconfig 的配置文件，详解见文件
+19补、grub.cfg 配置文件的详细说明
