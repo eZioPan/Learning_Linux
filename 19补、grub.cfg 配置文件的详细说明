@@ -22,3 +22,23 @@ GRUB_TIMEOUT
 	设置为 0 将不进行倒数，直接进入默认选项
 	设置为 -1 将永久等待用户选择
 	# 默认值是 5
+
+GRUB_TIMEOUT_SYTLE
+	若选项 未设置 或设置为 "menu"， GRUB 会显示 菜单，并开始倒计时
+	若设置为 "countdown" 或 "hidden"，GRUB 将在 显示菜单 前进行倒数（也就是不显示菜单）
+	若按了 <ESC>，则显示菜单并取消倒数
+	"countdown" 模式会在屏幕上提示倒数的秒数
+
+GRUB_DISTRIBUTOR
+	用于制定更加详细的 menuentry id
+
+GRUB_TERMINAL_INPUT
+	设置可用的终端输入设备，可指定多个设备，用 空格 隔开
+	可用输入设备将虽则平台的不同而不同
+	可以包含
+	console			平台原生的控制台
+	serial			串口终端
+	serial_<port>	指定串口号的终端设备
+	at_keyboard		AT 键盘
+	usb_keyboard	使用 HID Boot 协议的 USB 键盘，防止固件不认识这块键盘
+	# 默认值为 console
