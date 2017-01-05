@@ -42,3 +42,24 @@ GRUB_TERMINAL_INPUT
 	at_keyboard		AT 键盘
 	usb_keyboard	使用 HID Boot 协议的 USB 键盘，防止固件不认识这块键盘
 	# 默认值为 console
+
+GRUB_TERMINAL_OUTPUT
+	设置可用的终端输出设备，可指定多个设备，用 空格 隔开
+	可用输入设备将虽则平台的不同而不同
+	可以包含
+	console			平台原生的控制台
+	serial			串口终端
+	serial_<port>	指定串口号的终端设备
+	gfxterm			图形模式输出（graphics-mode output）
+	vga_text		VGA 文本输出
+	mda_text		MDA 文本输出
+	morse			摩尔斯电码输出（通过系统蜂鸣器输出）
+	spkmodem		简单数据协议（simple data protocol）输出（通过系统喇叭输出）
+	# 默认为 console
+
+GRUB_TERMINAL
+	将 override GRUB_TERMINAL_INPUT 和 GRUB_TERMINAL_OUTPUT 的设置
+	并将它们设置为同一个
+
+GRUB_SERIAL_COMMAND
+	输入一个命令来 配置串口
