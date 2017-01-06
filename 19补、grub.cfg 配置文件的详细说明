@@ -63,3 +63,27 @@ GRUB_TERMINAL
 
 GRUB_SERIAL_COMMAND
 	输入一个命令来 配置串口
+
+GRUB_COMLINE_LINUX
+	为 Linux 的内核添加的命令行参数
+
+GRUB_CMDLINE_LINUX_DEFAULT
+	除非 GRUB_DISABLE_RECOVERY 设置为 true，
+	否则对于同一个 Linux 内核，会同时生成两个选项：
+	一个是普通的入口，一个是救援模式的入口
+	本条目定义就是普通模式入口将要传入 GRUB_CMDLINE_LINUX 定义的命令行之后的参数
+
+GRUB_DISABLE_LINUX_UUID
+	默认情况下， grub-mkconfig 会使用 UUID 来定义 Linux 根目录所在的文件系统，
+	将本条目设置为 true 可以不使用 UUID 作为标记
+
+GRUB_DISABLE_RECOVERY
+	当设置为 true 时，
+	仅生成普通模式的入口，而不生成救援模式的入口
+
+GRUB_VIDEO_BACKEND
+	如果 要求加载 图形显卡支持
+	说明 gfxterm 图形终端 或 GRUB_GFXPAYLOAD_LINUX 被设置
+	此时 grub-nkconfig 将会加载所有可用的 GRUB 显卡驱动，然后选择和硬件最适配的驱动
+	如果需要手动设置，可以在这里指定
+	# 在执行了 grub-install 之后，所有可以使用的 显卡驱动 将全部罗列在 /boot/grub/video.lst 中
