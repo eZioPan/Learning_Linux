@@ -87,3 +87,30 @@ GRUB_VIDEO_BACKEND
 	此时 grub-nkconfig 将会加载所有可用的 GRUB 显卡驱动，然后选择和硬件最适配的驱动
 	如果需要手动设置，可以在这里指定
 	# 在执行了 grub-install 之后，所有可以使用的 显卡驱动 将全部罗列在 /boot/grub/video.lst 中
+
+GRUB_GFXMODE
+	设置在使用 gfxterm 图形终端 时的分辨率
+	仅当 显卡 支持 VESA BIOS Extensions（VBS）时，才起效
+
+GRUB_BACKGROUND
+	当使用 gfxterm 图形终端 时，设置一张背景图片
+	这张图片必须能在启动时，被 GRUB 读取到，且必须以 .png .tga .jpeg 或 .jpeg 作为后缀名
+	图片将会被缩放以适应全屏显示
+
+GRUB_THEME
+	当使用 gfxterm 图形终端时，设置一个主题
+
+GRUB_GFXPAYLOAD_LINUX
+	设置为 text 强制使 Linux 内核以文字模式启动
+	设置为 keep 则会使用 GRUB_GFXMODE 中的设置
+	也可以设置为连续多个模式，来尝试可用的模式，模式和模式之间用 逗号 或 分号 作为分隔
+	# 请注意，这个设置可能会让显示出现问题，如果出现问题，则改回 text 要求 Linux 内核以 普通的 text 模式启动
+
+GRUB_DISABLE_OS_PROBER
+	一般情况下， grub-mkconfig 会调用外部程序 os-prober (若已安装)来寻找其他已经安装的系统
+	并生成相应的菜单选项
+	设置为 true 关闭自动寻找
+
+GRUB_OS_PROBER_SKIP_LIST
+	指定需要 os-prober 程序不检测的文件系统的 UUID ，用 空格 隔开
+	若使用的是 efi chainloader，则写为 <UUID>@<EFI FILE>
