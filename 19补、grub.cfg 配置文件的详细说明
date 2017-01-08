@@ -114,3 +114,28 @@ GRUB_DISABLE_OS_PROBER
 GRUB_OS_PROBER_SKIP_LIST
 	指定需要 os-prober 程序不检测的文件系统的 UUID ，用 空格 隔开
 	若使用的是 efi chainloader，则写为 <UUID>@<EFI FILE>
+
+GRUB_DISABLE_SUBMENU
+	一般情况下，
+	grub-mkconfig 仅会将 最新的内核的普通入口 置于菜单的 顶层目录，
+	而将其他旧内核和救援入口 置于本菜单的 次级目录 中
+	由 os-prober 探索到的第一个系统，将 置于菜单的 顶层目录，
+	而其他的系统，将 置于本菜单的 次级目录
+	# 若将该条目设置为 y ，则将所有菜单选项置于顶层，创建出一个平坦样式的菜单
+	## 修改这个选项将修改 GRUB_DEFAULT 设置
+	## 以及 fallback 和 default 全局变量
+	## 以及 grub-set-default grub-reboot 生成或使用的变量
+
+GRUB_ENABLE_CRYPTODISK
+	若果设置为 y ， grub-mkconfig 和 grub-install 将检查 加密磁盘，并生成启动时所需要的附加参数
+	注意，这种情况下，无人值守启动 是不可能的，因为这需要用户输入密码来解锁加密的磁盘
+
+GRUB_INIT_TUNE
+	在 grub 启动的时候，会通过音响播放一个声音
+	这个设置会直接传入至 grub 的 play 命令中
+
+GRUB_BADRAM
+	若设置了该参数，则会使用 grub 的 badram 命令检查内存
+
+GRUB_PRELOAD_MODULES
+	可指定一系列用 空格 隔开的 Grub 的模块，它们将在 grub.cfg 的开始处就被执行
