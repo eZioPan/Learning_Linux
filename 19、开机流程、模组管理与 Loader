@@ -708,3 +708,15 @@ menuentry 'CentOS Linux (3.10.0-514.2.2.el7.x86_64) 7 (Core)' --class centos --c
 
 /etc/default/grub grub2-mkconfig 的配置文件，详解见文件
 19补、grub.cfg 配置文件的详细说明
+
+
+
+/etc/grub.d/ 下的补充启动脚本
+
+00_header 建立初始的显示项目，大部分 /etc/default/grub 中的参数，都会在这个脚本中被调用，并用以建立 grub.cfg
+
+10_linux 会分析 /boot 下的文件，并找到 系统内核 以及 启动内核的 相关参数，并建立 grub.cfg 中的 启动菜单选项
+
+30_os-prober 会寻找系统上其他分区可能存在的系统内核
+
+40_custom 自定义新的 启动菜单选项，仅需仿制 /boot/grub2/grub.cfg 中 menuentry 字段，添加至 40_custom 文件中即可
