@@ -720,3 +720,37 @@ menuentry 'CentOS Linux (3.10.0-514.2.2.el7.x86_64) 7 (Core)' --class centos --c
 30_os-prober 会寻找系统上其他分区可能存在的系统内核
 
 40_custom 自定义新的 启动菜单选项，仅需仿制 /boot/grub2/grub.cfg 中 menuentry 字段，添加至 40_custom 文件中即可
+
+
+对于不使用 grub2 作为 boot loader ，而自带 boot loader 的系统（比如 Windows）
+可以使用 grub 提供的 chainloader 功能，启动系统自身的 boot loader
+仅需编辑 40_custom 文件，menuentry 如下所示
+
+EG.【假设 Windows 的 boot loader 在 第一块硬盘的第一个分区上】
+
+menuentry "Windows" {
+        insmod chain      # 载入 chainloader 模块
+        insmod ntfs       # 载入 NTFS 文件系统的支持
+        set root=(hd0,1)  # 设置 boot loader 所在的分区
+        chainloader +1    # 等价于 chainloader (hd0,1)0+1
+						  # 也即使用 chainloader 命令，读取 (hd0,1) 分区上从第 0 个扇区开始，共计 1 个扇区的数据
+						  # 在这里就是 windows 的 boot loader 所在的扇区
+}
+
+
+！若 Windows 并非安装在第一个硬盘上，或者在同一个硬盘上安装了多于 1 套的 Windows，在使用 chainloader 时有以下注意事项
+！具体解释参见 https://dev.gentoo.org/~floppym/grub.html#DOS_002fWindows
+
+(1) 由于 Windows 必须将 boot loader 所在磁盘识别为第一块硬盘，所以在对非第一块硬盘上的 Windows 使用 chainloader 时
+	需要使用 磁盘交换技术（disk swapping technique）
+
+	drivemap -s (hd1) (hd0)
+
+(2) 若在同一块硬盘上存在多个 Windows 系统，则 boot loader 可能会无法识别正确的主分区，此时需要使用 parttool 隐藏分区
+
+	parttool (hd0,1) hidden-
+	parttool (hd0,2) hidden+
+	set root=(hd0,1)
+	chainloader +1
+	parttool ${root} boot+
+	boot
