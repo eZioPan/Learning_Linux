@@ -1,0 +1,11 @@
+dracut 生成 initramfs 镜像的低级工具
+
+dracut [OPTION] [<image> [<kernel version>]]
+
+创建一个以 <image> 命名 对应 系统内核版本为 <kernel version> 的 initramfs 文件
+如果 <kernel version> 未指定，则以当前正在使用的系统内核为准
+如果 <image> 未指定，则使用 /boot/initramfs-<kernel version>.img
+
+需要寻找完整的 内核命令选项 可以 man 7 dracut.cmdline
+
+若已救援模式启动，则所有的与 initramfs 相关的 log 都会保存至 /run/initramfs/rdsosreport.txt 中
