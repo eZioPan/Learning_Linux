@@ -9,3 +9,33 @@ dracut [OPTION] [<image> [<kernel version>]]
 需要寻找完整的 内核命令选项 可以 man 7 dracut.cmdline
 
 若已救援模式启动，则所有的与 initramfs 相关的 log 都会保存至 /run/initramfs/rdsosreport.txt 中
+
+
+# 常用的选项搭配
+
+dracut
+	以当前运行状态，配制出 initramfs 文件
+
+dracut foobar.img
+	自定义 initramfs 文件名
+
+dracut foobar.img 3.10.0-229.el7.x86_64
+	自定义 intiramfs 文件名 和使用的 系统内核
+
+dracut --kver 3.10.0-229.el7.x86_64
+	仅自定义 使用的 系统内核
+
+若要最精简化 initramfs，可以使用 --hostonly 或 -H 命令
+这样 dracut 会生成 本机 以 当前状态 启动，所需要的最少的文件
+从 CentOS 7 开始，这将成为默认的设置，
+若要生成 non-hostonly image，请安装 dracut-config-generic rpm 包
+
+若要查看一个 initramfs 包，请使用 lsinitrd 命令
+
+若要启用 dracut 模块，可以将 模块名添加至
+/etc/dracut.conf
+或
+/etc/dracut.conf.d/<name>.conf
+详见 man 5 dracut.conf
+或使用 --add 或 -a 参数
+dracut --add bootchart initramfs-bootchart.img
