@@ -39,3 +39,35 @@ dracut --kver 3.10.0-229.el7.x86_64
 详见 man 5 dracut.conf
 或使用 --add 或 -a 参数
 dracut --add bootchart initramfs-bootchart.img
+
+dracut --list-modules
+	查看可用的 dracut 模块
+
+关闭 dracut 模块
+	将模块名添加至 dracut.conf 或 /etc/dracut.d/<name>.conf 的 omit_dracutmodules 变量中
+	或使用 --omit 或 -o 参数
+	dracut -o "multipath lvm" no-multipath-lvm.img
+
+添加 kernel 模块
+	使用 --add-drivers 选项
+	或将模块名添加至 dracut.conf 或 /etc/dracut.d/<name>.conf 的 drivers 变量中
+	dracut --add-drivers mymod initramfs-with-mymod.img
+
+对于未使用 hostonly 模式生成的 initramfs，其中不会包含任何系统配置文件
+而系统配置信息，将以 内核命令 的方式传递给 内核
+而 内核命令 将写入 grub.cfg 配置文件中
+若要取得 内核命令 中必须指定的磁盘路径，可以使用以下命令
+dracut --print-cmdline
+
+内核命令 的 root 指定
+	系统更目录所在位置 可以用 root=<设备路径> EG. root=/dev/sda
+					  可以用 root=UUID=<设备 UUID> EG. root=UUID=19e9dda3-5a38-484d-a9b0-fa6b067d0331
+					  可以用 root=LABEL=<设备 label> EG. root=label=MyRootPartiLabel
+
+若使用了加密磁盘作为启动目录，则可以配置 输入密码时 需要的 字体、键盘映射样式、以及语言 等等
+	EG.
+	rd.vconsole.font=latarcyrheb-sun16 rd.vconsole.keymap=de-latin1-nodeadkeys rd.locale.LANG=de_DE.UTF-819e9dda3-5a38-484d-a9b0-fa6b067d0331
+
+禁用 内核模块
+	EG.
+	rd.driver.blacklist=mptsas rd.driver.blaclist=nouveau
