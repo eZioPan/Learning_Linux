@@ -71,3 +71,28 @@ dracut --print-cmdline
 禁用 内核模块
 	EG.
 	rd.driver.blacklist=mptsas rd.driver.blaclist=nouveau
+
+加速启动进程
+	EG. 若系统根目录不在 LVM RAID 或 LUKS 加密盘上，则可以在 内核命令上添加如下参数
+	rd.luks=0 rd.lvm=0 rd.dm=0
+	这会让内核不加载 LUKS LVM 和 RAID 支持模块，加速启动
+
+在 intiramfs 中加入自定义文件
+	使用 --include 选项，该选项只能定义一次
+	dracut --include <原文件/目录> <目标路径> <initramfs 文件名>
+	使用 --install 选项，该选项可定义多次
+	dracut --install "strace fsck.ext3 ssh" initramfs-dbg.img
+
+若要使用网络设备作为 根目录，则需要安装 dracut-network 程序
+详见 Red Hat Enterprise Linux Storage Administration Guide
+
+最小化 镜像 大小
+	<1> 禁用所有开机时不需要的 dracut 模块
+		用 -m 指定需要的 dracut 模块
+	<2> 使用 --host-only 仅加载启动需要的 kernel 模块
+	EG.
+	# 对于一个 NFS 镜像
+	dracut -m "nfs network base" initramfs-nfs-only.img
+	# 接着在目标机器上用该镜像启动，并执行
+	dracut -m "nfs network base" --host-only initramfs-nfs-hostonly.img
+	# 这样就极大的减小了 镜像 的 大小
