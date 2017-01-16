@@ -125,3 +125,40 @@ dracut --print-cmdline
 	用 空格 隔开的 dracut 模块，即使使用了 -H 选项，也强制将它们加入至 intiramfs 镜像中
 	若 列表 含有多个参数，请用一个 引号 将它们全部引起来
 	该选项可多次指定多次
+
+-d, --drivers <kernel 模块 列表>
+	用 空格 隔开的 kernel 模块，仅有这些 kernel 模块会被包含至 initramfs 镜像中
+	若 列表 含有多个参数，请用一个 引号 将它们全部引起来
+
+--add-drivers <kernel 模块 列表>
+	用 空格 隔开的 kernel 模块，这些 kernel 模块会额外地包含至 initramfs 镜像中
+	仅包含模块名，而没有模块名后的 .ko 后缀
+	若 列表 含有多个参数，请用一个 引号 将它们全部引起来
+	该选项可多次指定多次
+
+--omit-drivers <kernel 模块 列表>
+	用 空格 隔开的 kernel 模块，这些 kernel 模块不会被包含至 initramfs 镜像中
+	仅包含模块名，而没有模块名后的 .ko 后缀
+	若 列表 含有多个参数，请用一个 引号 将它们全部引起来
+	该选项可多次指定多次
+
+--filesystems <文件系统 列表>
+	用 空格 隔开的 文件系统 模块，仅有这些 文件系统 模块会被包含至 initramfs 镜像中
+	若 列表 含有多个参数，请用一个 引号 将它们全部引起来
+	该选项可多次指定多次
+
+-k, --kmoddir <kernel 模块 文件夹>
+	将从此文件夹中寻找 kernel 模块
+
+--fwdir <固件 文件夹1> [固件 文件夹2]...
+	指定附加的 用于寻找 firmware 模块的文件夹
+	该选项可多次指定多次
+
+--kernel-cmdline <parms>
+	设置默认的 内核命令参数
+
+--kernel-only
+	仅安装 内核驱动 和 固件文件
+
+--no-kernel
+	不安装 内核驱动 和 固件文件
