@@ -191,3 +191,37 @@ dracut --print-cmdline
 
 --nofscks
 	不加载任何 fsck 工具
+
+--strip
+	【默认选项】为 initramfs 镜像中，所有 二进制文件 做简化
+
+--nostrip
+	不为 initramfs 镜像中的 二进制文件 做简化
+
+--prelink
+	【默认选项】为 initramfs 镜像中的 二进制文件 做 预连接
+
+--noprelink
+	不为 initramfs 镜像中的 二进制文件 做 与链接
+
+--hardlink
+	【默认选项】为 initramfs 中的文件生成硬链接
+
+--nohardlink
+	不为 initramfs 中的文件生成硬链接
+
+--prefix <目录>
+	参考指定的目录生成 initramfs
+	(比如参考 /run/initramfs 生成)
+
+--noprefix
+	仅参考默认位置生成 initramfs
+
+--debug
+	为创建过程输出 debug 信息
+
+-v, --verbose
+	增加详细度等级（默认是 info(4)）
+
+-q, --quiet
+	减少详细读等级（默认是 info(4)）
