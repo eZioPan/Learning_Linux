@@ -225,3 +225,31 @@ dracut --print-cmdline
 
 -q, --quiet
 	减少详细读等级（默认是 info(4)）
+
+-c, --conf <dracut 配置文件>
+	指定 将要使用的 dracut 配置文件
+	默认是 /etc/dracut.conf
+
+--confdir <dracut 配置文件目录>
+	指定 将要使用的 dracut 配置文件目录
+	默认是 /etc/dracut.conf.d/
+
+--tmpdir <临时目录 路径>
+	指定将要使用的 临时目录 路径
+	默认是 /var/tmp/
+
+--sshkey <sshkey 文件>
+	若使用了 ssh-client 模块，则为其指定所使用的 ssh key
+
+-l, --local
+	激活本地模式。
+	dracut 将使用 当前的工作目录 中的 模块，而非系统全局的 /uar/lib/dracut/modules.d/ 目录
+	来生成 initramfs
+	这有助于 从 git checkout 中生成 initramfs
+
+-H, --hostonly
+	仅主机 模式：生成仅可以让本地主机启动的 initramfs 文件
+				以及仅可以让本地主机启动的 配置文件
+	注意：
+		若使用了 chroot 改变根目录至非真实的根目录下
+		请指定 --fstab 选项，并提供一个可用的 /etc/fstab 文件
