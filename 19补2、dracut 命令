@@ -253,3 +253,36 @@ dracut --print-cmdline
 	注意：
 		若使用了 chroot 改变根目录至非真实的根目录下
 		请指定 --fstab 选项，并提供一个可用的 /etc/fstab 文件
+
+-N, --no-hostonly
+	关闭 hostonly 模式
+
+--hostonly-cmdline
+	将所需 内核命令 置入 initramfs 中
+
+--no-hostonly-cmdline
+	不将所需的 内核命令 置入 initramfs 中
+
+--hostonly-i18n
+	【默认选项】仅针对主机的配置，置入所需的 键盘布局 以及 字体文件
+
+--no-hostonly-i18n
+	置入所有可用的 键盘布局 和 字体文件
+
+--persistent-policy <策略>
+	使用 <策略> 来定位 磁盘和分区。
+	<策略> 可以是 任何 /dev/disk 下的目录名
+	EG. "by-uuid" 或 "by-label"
+
+--fstab
+	使用 /etc/fstab 而非 /proc/self/mountinfo
+
+--add-fstab <文件>
+	将 <文件> 中定义的 fstab 条目加入至 initramfs 文件的 /etc/fstab 中
+
+--mount "<设备> <挂载点> <文件系统> [<文件系统选项> [<dump 频率> [<磁盘检查 顺序>]]]"
+	在 initramfs 中，把 <设备> 识别为 <文件系统> 并挂载至 <挂载点>
+	<文件系统选项> <dump 频率> 和 <磁盘检查顺序> 可以查看 fstab 的 帮助页
+	<文件系统选项> 默认为 “默认”
+	<dump 频率> 默认为 “0”
+	<磁盘检查顺序> 默认为 “2”
