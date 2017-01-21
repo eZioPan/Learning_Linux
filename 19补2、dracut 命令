@@ -286,3 +286,31 @@ dracut --print-cmdline
 	<文件系统选项> 默认为 “默认”
 	<dump 频率> 默认为 “0”
 	<磁盘检查顺序> 默认为 “2”
+
+--add-device <设备名>
+	在 initramfs 中 唤醒 指定设备
+	当处在在 hostonly 模式的救援模式下时，若 swap 分区正好处在 LVM 或 加密分区上时，十分有效
+	NB-device 可用于对早期的发行版本的兼容
+
+-i, --include <原始> <目标>
+	将 <原始> 目录 中的文件 置入 initramfs 的 <目标> 目录中。
+	若 <原始> 为文件，则将其安装至 <目标> 中
+	这个选项可以被指定多次
+
+-I, --install <文件 列表>
+	以 空格 隔开的 文件 列表，其中的文件将会被安装至 initramfs 文件中
+	若 列表 含有多个参数，请用一个 引号 将它们全部引起来
+
+--install-optional <文件 列表>
+	以 空格 隔开的 文件列表，若它们存在，则会被安装至 initramfs 文件中
+
+--gzip
+	【默认选项】使用 gzip 压缩生成的 initramfs 文件
+	除非使用了其他 压缩选项 或者传入了 --no-compress 选项
+	本选项等价于 --compress=gzip -9
+
+--bzip2
+	使用 bzip2 来压缩生成的 initramfs 文件
+	注意：
+		请确保 系统内核 有 bzip2 的解压支持。否则将无法正常启动
+	本选项等价于 --compress=bzip2
