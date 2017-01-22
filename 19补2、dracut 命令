@@ -314,3 +314,34 @@ dracut --print-cmdline
 	注意：
 		请确保 系统内核 有 bzip2 的解压支持。否则将无法正常启动
 	本选项等价于 --compress=bzip2
+
+--lzma
+	使用 lzma 来压缩生成的 initramfs 文件
+	注意：
+		请确保 系统内核 有 lzma 的解压支持。否则将无法正常启动
+	本选项等价于 lzma --compress=lzma -9
+
+--xz
+	使用 xz 来压缩生成的 initramfs 文件
+	注意：
+		请确保 系统内核 有 xz 的解压支持。否则将无法正常启动
+	本选项等价于 lzma --compress=xz --check-crc32 --lzma=dict=1MiB
+
+--lzo
+	使用 lzop 来压缩生成的 initramfs 文件
+	注意：
+		请确保 系统内核 有 lzop 的解压支持。否则将无法正常启动
+
+--lz4
+	使用 lz4 来压缩生成的 initramfs 文件
+	注意：
+		请确保 系统内核 有 lz4 的解压支持。否则将无法正常启动
+
+--compress <压缩器>
+	使用 指定的 压缩程序 压缩已经生成的 initramfs 文件。
+	若仅输入了 压缩程序的名字 则会自动调用可以使用的命令来进行压缩
+	若将一个由 双引号 引起 字符串作为参数传入该选项，则将调用该字符串 执行压缩
+	请确保 系统内核 中有对应的解压支持，否则系统无法正常启动
+
+--no-compress
+	不要对生成的 initramfs 执行压缩，这将 override 所有其他的压缩选项
