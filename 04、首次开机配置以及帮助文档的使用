@@ -33,7 +33,10 @@ localectl set-locale LANG=en_GB.utf8
 在 CentOS7 的系统下，
 修改文件 /etc/locale.conf
 
+EG.基于中文的推荐设置
 
+localectl set-locale LANG=zh_cn.UTF-8
+localectl set-locale LC_TIME=en_GB.UTF-8
 
 CentOS提供 6 个 Terminal 供登录的用户使用
 这六个Terminal分别为tty[1-6]
