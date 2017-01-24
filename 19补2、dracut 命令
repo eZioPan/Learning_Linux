@@ -345,3 +345,64 @@ dracut --print-cmdline
 
 --no-compress
 	不要对生成的 initramfs 执行压缩，这将 override 所有其他的压缩选项
+
+--list-modules
+	罗列所有可用的 dracut 模块
+
+-M, --show-modules
+	在构建 initramfs 时，将所有 包含的 模块名 输出至 StdOut
+
+--keep
+	保留 创建 initramfs 时 使用的 临时目录，以方便 debug
+
+--printsize
+	输出安装的模块的大小
+
+--profile
+	输出创建过程的 profile 信息
+
+--ro-mount
+	默认将以只读模式挂载 根目录 和 /usr 目录
+
+-L, --stdlog <等级>
+	[0-6] 定义输出至 StdOut 的 log 等级
+		0 - 不输出任何信息
+		1 - 仅 致命错误
+		2 - 所有错误
+		3 - 警告
+		4 - 信息
+		5 - debug 信息（会输出大量的信息）
+		6 - trace 信息（更多的信息）
+
+--regenerate-all
+	重新生成存在于默认路径下的所有 initramfs 文件。其他的 参数将传入其中
+
+
+相关文件
+
+/var/log/dracut.log
+	initramfs 镜像生成时的 log
+
+/tmp/dracut.log
+	若 /var/log/dracut.log 不可写入
+	则写至该处
+
+/etc/dracut.conf
+/etc/dracut.conf.d/*.conf
+/usr/lib/dracut/dracut.conf.d/*.conf
+	见 man 5 dracut.conf
+
+
+在 initramfs 中的 配置文件
+
+/etc/conf.d/
+	所有 /etc/conf.d/ 中的文件将用于设置初始的值
+	command line 选项将 override 在 配置文件中 设置的值
+
+/etc/cmdline
+	可以包含附加的 command line 选项。
+	推荐使用 /etc/cmdline.d/*.conf
+
+/etc/cmdline.d/*.conf
+	可以包含附加的 command line 选项
+
