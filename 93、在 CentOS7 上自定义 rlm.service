@@ -11,7 +11,7 @@ Description=Reprise License Manager
 
 [Service]
 Environment="LANG=C"
-ExecStart=/opt/RLM/rlm -dlog +/var/log/RLM/main.dlog
+ExecStart=/opt/RLM/rlm -dlog +/var/log/RLM/RLM.dlog
 ExecReload=/bin/kill -SIGHUP $MAINPID
 ExecStop=/bin/kill -SIGTERM $MAINPID
 Restart=on-failure
@@ -28,4 +28,13 @@ WantedBy=multi-user.target
 
 (8) systemctl enable/disable RLM 来 开启/关闭 RLM 的开机自动启动
 
-(9) 【未完成】若要让局域网内机器都可验证，请关闭防火墙 systemctl stop firewalld
+(9) 为了可以通过网络来验证，需要固定 HOST 和 ISV 使用的端口号，这个项目需要修改 .lic 文件
+	在 .lic 文件的 HOST 行的第 4 个参数写入 RLM 使用的 端口号
+	在 .lic 文件的 ISV 行 以 port= 写入 ISV 将使用的 端口号
+
+(10) 为了独立 各个 ISV 的 log，可以添加/编辑 <ISV>.opt 文件
+	并在其后追加 DEBUGLOG +/<absolutePathToISVLog>.dlog
+
+(12) 在 firewall-cmd 的永久区中添加新的服务，并将 HOST 和 ISV 行指定的 port 都添加进来
+	并将 新增的服务添加至 public 域
+	接着重载 firewalld
