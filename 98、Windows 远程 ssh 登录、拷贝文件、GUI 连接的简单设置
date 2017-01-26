@@ -7,31 +7,23 @@ Windows 远程 ssh 登录，远程文件传输，远程 GUI 的，简单设置
 0.0 在 CentOS 中输入 sudo ps -e | grep "ssh"
 	查看是否有 ssh 进程在运行
 	若没有则用
-	sudo /etc/init.d/ssh start 启动
-	（sudo /etc/init.d/ssh stop 可关闭这个服务）
+	systemctl start ssh 启动
+	（systemctl stop ssh 可关闭这个服务）
 	若没有安装 ssh server
 	则使用 yum install openssh-server 安装
 
 0.1 修改 /etc/ssh/sshd_config 配置部分参数
 	默认只需要取消 PermitRootLogin yes 前的注释即可
 
+0.2 为了在 DHCP 服务下以 <user>@<hostname>.local 的形式远程连接 CentOS，可以让 mDNS 通过防火墙
+	firewall-cmd --permanent --zone=public --add-service=mdns
+	firewall-cmd --reload
+
 1.0 下载 PuTTY
 
 1.1 若使用 VBox 虚拟机，请修改 虚拟机 设置--网络--网卡1--连接方式：桥接网卡
 
-2、在 CentOS 中输入 ifconfig 查看当前机器的 IP
-	一般出现在第二行的 inet 字段后
-
-	# ifconfig | grep "inet"
-
-# 同局域网段下 在 客户机 上 猜测 服务器 IP 地址
-# ifconfig | grep "broadcast" 查询 客户机 所在网段的广播地址
-# ping <broadcast IP> 获取当前网段的所有正在使用的 IP
-# arp -a 获取 hostname 和 IP 的对应情况
-# 通过 hostname 寻找 服务器 IP
-
-
-3.0 打开 PuTTY，选择 左侧 Session 标签，在右侧的 Host Name (or IP address) 中输入 刚刚获得的 IP
+3.0 打开 PuTTY，选择 左侧 Session 标签，在右侧的 Host Name (or IP address) 中输入 CentOS 的主机名（hostname）
 	并在下方的 Saved Sessions 中输入名称并按 Save 保存设置
 
 3.1 点击下方的 Open，就启动了 SSH 的终端，接着就可以正常登陆了
