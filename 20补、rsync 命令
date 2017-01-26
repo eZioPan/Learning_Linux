@@ -35,3 +35,39 @@ rysnc 支持两种方式连接 远程系统：
 
 rsync 将 本地 视为 client，将 远程 视为 server
 rsync daemon 一定是一个 server
+
+
+安装
+
+rsync 必须在 本地 及 远程 机器上安装才可以正常使用
+
+默认情况下， rsync 通过 ssh 作为通信用的 远程 shell
+这个设置可以通过选项 -e 或 环境变量 RSYNC_RSH 指定
+
+
+用法
+
+保持原有修改时间不变
+
+	rsync -t *.c foo:src/
+
+以 存档 的方式备份数据，并在传输之前进行压缩处理，以减少传输量
+
+	rsync -avz foo:src/bar/ /data/tmp
+
+若 源数据 以 / 作为结尾，则拷贝 文件夹的内容 至新目录
+若 源数据 以 文件夹名 作为结尾，则在新目录下创建 文件夹，再拷贝 文件夹的内容
+以下两种写法是等价的
+
+	rsync -av /src/foo /dest
+	rsync -av /src/foo/ /dest/foo
+
+当使用 rsync daemon 时，daemon 会定义一些模块（module），
+模块的配置文件 会指定 该模块可以使用的顶层目录路径 等等信息
+此时， rsync 标识路径就写为
+
+rsync -av <主机名>::<模块名>/<相对模块路径> <目标路径>
+
+用以下命令罗列主机可使用的所有模块
+
+rsync <主机名>::
