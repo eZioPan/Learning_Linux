@@ -124,3 +124,67 @@ rsync <主机名>::
 	如果要使用 -a 但又不想使用内含的 -o，可以这么用
 	-a --no-o
 	注意， --no-o 一定要放置在 -a 之后
+
+-r, --recursive
+	递归拷贝整个目录，参见 --dirs (-d)
+
+	在 rsync 3.0.0 及之后的版本中，使用 增量扫描法（incremental scan）来减小内存开销
+
+	当使用如下参数时，rsync 需要获取全部的文件列表，于是就不会使用增量扫描法
+	--delete-before --delete-after --prune-empty-dirs --delay-updates
+
+	可以使用 --no-inc-recursive 或者 --no-i-c 来手动禁用 增量扫描法
+
+-R, --relative
+	使用相对路径。
+	整个文件的绝对路径将会被传递给 rsync server，而非 只有文件名 被传递给 rsync server
+
+	Eg.
+	rsync -av /foo/bar/baz.c remote:/tmp/
+	这会在 remote 上建立一个 /tmp/baz.c 文件
+
+	rsync -avR /foo/bar/baz.c remote:/tmp/
+	这会在 remote 上建立一个 /tmp/foo/bar/baz.c 文件
+
+	上述案例中的 foo 以及 foo/bar 就被称为 隐含目录（implied directories）
+	在 rsync 3.0.0 及后续版本中，即便在发送端，隐含目录 只是一个 符号链接，rsync 也会在接收端创建 真实而完整的目录
+	如果你想保留 文件的 符号链接，请将 符号链接的 路径 和 符号链接 指向的 真实目录路径 都包含在内
+
+	可以限制 传递给 rsync 的 隐含目录 的层数。
+	对于在 rsync 2.6.7 及之后的版本中，只要在路径中插入一个 点斜线 ./ 就会打断将 插入点 之前的 路劲识别为 隐含目录的 过程
+
+	Eg.
+	rsync -avR /foo/./bar/baz.c remote:/tmp/
+	这会在 remote 上建立一个 /tmp/bar/baz.c 文件
+
+	对于老版本的 rsync：
+		向老版本 rsync 推送过去：
+			(cd /foo; rsync -avR bar/baz.c remote:/tmp/)	# 加 小括号 是为了在 sub-shell 进程中运行，而对其后操作产生影响
+		从老版本 rsync 拉取进来：
+			rsync -avR --rsync=path='cd /foo; rsync' remote:bar/barz.c /tmp/	# 仅针对 非 rsync daemon 的 workaround
+
+--no-implied-dirs
+	这个选项会影响 --relative 的默认行为。当它被指定时，来自 源路径的 隐含目录 的属性将不被保留。
+	这意味着，若 目标地址 上有对应的 路径元素，则该 路径元素 不会被修改，若 隐含目录 没有出现在 目标路径 上，则会以默认参数创建它
+	这会导致 隐含目录 在传输两侧有完全不同状态：比如 在 接受端，隐含目录 变成了一个 指向 目录的 软链接
+
+	EG.
+	若 rsync 被要求传输一个 path/foo/file 文件，而且 path/foo 被 --relative 指定为 隐含目录，
+	但在 接收端 path/foo 是一个指向 文件夹 bar 的软链接，
+	则默认情况下 rsync 会删除这个软链接，并创建一个新的 path/foo 文件夹
+
+	若使用了 --no-implied-dirs，则 文件 file 将真实地存储在 path/bar 下，并随着 path/foo 的软链接 链接至 path/foo/file
+
+	另一种保留 软链接 的方法就是使用 --keep-dirlinks 选项
+
+	对于从 rsync 版本低于 3.0.0 的主机拉取文件，你可以使用这个选项，来将 发送端的 目录软链接 转化为 接收端的 普通目录
+
+-b, --backup
+	使用这个选项，若目标文件已存在，则在传输新文件或删除旧文件时，会备份旧文件。
+	你可以使用 --backup-dir 来指定备份目录，以及使用 --suffix 指定备份用的后缀名
+
+	若没有规定 --backup-dir，则	<1> --omit-dir-times 将被使用
+								<2> 如果同时使用了 --delete（同时未使用 --delete-excluded）
+									rsync 会将备份用 后缀名添加至 防删除匹配字符中，放置备份被删除
+
+									若自定义 --delete-excluded ，则需要手动输入 备份后缀名，并使其优先级较高
