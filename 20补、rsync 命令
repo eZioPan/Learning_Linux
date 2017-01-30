@@ -231,3 +231,43 @@ rsync <主机名>::
 	这个选项 内置 --partial（数据未传输完成也不删除文件）
 	但与 --partial-dir 和 --delay-updates 冲突
 	旧于 rsync 2.6.4 的版本中，该选项 还与 --compare-dust 以及 --link-dest 冲突
+
+--append
+	这个选项让 rsync 在 目标文件尾部追加新的数据，它假设了 接收端 已有的数据 和 发送端 将要发送的数据的前段 是完全一致的。
+	若 接收端 的数据的大小 等于或大于 发送端，则传输就被跳过
+	这个选项不影响 非文件内容 属性的更新（比如 权限 和 所有者），即使文件内容不做修改
+	也不影响 非普通文件 的更新
+	内置 --inplace 选项，但 不与 --sparse 选项冲突
+
+--append-vertify
+	和 --append 选项类似，但 接收端 已存在的数据 将一同加入 全文件校验和检查
+	若校验失败，则 rsync 将以 普通、非追加、就地修改的模式再次传输文件
+
+	对于 rsync 3.0.0 之前的版本， --append 和 --append-vertify 是相同的，它们都会执行 --append-vertify 的内容
+
+-d, --dirs
+	让 发送端 仅发送命令行中指定的目录本身
+	与 --recursive 不同
+	若 源文件 以 目录名 作为结尾，则只会在 目标路径下 创建一个 与 源目录名 相同名称的 空目录
+	若 源文件 以 点号 . 斜线 / 作为结尾，则除了在 目标路径下 创建一个 相同名称的 目录，也会将 源目录下 第一层的内容 拷贝过来
+
+	EG.
+	现有目录 src{A.file,B.dir{C.file,D.dir{}}},des{}
+
+	<1>
+	rsync -dR src des/
+	# des 目录的变化为 des{src{}}
+
+	<2>
+	rsync -dR src/ des/
+	# des 目录的变化为 des{src{A.file,B.dir{}}}
+
+	<3>
+	rsync -dR src/./ des/
+	# des 目录的变化为 des{A.file,B.dir{}}
+
+	若不指定 --recursive 和 --dirs， rsync 仅会拷贝命令行中指定的 文件，而忽略所有的 文件夹
+	若同时指定 --recursive 和 --dirs，则 rsync 会使用 --recursive
+
+	若没有指定 --recursive，则 --dir 会内含在 --file-from 和 --list-only 选项中
+	使用 --no-dirs 或 --no-d 关闭这个选项
