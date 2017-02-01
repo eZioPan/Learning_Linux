@@ -74,7 +74,7 @@ chgrp/chown/chmod 修改群组、所有者、权限
 
 chgrp [-r] [新群组] [文件名]
 chown [-r] [新所有者]|{[新所有者]:[新群组]} [文件名]
-chmod [-r] [u/g/o/a] [+/-/=] {[r/w/x]|[0/1/2/4/...]}
+chmod [-r] [u/g/o/a] [+/-/=] {[r/w/x/X]|[0/1/2/4/...]}
 
 chmod用法详细说明
 
@@ -99,6 +99,9 @@ chmod a-x SomeFile.txt
 
 只去除所有人的 执行 权限，而不修改其他权限
 
+
+特殊设置 chmod [-R] [a/u/g/o][+/-/=]X
+使用大写的 X，仅会修改 目录的 x 权限，而不会修改 普通文件的 x 权限
 
 
 FHS（Filesystem Hierarchy Standard）定义了每一个文件路径应该放置什么样的文件
