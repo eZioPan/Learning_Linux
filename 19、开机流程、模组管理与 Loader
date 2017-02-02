@@ -766,3 +766,18 @@ dracut 建立 initramfs.img 的命令
 需要生成自定义的 initramfs 模块
 
 详见文件 19补2、dracut 命令
+
+
+
+启动中 grub 的修改
+
+EG.在启动时进入 rescue 模式
+
+在启动至 grub 界面时，选中要启动的项目，按 e 进入启动条目编辑模式，并在 linux16 行的行尾添加
+
+systemd.unit=rescure.target
+
+按 <Ctrl>+x 执行即可
+
+
+
