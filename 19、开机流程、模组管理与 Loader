@@ -781,3 +781,10 @@ systemd.unit=rescure.target
 
 
 
+以图形界面使用 grub
+
+在 /etc/default/grub 中添加或修改以下条目
+
+GRUB_TERMINAL="gfxterm"			# 以图形模式启动
+GRUB_GFXMODE=1024x768x24		# 设置屏幕的 <宽>x<高>x<像素位深度>
+GRUB_GFXPAYLOAD_LINUX="keep"	# 保持 GFX 的设置，不要使用 text 模式
