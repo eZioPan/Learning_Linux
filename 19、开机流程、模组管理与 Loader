@@ -788,3 +788,53 @@ systemd.unit=rescure.target
 GRUB_TERMINAL="gfxterm"			# 以图形模式启动
 GRUB_GFXMODE=1024x768x24		# 设置屏幕的 <宽>x<高>x<像素位深度>
 GRUB_GFXPAYLOAD_LINUX="keep"	# 保持 GFX 的设置，不要使用 text 模式
+
+
+
+grub2 的帐号与密码
+
+grub2 中有三类帐号，分别为
+
+superusers 这类帐号是 grub2 的管理员，可以修改 grub2 内的所有参数
+			一旦配置了 superusers 的参数，则所有的修改指令都会变成受限的
+
+users 这类帐号为 grub2 的一般用户，不可修改 grub 的设置，仅能进入 grub 选单项目
+
+无账户 具有最低的权限，仅可以进入无任何限制的系统菜单
+
+EG.假设有三块分区 (hd0,1) (hd0,2) (hd0,3)
+	(hd0,1) 可以给任何人使用
+	(hd0,2) 仅给 名为 eZioPan 的 superusers 使用
+	(hd0,3) 给 名为 eP 的 普通用户 使用
+
+<1> 编辑 /etc/grub.d/01_users 文件，添加以下内容，来添加用户和密码
+
+	set superusers="eZioPan"		# 设置超级管理员账户名
+	password eZioPan abcd1234		# 以明文密码设置 用户名 及对应的 密码
+	password eP dcba4321			# 格式为 password <用户名> <明文密码>
+
+	注意，为了保证密码的安全性，不建议使用明文密码
+	可以使用 grub2-mkpasswd-pbkdf2 命令将明文密码转换为密文存储
+	直接执行 grub2-mkpasswd-pbkdf2 命令，并按照提示输入明文密码
+	接着将输出字段中 “your password is” 后的所有内容复制下来
+	并以
+
+	password_pbkdf2 <用户名> <复制的密码>
+
+	的形式粘贴回 /etc/grub.d/01_users 文件中
+
+	注意若 /etc/grub.d/01_users 没有 可执行权限，必须加上
+
+<2> 编辑 /etc/grub.d/10_linux 以及 /etc/grub.d/40_custom 文件
+
+	搜索 --unrestricted 字符
+	若要将对应的 menuentry 只能以 superusers 的身份登陆，
+	则将 --unrestricted 修改为 --users "" 或直接删除 --unrestricted
+
+	若要指定的用户登陆，
+	则将 --unrestricted 修改为 --users "user1"
+
+	若要让任何人都可以登陆。
+	则保留 --unrestricted
+
+<3> 用 grub2-mkconfig -o /boot/grub2/grub.cfg 重新生成 grub.cfg 文件
