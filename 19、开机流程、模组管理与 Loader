@@ -838,3 +838,41 @@ EG.假设有三块分区 (hd0,1) (hd0,2) (hd0,3)
 	则保留 --unrestricted
 
 <3> 用 grub2-mkconfig -o /boot/grub2/grub.cfg 重新生成 grub.cfg 文件
+
+
+
+常见启动问题的解决方案
+
+<1> 忘记 root 密码
+
+	在 systemd 的控制下，即便到达了 rescure 模式，依旧需要 root 密码才能进入系统，
+	所以不可以使用 rescure 模式重置 root 密码
+
+	但是我们可以通过 使用 InitRamFS 提供的系统 和 chroot 命令以 可读写 的方式挂载 原系统根目录
+	来修改密码
+
+	(1) 在 grub 启动选单界面中按 e 编辑 启动 command
+	(2) 在 linux16 所在的行尾 添加 rd.break
+	(3) 按 <Ctrl>+<x> 来启动
+	(4) 此时会进入 InitRamFS 所提供的系统，原系统的根目录会被挂载至 /sysroot 目录下
+	(5) 可以使用 mount 命令查看 系统的 root 所在的设备以及挂载点
+	(6) 使用 mount -o remount,rw /sysroot 将 原系统的根目录 挂载为 可读写的状态
+	(7) 使用 chroot /sysroot 将 /sysroot 的路径变为 /
+	(8) 使用 passwd root 来修改密码
+	(9) 由于 RamDiskFS 不包含 SELinux 所以
+		使用 touch /.autorelabel 来重建整个磁盘的 SELinux Content
+		或者
+		将 /etc/selinux/config 设置为 permissive
+		接着，重启后，以 root 下达 restorecon -Rv /etc 来重建 /etc/ 下的 SELinux Content
+		重新修改 /etc/selinux/config 为 enforcing
+		接着 setenforce 1 即可
+
+<2> 以 root 状态直接开机
+
+	(1) 在 grub 启动选单界面中按 e 编辑 启动 command
+	(2) 在 linux16 所在的行尾 添加 init=/init/bash
+	(3) 按 <Ctrl>+<x> 来启动
+	(4) 此时 bash 将成为 PID 为 1 的程序
+		由于 没有 systemd 的使用，所以无法正常使用全部的功能
+		也无法开关机，要开关机只能用 电源键
+		另外由于没有 systemd 所以 SELinux 也没有启动，修改过的文件一定要重建 SELinux Content
