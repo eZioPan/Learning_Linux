@@ -21,6 +21,7 @@ Windows 远程 ssh 登录，远程文件传输，远程 GUI 的，简单设置
 
 	如果在 Windows 上登录，请下载 iTunes 安装包，用 7zip 解包，并安装其中的 Bonjour.msi
 
+
 1.0 下载 PuTTY
 
 1.1 若使用 VBox 虚拟机，请修改 虚拟机 设置--网络--网卡1--连接方式：桥接网卡
@@ -29,6 +30,12 @@ Windows 远程 ssh 登录，远程文件传输，远程 GUI 的，简单设置
 	并在下方的 Saved Sessions 中输入名称并按 Save 保存设置
 
 3.1 点击下方的 Open，就启动了 SSH 的终端，接着就可以正常登陆了
+
+
+# 注意事项（IPv4）
+# 在登录后， CentOS 会记录远程登录的 IP 地址，若要使用 IPv4 地址
+# <1> 请修改 CentOS 上 /etc/ssh/sshd_config 中的 AddressFamily any 为 AddressFamily inet
+# <2> 请修改 Putty 上 Connection 选项卡 Internet protocol version 为 IPv4
 
 
 # 注意事项（vim 使用）
