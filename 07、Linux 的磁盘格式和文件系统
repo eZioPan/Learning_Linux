@@ -319,11 +319,18 @@ lsblk [-dfimpt] [device]
 
 -d, --nodeps 只显示磁盘本身的信息，而不显示磁盘分区的状态
 -f, --fs 同时显示对应的文件系统
+		 等价于 -o NAME,FSTYPE,LABEL,MOUNTPOINT
 -i, --ascii 仅用 ASCII 码来展示文件夹层级关系
 -m, --perms 输出设备的权限信息
 -p, --paths 输出完成的设备路径
 -t, --topology 列出磁盘的完整信息
-
+-o, --output 自定义输出列
+			 输出列的内容以逗号 , 作为分隔
+			 若在 此选项前添一个加号 + 则表示，
+			 当前指定的内容追加至 lsblk 默认输出之后
+			 eg.
+			 lsblk -o +UUID
+			 具体的追加内容可以查看 lsblk --help
 eg.
 
 [eP@epct ~]$ lsblk
