@@ -34,8 +34,7 @@ Windows 远程 ssh 登录，远程文件传输，远程 GUI 的，简单设置
 
 # 注意事项（IPv4）
 # 在登录后， CentOS 会记录远程登录的 IP 地址，若要使用 IPv4 地址
-# <1> 请修改 CentOS 上 /etc/ssh/sshd_config 中的 AddressFamily any 为 AddressFamily inet
-# <2> 请修改 Putty 上 Connection 选项卡 Internet protocol version 为 IPv4
+# 请修改 Putty 上 Connection 选项卡 Internet protocol version 为 IPv4
 
 
 # 注意事项（vim 使用）
