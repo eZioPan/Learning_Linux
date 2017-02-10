@@ -31,3 +31,49 @@ x<MAC> MAC 地址
 eg.
 enp5s0 有线网卡，在 PCI 上，总线 5 插槽 0 上的网卡
 wlp3s0 无线局域网，在 PCI 上，总线 3 插槽 0 上的网卡
+
+
+
+简单设置网络连接
+
+查看当前的网络连接
+
+nmcli connection show [网络配置名]
+
+当使用 nmcli connection show 时，显示当前机器上所有网络配置的状态
+
+使用 nmcli connection show [网络配置名] 时，显示指定的网络配置的信息
+
+返回值有很多，其中比较重要的是：
+
+connection.autoconnect [yes|no] 开机是否自动连接
+ipv4.method [auto|manual] 手动还是自动配置网络参数
+ipv4.dns [DNS 服务器的 IP 地址] 指定 DNS 服务器地址
+ipv4.gateway [网关 IP 地址] 指定 网关 IP 地址
+
+
+如果要手动设置一个 网络连接，可以这样
+
+eg.
+
+[eP@ePCt ~]$ nmcli connection modify [网络配置名] \
+> connection.autoconnect yes \
+> ipv4.method manual \
+> ipv4.addresses 192.168.1.101/24 \
+> ipv4.gateway 192.168.1.1 \
+> ipv4.dns 192.168.1.1
+
+接着我们可以开启这个网络
+
+[eP@ePCt ~]$ nmcli connection up [网络配置名]
+
+
+如果路由具有 DHCP 功能，则可以如下简单设置 网络连接
+
+[eP@ePCt ~]$ nmcli connection modify [网络配置名] \
+> connection.autoconnect yes \
+> ipv4.method auto
+
+接着开启这个网络即可
+
+[eP@ePCt ~]$ nmcli connection up [网路配置名]
