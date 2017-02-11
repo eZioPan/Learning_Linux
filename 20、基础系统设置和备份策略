@@ -77,3 +77,14 @@ eg.
 接着开启这个网络即可
 
 [eP@ePCt ~]$ nmcli connection up [网路配置名]
+
+
+
+修改主机名（mDNS 会使用到）
+
+hostname 来查当前主机名
+hostname [HOSTNAME] 来设置临时主机名（Transient hostname）
+
+
+hostnamectl 命令 见文件
+20补1、hostnamectl 命令
