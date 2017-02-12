@@ -1,0 +1,76 @@
+hostnamectl 查看和设置主机名
+
+该指令可以设置三种级别的 主机名
+
+"pretty" hostname 可以写入几乎任何的字符
+"static" hostname 用于系统启动时，定义内核的主机名
+"transient" hostname 默认是从网络配置中读取的
+
+如果 static hostname 被指定（除了 localhost 的其他名称）且可用，则 transient hostname 就不被使用
+
+static hostname 被存储在 /etc/hostname 文件中
+而 pretty hostname、chassis type、icon name 则被保存在 /etc/machine-info 中
+
+选项
+
+--no-ask-password
+	不提示普通用户输入升权限密码
+
+--static, --transient, --pretty
+	若同时使用了 status 选项（或者没有指明任何选项），会输出当前指定的 hostname
+	若同时使用了 set-hostname 则仅有指定的 hostname 会被设置
+
+-H, --host=
+	执行远程设置
+	直接指定 主机名 或者指定 <用户>@<主机名>
+	后面可以用冒号 : 隔开需要连接的 container
+	将使用 ssh 作为连接方式
+
+-M, --machine=
+	指定本地的 container
+
+命令
+
+status
+	显示当前系统的 hostname 以及相关的信息
+
+set-hostname [NAME]
+	将系统的 hostname 设置为 NAME
+	默认情况下，所有三个 hostname 都会被一同设置。
+
+	如果指定了 --static --transient --pretty 则只有被指定的部分会被设置
+
+	若 pretty hostname 被设置，则 static hostname 和 transient hostname 会被一同设置
+	而再设置后两者时， pretty hostname 中的 空格 会被横线 - 所代替，其他特殊字符会被移除
+
+	若输入了空字符，则系统的 hostname 会恢复至系统的初始状态
+
+set-icon-name [NAME]
+	设置 系统图标名 为 NAME， 系统图标名 被用在一些图形程序中，让主机可视化
+	图标名 应该遵循 Icon Naming Specification
+
+	传入一个空字符串将使图标还原至原始状态
+	这个状态一般由 chassis type 和其他一些参数决定
+
+set-chassis [TYPE]
+	将设备类型设置为 TYPE，设备类型 被用在一些图形程序中，让主机可视化或改变人机交互
+	目标可用的设备类型有
+	desktop、laptop、server、tablet、handset、watch、embedded、vm、container
+
+	传入一个空字符串将使类型还原至原始状态
+	这个状态一般由 固件 和其他一些参数决定
+
+set-deployment [ENVIROMENT]
+	设置部署环境描述
+	ENVIROMENT 必须为单个单词，且不包含控制符
+	建议使用的有
+	development、integration、staging、production
+
+	传入一个空字符串将使类型还原至 空字符状态
+
+set-location [LOCATION]
+	为系统设置一个 地址字符串
+	以人类可读的方式指明这台机器所在的地理位置
+	比如：“XX楼机房X第X号机器”
+
+	传入一个空字符串将使类型还原至 空字符状态
