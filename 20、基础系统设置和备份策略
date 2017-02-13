@@ -88,3 +88,65 @@ hostname [HOSTNAME] 来设置临时主机名（Transient hostname）
 
 hostnamectl 命令 见文件
 20补1、hostnamectl 命令
+
+
+
+设置时间和日期
+
+timedatectl
+
+选项
+
+--no-ask-password
+ 	同 hostnamectl
+
+--adjust-system-clock
+	如果与 set-local-rtc 命令一同使用，系统时钟会用 实时时钟（RTC） 来同步时间
+	否则 实时时钟（RTC） 将与 系统时钟 同步
+
+-H, --host=
+	同 hostnamectl
+
+-M, --machine=
+	同 hostnamectl
+
+--no-pager
+	让输出不使用分页器
+
+命令
+
+status
+	显示当前 系统时间 和 实时时钟 的设置
+
+set-time [TIME]
+	将 系统时间 设置为指定的时间
+	这个命令将同时同步 RTC 时间
+	使用以下格式设置时间
+	"2012-10-10-30 18:17:16"
+
+set-timezone [TIMEZONE]
+	将 系统时区 设置为指定的值
+	可用的时区 可用 list-timezones 罗列
+	若 实时时钟 记录的是当地时间，则该指令也会同步 实时时钟
+	这个命令会修改 /etc/localtime 的软链接
+	查看 localtime(5) 获取更多信息
+
+list-timezones
+	罗列所有可用的时区，每个一行
+
+set-local-rtc [BOOL]
+	设置为 0 时，系统将 实时时钟 设置为 UTC 时间
+	设置为 1 时，系统将 实时时钟 设置为 本地时间
+	注意：
+	只要使用了这个命令，系统都会用 系统时间 修改 实时时钟
+	但若使用了 --adjust-system-clock，则 系统时间 将会以 实时时钟 为标准来同步
+	这个命令会修改 /etc/adjustime 的第 3 行，见 hwclock(8) 的文档
+
+set-ntp [BOOL]
+	设置是否使用网络校时服务
+
+
+
+网络校时服务
+ntpdate [NTP 网址]	# 使用 NTP 服务来设置 系统时间
+hwclock -w			# 用系统时间来设置 实时时钟
