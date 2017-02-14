@@ -40,3 +40,11 @@ exfat-utils 和 fuse-exfat
 
 主要问题：
 CentOS7 无法正确识别 exFAT 的文件系统，需要使用 mount -t exfat <device> <directory> 手动指定文件系统
+
+
+
+设置屏幕的亮度
+
+echo <屏幕亮度> | sudo tee /sys/class/backlight/nv_backlight/brightness
+
+屏幕亮度取值 0 至 100
