@@ -207,3 +207,9 @@ set-x11-keymap <LAYOUT> [MODEL [VARIANT [OPTIONS]]]
 list-x11-keymap-models, list-x11-keymap-layouts,
 list-x11-keymap-variants [LAYOUT], list-x11-keymap-options
 	上述命令用于罗列 set-x11-keymap 可用的参数
+
+
+
+系统防火墙配置
+详见文件
+20补2、firewalld 相关配置
