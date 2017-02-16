@@ -67,3 +67,46 @@
 
 	trusted
 		所有的传入连接将被接受
+
+
+哪种 区域 应该被使用
+
+	举例来说，公共 WIFI 连接主要应该不被信任
+	有线家庭网络连接应该被信任
+	选择与你使用环境最接近的 区域
+
+
+如何配置和添加区域
+
+	可以用以下的 firewalld 交互界面 来处理和改变配置
+	图形化配置界面 firewall-config
+	命令行 firewall-cmd
+	D-BUS 界面
+
+	或者向 配置目录中拷贝或添加 区域文件
+	预设和倒回的配置文件 /lib/firewalld/zones
+	用户创建的配置文件 /etc/firewalld/zones
+
+
+如何为 网络连接 设置或修改 区域
+
+	区域被保存在 网络连接配置文件 ifcfg 中，且它们以 ZONE= 开头
+	如果该选项丢失或为空，则使用 firewalld 设置中的默认区域
+	如果 网络连接被 NetworkManager 控制，也可以使用 nm-connection-editor 来修改 区域
+
+
+被 NetworkManager 控制的网络连接
+
+	firewall 不能用 NetworkManager 所提供的 网络连接名称 来控制网络连接，它仅能控制网络界面
+	因此 NetworkManager 告诉 firewalld 在网络连接连接前，就将由 ifcfg 定义的 网络界面 置于指定的 区域中
+	若 区域 没有被设置，则界面将被放置在 firewalld 设置的默认区域中
+	如果一个连接由多个界面，两者都会被引入 firewalld 中
+	修改 界面的名称也会被 NetworkManager 接管并传入 firewalld 中
+
+	NetworkManager 也会告诉 firewalld 从 区域 中 移除 网络连接，若连接本身已经断开
+	如果 firewalld 被 systemd 或 init 脚本 启动或重启， firewalld 也会提示 NetworkManager 将 网络连接加入 区域 中
+
+
+被 network script 控制的 网络连接
+
+	（过时不提，仅明白不会自动处理即可）
