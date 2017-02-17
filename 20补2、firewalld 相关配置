@@ -110,3 +110,61 @@
 被 network script 控制的 网络连接
 
 	（过时不提，仅明白不会自动处理即可）
+
+
+firewalld 的使用
+
+	下面介绍 firewall-cmd 的用法
+
+
+
+firewall-cmd
+
+通用选项
+
+	-q, --quiet
+			不要打印状态信息
+
+
+状态选项
+
+	--state
+		检查 firewalld 服务是否被激活
+
+	--reload
+		重载 firewall 规则，并保持原有的 firewall 状态信息
+
+	--complete-reload
+		完全重载 firewall，甚至包括 netfilter 内核模块 在内。
+		这很有可能会中断当前的链接
+
+		仅在严重的 firewall 错误发生时使用，
+		比如 状态信息出错 时，使用正确的 firewall 规则 也无法建立任何连接时
+
+	--runtime-to-permanent
+		将 firewalld 当前 运行时配置 写入 永久配置 中
+
+	--get-log-denied
+		输出 log denied 设置
+
+	--set-log-denied=<VALUE>
+		在 INPUT/FORWARD/OUTPUT 链 的 reject 和 drop 前，
+		以及 final reject/drop 前，
+		加入 log rule
+		可用的值为 all, unicast, broadcast, multicast 和 off
+		默认值为 off，也就是关闭 log
+
+		这会同时设置 runtime 和 permanent，并会重载 firewalld 保证 log rule 的运行
+
+
+永久选项
+
+	--permanent
+		该选项 将 选项 设置为 永久的
+		这类选项不会立刻生效，除非 重启/重载 firewalld 或者 重启系统
+
+		若不用 该选项，则 选项 仅会成为 运行时 配置
+
+		若要同时设置 永久选项 和 运行时 选项，分别运行 带有该选项 和 不带该选项 的命令
+
+		只要下方的选项允许，该选项都可以加上去
