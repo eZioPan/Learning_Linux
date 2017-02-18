@@ -168,3 +168,96 @@ firewall-cmd
 		若要同时设置 永久选项 和 运行时 选项，分别运行 带有该选项 和 不带该选项 的命令
 
 		只要下方的选项允许，该选项都可以加上去
+
+
+区域选项
+
+	--get-default-zone
+		打印 网络连接 和 界面 将进入的 默认区域
+
+	--set-default-zone=<ZONE>
+		为 未被指定 区域 的 网络连接 和 界面 设置 默认的 区域
+
+		会同时改变 永久 和 运行时 配置
+
+	--get-active-zones
+		打印当前 激活的区域 以及对应的 界面 和 源地址
+		激活的区域 就是 被 绑定至 特定 界面 和 源地址 的 区域
+		输出格式为
+
+		zone1
+			interfaces: interface1 interface2 ..
+			sources: source1 ..
+		zone2
+			..
+
+	[--permanent] --get-zones
+		打印 预定义 的 区域
+
+	[--permanent] --get-services
+		打印 预定义 的 服务
+
+	[--permanent] --get-icmptypes
+		打印 预定义 的 icmp 类型
+
+	[--permanent] --get-zone-of-interface=<INTERFACE>
+		打印 绑定至 指定 界面 的 区域
+
+	[--permanent] --get-zone-of-source=<source>[/mask]|MAC|ipset:ipset
+		打印 绑定至 指定 源地址 的 区域
+
+	[--permanent] --info-zone=<ZONE>
+		打印 区域 的 详细信息
+
+		输出格式为
+
+		zone
+			interfaces: interface1 ..
+			sources: source1 ..
+			services: service1 ..
+			ports: port1 ..
+			protocols: protocol1 ..
+			forward-ports:
+				forward-port1
+				..
+			source-ports: source-port1 ..
+			icmp-blocks: icmp-type1 ..
+			rich rules:
+				rich rule1
+				..
+
+	[--permanent] --list-all-zones
+		罗列所有的 区域 的详细信息
+		输出格式 类似 --info-zone
+
+	--permanent --new-zone=<ZONE>
+		添加一个永久的空区域
+
+	--permanent --new-zone-from-file=<FILENAME> [--name=[ZONE]]
+		从一个已经配置好的 区域文件 中 设置新的 区域，并用 ZONE 来重命名 区域名称
+
+	--permanent --delete-zone=<ZONE>
+		删除一个已经存在的区域
+
+	--permanent --load-zone-defaults=<ZONE>
+		载入 区域 的默认设置，或报告 NO_DEFAULTS 错误
+
+	--permanent --zone=<ZONE> --set-description=<DESCRIPTION>
+		为 指定的 区域 写入描述
+
+	--permanent --zone=<ZONE> --get-description
+		打印指定 区域 的描述
+
+	--permanent --zone=<ZONE> --set-short=<DESCRIPTION>
+		为 指定的 区域 设置短描述
+
+	--permanent --zone=<ZONE> --get-short
+		打印指定 区域 的短描述
+
+	--permanent [--zone=<ZONE>] --get-target
+		获取 永久 区域 的 目标
+
+	--permanent [--zone=<ZONE>] --set-target=<TARGET>
+		设置 永久 区域 的 目标
+		目标为下列之一
+			default, ACCEPT, DROP, REJECT
