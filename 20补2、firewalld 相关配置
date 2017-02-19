@@ -261,3 +261,39 @@ firewall-cmd
 		设置 永久 区域 的 目标
 		目标为下列之一
 			default, ACCEPT, DROP, REJECT
+
+
+修改和请求 区域 的选项
+
+	下方内容仅影响特定的一个 区域
+	若指定了 --zone=<ZONE> 则影响指定的 区域，否则影响默认区域
+
+	[--permanent] [--zone=<ZONE>] --list-all
+		罗列 区域的 所有信息
+
+	[--permanent] [--zone=<ZONE>] --list-services
+		罗列所有 加入 区域的 服务
+
+	[--permanent] [--zone=<ZONE>] --add-service=<SERVICE> [--timeout=<TIMEVAL>]
+		将一个 服务 加入区域内
+		可重复指定
+		若指定了 --timeout，则在指定的时间后该条目失效，默认时间是 秒，可用单位有 s,m,h
+
+		--timeout 和 --permanent 互斥
+
+	[--permanent] [--zone=<ZONE>] --remove-service=<SERVICE>
+		将一个 服务 从 区域 中移除
+		可重复指定
+
+	[--permanent] [--zone=<ZONE>] --query-service=<SERVICE>
+		查询某个 服务 是否加入了 区域
+		返回 0 则为 加入，返回 1 则没有加入
+
+	下述内容均可参照 server 部分仿制命令
+	port=<portID>[-<portID>]/<PROTOCOL>
+	protocol=<PROTOCOL>
+	source-port=<portID>[-<portID>]/<PROTOCOL>
+	icmp-block=<ICMPTYPE>
+	forward-port=port=<portID>[-<portID>]:proto=<PROTOCOL>[:toport=<portID>[-<portID>]][:toaddr=<ADDRRESS>[/<MASK>]]
+	masquerade
+	rich-rule='<rule>'
