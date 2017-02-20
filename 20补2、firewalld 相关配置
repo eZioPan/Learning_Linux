@@ -297,3 +297,53 @@ firewall-cmd
 	forward-port=port=<portID>[-<portID>]:proto=<PROTOCOL>[:toport=<portID>[-<portID>]][:toaddr=<ADDRRESS>[/<MASK>]]
 	masquerade
 	rich-rule='<rule>'
+
+
+控制 区域 和 界面 的绑定
+	将一个 界面 绑定至一个 区域 中，表示通过该 界面 的数据，受到该 区域 的限制
+	若指定了 --zone=<ZONE> 则影响指定的 区域，否则影响默认区域
+
+	界面名 是一个最长 16 个字的 字符串，且不可以包含 空格 斜线 感叹号 星号
+
+	[--permanent] [--zone=<ZONE>] --list-interfaces	罗列 区域 绑定的 界面
+									add				（不常用）将 界面 添加至 区域
+									change			修改 界面 所在的 区域
+									query			查询 界面 是否在 区域 中
+									remove			从 区域 中移除 界面
+
+
+控制 区域 和 源地址 的绑定
+	将一个 源地址 绑定至一个 区域 中，表示由该 原地址 发来的数据，受到该 区域 的限制
+	若指定了 --zone=<ZONE> 则影响指定的 区域，否则影响默认区域
+
+	语法同 区域 和 界面 的绑定
+
+	[--permanent] [--zone=<ZONE>] --list-source
+									add
+									change
+									query
+									remove
+
+
+IPSet 选项
+
+	--permanent --new-ipset=<IPSET> --type=<TYPE> [--option=<IPSET> --option[=<VALUE>]]	设置新的 IPSet
+				--new-ipset-from-file=<FILENAME> [--name=<IPSET>]	从文件中导入 IPSet
+				--delete-ipset=<IPSET>								删除 IPSet
+				--load-ipset-defaults=<IPSET>						载入默认 IPSet
+
+	[--permanent] --info-ipset=<IPSET>
+					get-ipsets
+
+	--permanent --ipset=<IPSET> --set-description=<DESC>
+								--get-description
+								--set-short=<SHORT>
+								--get-short
+
+	[--permanent] --ipset=<IPSET> --add-entry=<ENTRY>
+									remove-entry=<ENTRY>
+									query-entry=<ENTRY>
+
+									get-entries
+									add-entries-from-file=<FILENAME>
+									remove-entries-from-file=<FILENAME>
