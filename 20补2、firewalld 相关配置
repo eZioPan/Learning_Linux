@@ -347,3 +347,50 @@ IPSet 选项
 									get-entries
 									add-entries-from-file=<FILENAME>
 									remove-entries-from-file=<FILENAME>
+
+
+服务选项
+	这部分的操作仅会影响指定的某个服务
+
+	[--permanent] --info-service=<SERVICE>
+
+	--permanent --new-service=<SERVICE> 创建新 服务 条目
+				--new-service-from-file=<FILENAME> [--name=<SERVICE>]
+				--load-service-defaults=<SERVICE>
+
+	--permanent --service=<SERVICE> --set-description=<DESC>
+									--get-description
+									--set-short=<DESC>
+									--get-short
+
+									--add-port=<portID>[-<portID>]/<protocol>
+									--remove-port=...
+									--query-port=...
+									--get-ports
+
+										-protocol=<PROTOCOL>
+										-source-port=<portID>[-<portID>]/<protocol>
+										-module=<MOD>
+										-destination=<IPVer>:<ADRESS>[/<mask>]
+
+
+ICMP 设置
+	（略）
+
+
+直接操作设置
+	（略）
+
+
+锁定选项
+	即使拥有 root 权限的程序也不能通过 firewall 程序来修改 firewall 配置
+	（详情略）
+
+
+疼痛模式
+	完全丢弃所有的进出入包
+	仅在严重的网络问题时使用（比如被黑客入侵）
+
+	--panic-on
+	--panic-off
+	--query-panic
