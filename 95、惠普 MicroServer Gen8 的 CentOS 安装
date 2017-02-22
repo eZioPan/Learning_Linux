@@ -54,7 +54,7 @@ hpe.com 搜索 B120i，右侧选择 支持，找到 HP Dynamic Smart Array B120i
 
 7、禁用 ahci 驱动的开机自动载入，修改 /etc/default/grub 的 GRUB_CMDLINE_LINUX 行，在行尾反引号和最后一个单词之间添加 rd.driver.blacklist=ahci
 
-8、生成新的 grub 以及启动 img， grub2-mkconfig -o /boot/grub2/grub.cfg
+8、生成新的 grub 配置文件， grub2-mkconfig -o /boot/grub2/grub.cfg
 
 9、再次重启，之后就能开始分区及格式化 RAID
 
@@ -64,4 +64,4 @@ hpe.com 搜索 B120i，右侧选择 支持，找到 HP Dynamic Smart Array B120i
 
 注意！只有一根网线链接在网口上时，系统只会使用当前真实的网口 MAC 地址获取 IP
      若将两个网口都插上网线，则系统会自动屏蔽已经加入绑定的真实网口，并用绑定生成的新设备获取 IP
-     者两个 IP 极有可能不一样
+     这两个 IP 极有可能不一样
