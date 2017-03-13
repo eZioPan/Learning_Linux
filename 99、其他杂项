@@ -56,3 +56,17 @@ RPMforge 安装问题
 若在安装 RPMforge 源之前已经安装了 EPEL 源
 请先删除 epel-release 源，再安装 RPMforge
 此时 RPMforge 会同时安装 EPEL 并匹配好两者的关系
+
+
+
+CentOS 解析其他 mDNS(avahi/bonjour) 主机
+
+由于 CentOS7 安装时只会带 avahi-daemon 用于解析/应答 mDNS
+此时其他带有 完整的 nss-mdns 或 bonjour 的主机可以正常解析 CentOS7 主机的 mDNS 名
+但 CentOS7 无法利用 avahi-daemon 解析其他 mDNS 主机名
+需要安装 nss-mdns 向 nss 中加入 mdns 的模块
+来使系统可以利用 avahi 提供的 mDNS 解析
+yum install nss-mdns
+
+#！ 注1: 将 mDNS 服务加入 firewalld 的 public 域让 mDNS 服务通过防火墙
+#！ 注2: nss 为 GNU Name Service Switch 的简称
