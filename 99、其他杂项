@@ -70,3 +70,32 @@ yum install nss-mdns
 
 #！ 注1: 将 mDNS 服务加入 firewalld 的 public 域让 mDNS 服务通过防火墙
 #！ 注2: nss 为 GNU Name Service Switch 的简称
+
+
+
+有关于 Putty 连接至 MacOS 中文乱码的问题
+
+由于 MacOS 将 LANG 设置为 C
+所以无法正常显示除英文之外的字符
+
+可以对 Putty 进行如下设置
+
+设置 Connection - Data - Enviroment variables
+添加
+Variable 为 LC_ALL
+Value 为 zh_CN.utf-8
+即可
+
+在 Linux 中的 ssh 命令执行以下命令
+
+export LC_ALL=zh_CN.utf-8
+ssh -o SendEnv=LC_ALL <主机名>
+即可
+SendEnv 表示把本地的环境变量发送至远端系统
+
+注意
+这个配置必须保证
+远程计算机的 /etc/ssh/sshd_config 文件中
+AcceptEnv 字段未被注释
+这个条目表示会使用的环境
+必须保证后面接的字符串含有 LC_ALL 或包含这个字符串的通配符
