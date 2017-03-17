@@ -99,3 +99,17 @@ SendEnv 表示把本地的环境变量发送至远端系统
 AcceptEnv 字段未被注释
 这个条目表示会使用的环境
 必须保证后面接的字符串含有 LC_ALL 或包含这个字符串的通配符
+
+
+
+MacOS 的 ls 命令的配置
+
+MacOS 的 ls 命令继承自 FreeBSD
+不如 Linux 的易于辨识
+将如下的行追加至 ~/.bash_profile 中
+
+export LSCOLORS="ExGxBxDxCxEgEdxbxgxcxd"
+export CLICOLOR=1
+alias ls="ls -G"
+alias ll="ls -l"
+alias la="ls -a"
