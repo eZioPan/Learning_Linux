@@ -38,6 +38,16 @@ EG.基于中文的推荐设置
 localectl set-locale LANG=zh_cn.UTF-8
 localectl set-locale LC_TIME=en_GB.UTF-8
 
+
+locale 的几个变量的说明
+LANG 当各种 LC_* 变量没有明确设置时，所使用的默认变量
+LC_ALL 设置它时，会覆写所有的 LC_* 变量设置
+LC_* 单独设置某种 locale
+若所有的 LC_* 以及 LANG 都没有设置 默认使用 POSIX 或被称为 C
+这种模式只支持 ASCII 字符，其他字符一律不显示
+
+
+
 CentOS提供 6 个 Terminal 供登录的用户使用
 这六个Terminal分别为tty[1-6]
 可以通过 Ctrl+Alt+[F1-F6]来打开
