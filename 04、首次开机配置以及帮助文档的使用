@@ -35,8 +35,13 @@ localectl set-locale LANG=en_GB.utf8
 
 EG.基于中文的推荐设置
 
-localectl set-locale LANG=zh_cn.UTF-8
-localectl set-locale LC_TIME=en_GB.UTF-8
+localectl set-locale LANG=zh_cn.UTF-8 LC_TIME=en_GB.UTF-8
+
+注意1：多个 locale 变量需要在同一个命令中声明
+	   否则就是后一个命令覆盖前面的命令
+
+注意2：若使用 localectl 设置 locale，则需要在下一次登录时生效
+	   因为 locale 的本质是 登录后 shell 的环境变量
 
 
 locale 的几个变量的说明
