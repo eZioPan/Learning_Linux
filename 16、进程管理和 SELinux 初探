@@ -297,11 +297,27 @@ free [[-b|k|m|g|tera]|[-h]] [-t] [-s <间隔秒数>] [-c <输出次数>]
 
 
 
-uname 查看系统信息
+查看系统信息
+
+uname
+若没有参数则等价于 -s
+-a, --all 打印所有的信息
+-s, --kernel-name 打印核心名
+-n, --nodename 打印网络节点主机名
+-r, --kernel-release 打印发布号
+-v, --kernel-version 打印版本号
+-m, --machine 打印机器硬件名
+-p, --processor 打印处理器类型 或者 “未知”
+-i, --hardware-platform 打印硬件平台 或者 “未知”
+-o, --operating-system 打印操作系统
 
 
 
-dmesg 查看内核 log
+查看/控制 kernel ring buffer（也就是内核 log）
+
+dmesg
+不加参数为从 kernel ring buffer 中读取所有的信息
+
 
 
 
