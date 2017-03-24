@@ -317,7 +317,88 @@ uname
 
 dmesg
 不加参数为从 kernel ring buffer 中读取所有的信息
+下列参数中 --clear, --read-clear, --console-on, --console-off, --console-level
+-C, --clear
+	清除 ring buffer
 
+-c, --read-clear
+	打印并清除 ring buffer
+
+-D, --console-off
+	关闭将信息打印至控制台
+
+-d, --show-delta
+	显示时间戳和每条信息之间的时间差 若和 --notime 连用，则仅显示时间差，不显示时间戳
+
+-e, --reltime
+	用人类可读的方式显示本地时间和时间差
+
+-E, --console-on
+	打开将信息打印至控制台
+
+-F, --file <file>
+	从 文件 中读取 log
+
+-f, --facility <list>
+	仅显示由指定 facility 产生的 log
+	facility 可以指定为一个由 逗号 , 隔开的列表
+	具体的 facility 列表，参见 dmesg --help
+
+-H, --human
+	启用人类可读输出
+
+-k, --kernel
+	打印内核信息
+
+-L, --color
+	用颜色标记重要信息
+
+-l, --level <list>
+	仅显示指定等级的信息
+	等级 可以指定为一个由 逗号 , 隔开的列表
+	具体的 等级 列表， 参见 dmesg --help
+
+-n, --console-level <level>
+	设置会显示在控制台的 内核 log 等级
+	可用 等级 参见 dmesg --help
+
+-P, --nopager
+	不要使用分页器
+	分页器默认会被 --human 启用
+
+-r, --raw
+	读取 raw 格式的 dmesg 信息
+	注意
+	raw 格式会取决于 dmesg 如何读取内核信息的
+	/dev/kmsg 的格式 和 syslog 所使用的不一样
+	dmesg 默认会使用 syslog 的格式
+	真正的 /dev/kmsg 可以这样读取
+	dd if=/dev/kmsg iflag=nonblock
+
+-S, --syslog
+	使用 syslog 界面读取内核信息
+	在内核 3.5.0 之后，默认使用 /dev/kmsg 作为读取界面
+
+-s, --buffer-size <size>
+	设置读取 内核 log 的缓存大小
+	默认为 16392
+
+-T, --ctime
+	使用人类可读的方式显示时间戳
+	时间戳可能不准确
+	log 使用的时间将在系统 挂起 期间不更新
+
+-t, --notime
+	不要显示内核时间戳
+
+-u, --userspace
+	打印 用户空间 信息
+
+-w, --follow
+	等待新的信息
+
+-x, --decode
+	把 facility 和 level 的数字转化为人类可读的状态
 
 
 
