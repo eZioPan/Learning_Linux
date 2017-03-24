@@ -119,3 +119,9 @@ alias la="ls -a"
 关于 CentOS7 开机时提示 Fail to start LSB:Bring up/dowm networking 的解决办法
 
 systemctl enable NetworkManager-wait-online.service
+
+
+
+关于在 文字界面 下连接 无线网络的注意事项
+
+1、查看 wpa_supplicant.service 是否正在运行
