@@ -285,3 +285,74 @@ OPTIONS
 
 		nowatch
 			关闭一个设备节点的 inotify 监控
+
+
+NAME、SYMLINK、PROGRAM、OWNER、GROUP、MODE、RUN 字段支持简单的字符串替换
+RUN 替换在所有规则执行完成之后、程序即将执行之前执行，允许使用前面匹配规则中设置的所有设备属性
+对于其他的字段，替换在独立的规则运行时被执行
+可用的替换包括：
+
+$kernel, %k
+	设备的内核名称
+
+$number, %n
+	设备的内核序号
+	例如 sda3 的内核序号是 3
+
+$devpath, %p
+	设备的 devpath
+
+$id, %b
+	在为 SUBSYSTEMS、KERNELS、DRIVERS、ATTRS 向上搜索 devpath 时
+	找到的设备的名称
+
+$driver
+	在为 SUBSYSTEMS、KERNELS、DRIVERS、ATTRS 向上搜索 devpath 时
+	找到的驱动的名称
+
+$attr{文件}, %s{文件}
+	规则的键全匹配的设备的 sysfs 属性
+	若匹配上的设备没有改属性，
+	而前序的 KERNELS、SUBSYSTEMS、DRIVERS、ATTRS 匹配上父级设备具有该属性
+	则从父级设备取得该属性
+
+	若属性是软链接，则软链接目标的最后一个元素作为返回值返回
+
+$env{键名}, %E{键名}
+	设备的属性值
+
+$major, %M
+	设备的内核主序号
+
+$minor, %m
+	设备的内核次序号
+
+$result, %c
+	PROGRAM 定义的外部程序的返回字符串
+	返回字符串若含有空格，则可以用 %c{N} 来拾取对应片段编号的片段
+	若数字编码后跟随加号 +，则拾取该编号对应的片段和其后所有的片段
+
+$parent, %P
+	父级设备的节点名
+
+$name
+	设备的当前名称
+	若没有被某规则修改，则为内核设备名
+
+$links
+	当前软链接的空格分隔列表
+	该值仅在 移除事件发生时，或前序规则赋予时被设置值
+
+$root, %r
+	udev_root 值
+
+$sys, %S
+	sysfs 的挂载点
+
+$devnode, %N
+	设备节点的名称
+
+%%
+	输出一个 % 符号
+$$
+	输出一个 $ 符号
