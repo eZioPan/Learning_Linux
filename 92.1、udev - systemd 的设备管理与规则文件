@@ -255,3 +255,33 @@ WAIT_FOR
 	等待一个文件可用，或者超时 10s
 	路径为相对 sysfs 设备的路径
 	若没有路径被指定，则等待下一个属性的出现
+
+OPTIONS
+	规则和设备的选项：
+		link_priority=value
+			指定创建软链接的优先级
+			具有更高优先级的设备复写当前具有该链接的设备的软链接
+			默认值是 0
+
+		string_escape=none|replace
+			通常情况下，控制符 和 其他不安全的符号 用作设备命名时会被替换
+			该替换模式可以通过这个选项来切换
+
+		static_node=
+			将该规则规定的权限赋予指定名称的静态设备节点
+
+			同时，对于每个在该规则中定义的标签，创建一个软链接至目录
+			/run/udev/static_node-tags/tag
+			指向指定名称的静态设备节点
+
+			静态设备节点由先于 systemd-udev 启动的 systemd-tmpfiles 创建
+			静态节点不一定对应一个内核设备
+			它们用于在获取它们的时候，触发 自动内核模组载入
+
+		watch
+			使用 inotify 监控设备节点
+			当一个节点在作为写入之用被打开，之后被关闭后
+			一个 change uevent 会被创建
+
+		nowatch
+			关闭一个设备节点的 inotify 监控
