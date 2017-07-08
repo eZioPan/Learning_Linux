@@ -356,3 +356,10 @@ $devnode, %N
 	输出一个 % 符号
 $$
 	输出一个 $ 符号
+
+
+
+参见
+	systemd-udevd.service(8)
+	udevadm(8)
+	systemd.link(5)
