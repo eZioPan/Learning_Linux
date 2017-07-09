@@ -14,3 +14,65 @@ udevadm 由一系列命令组成
 
 -h, --help
 	打印帮助
+
+
+
+命令与对应参数
+
+
+udevadm info [options] [devpath|file]
+
+从 udev 数据库中拉取设备信息
+以及从 设备的 sysfs 表示中拉取设备属性，用于创建匹配该设备的 udev 规则
+
+-q, --query=TYPE
+	从 udev 数据库中拉取指定类型的设备属性
+	需要 --path 或 --name 参数指明设备
+	合法的类型包含：
+		name、symlink、path、property、all
+
+-p, --path=DEVPATH
+	被拉取的设备在 /sys 目录下的路径
+	eg. [/sys]/class/block/sda
+	本选项不是非常有用，因为 udev 可以猜测参数的类型
+	所以
+	udevadm --devpath=/class/block/sda
+	等价于
+	udevadm /sys/class/block/sda
+
+-n, --name=FILE
+	被拉取的设备节点名或软链接
+	eg. [/dev]/sda
+	本选项不是非常有用，因为 udev 可以猜测参数的类型
+	所以
+	udevadm --name=sda
+	等价于
+	udevadm /dev/sda
+
+-r, -root
+	打印 被拉取的 设备名/节点名/软链接 的绝对路径
+
+-a, --attribute-walk
+	打印指定设备所有的 sysfs 属性，这些属性可以用于在 udev 规则中匹配该设备
+
+-x, --export
+	以 键-值对 的形式打印输出
+	值被包括在单引号内
+
+-P, --export-prefix=NAME
+	将导出的键名钱加入一个前缀
+
+-d, --device-id-of-file=FILE
+	打印文件依赖的 底层设备的 主次号
+
+-e, --export-db
+	导出全部 udev 数据库的内容
+
+-c, --cleanup-db
+	清除全部 udev 的数据库
+
+--version
+	打印版本
+
+-h, --help
+	打印帮助
