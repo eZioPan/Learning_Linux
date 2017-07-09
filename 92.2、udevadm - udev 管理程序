@@ -1,0 +1,16 @@
+udevadm    udev 管理工具
+
+udevadm 由一系列命令组成
+
+
+
+全局参数
+
+--debug
+	将 debug 信息打印至 StdErr
+
+--version
+	打印版本号
+
+-h, --help
+	打印帮助
