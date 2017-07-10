@@ -76,3 +76,63 @@ udevadm info [options] [devpath|file]
 
 -h, --help
 	打印帮助
+
+
+udevadm trigger [options] [devpath|file...]
+
+向 内核 请求 设备事件
+主要用于在系统 coldplug 时重演事件
+
+-v, --verbose
+	打印将要被 trigger 的设备列表
+
+-n, --dry-run
+	不要真的触发事件
+
+-c, --action=ACTION
+	将被触发的事件类型
+	默认类型是 change
+
+-s, --subsystem-match=SUBSYSTEM
+	触发属于指定 subsystem 的设备的事件
+	该值可重复指定，并支持 shell 样式的通配
+
+-S, --subsystem-nomatch=SUBSYSTEM
+	不触发属于指定 subsystem 的设备的事件
+	该值可重复指定，并支持 shell 样式的通配
+
+-a, --attr-match=ATTRIBUTE=VALUE
+	触发匹配上 sysfs 属性的设备的事件
+	若一个属性名后指明了属性值，则匹配该属性的属性值
+	支持 shell 样式的通配
+	若仅出现一个属性名，则匹配上所有具有该属性名的设备
+	可重复指定
+
+-A, --attr-nomatch=ATTRIBUTE=VALUE
+	不触发匹配上 sysfs 属性的设备的事件
+	若一个属性名后指明了属性值，则匹配该属性的属性值
+	支持 shell 样式的通配
+	若仅出现一个属性名，则匹配上所有具有该属性名的设备
+	可重复指定
+
+-p, --property-match=PROPERTY=VALUE
+	触发匹配上 属性值 的设备的事件
+	该值可重复指定，并支持 shell 样式的通配
+
+-g, --tag-match=PROPERTY
+	触发匹配上 标签 的设备的事件
+	该值可重复指定
+
+-y, --sysname-match=PATH
+	触发匹配上 /sys 路径指定的设备的事件
+	该值可重复指定
+
+--name-match=NAME
+	触发匹配上设备路径的设备的事件
+	该值可重复指定
+
+-b, --parent-match=SYSPATH
+	触发指定设备的所有子设备的设备事件
+
+-h, --help
+	打印帮助
