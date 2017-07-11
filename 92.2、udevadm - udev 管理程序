@@ -152,3 +152,40 @@ udevadm settle [option]
 
 -h, --help
 	打印帮助
+
+
+udevadm control [options]
+
+修改运行中的 udev 进程的内部状态
+
+-x, --exit
+	向 systemd-udevd 发出信号，并等待其退出
+
+-l, --log-priority=value
+	设置 systemd-udevd 的内部 log 等级
+	同 syslog 的 log 等级设置：
+	emerg, alert, crit, err, warning, notice, info, debug
+
+-s, --stop-exec-queue
+	向 systemd-udevd 发送信号，停止处理新的事件
+	新的事件将加入队列
+
+-S, --start-exec-queue
+	向 systemd-udevd 发送信号，开始处理新的事件
+
+-R, --reload
+	向 systemd-udevd 发送信号，重载规则文件和其它的数据库（比如内核模块索引）
+	重载的规则和数据库不会修改已存在的设备产生
+	新的配置仅会影响新的事件
+
+-p, --property=KEY=value
+	为全部事件设置全局属性
+
+-m, --children-max=value
+	设置 systemd-udevd 将同时处理的最大事件个数
+
+--timeout=seconds
+	设置等待 systemd-udevd 回复的最大秒数
+
+-h, --help
+	打印帮助
