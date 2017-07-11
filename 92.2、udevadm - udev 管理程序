@@ -136,3 +136,19 @@ udevadm trigger [options] [devpath|file...]
 
 -h, --help
 	打印帮助
+
+
+udevadm settle [option]
+
+监看 udev 事件队列，若当前事件队列为空，则退出
+
+-t, --timeout=SECONDS
+	等待事件队列清空的最长时间
+	默认为 120 秒
+	值为 0 时，会检查队列是否清空，并立刻返回
+
+-E, --exit-if-exists=FILE
+	若文件存在则结束等待
+
+-h, --help
+	打印帮助
