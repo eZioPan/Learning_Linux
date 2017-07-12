@@ -215,3 +215,20 @@ udevadm monitor [options]
 
 -h, --help
 	打印帮助
+
+
+udevadm test [options] [devpath]
+
+模拟一个给定设备的 udev 事件，并打印 debug 结果
+
+-a, --action=string
+	设置动作名
+
+-N, --resolve-names=early|late|never
+	指定 udevadm 是否解析 用户和群组名
+	当设置为 early（也即默认值）时，解析规则时，名称即被解析
+	当设置为 late 时，名称将为每个事件解析
+	设置为 never 时，没有名称将被解析，所有的设备的全部被 root 拥有
+
+-h, --help
+	打印帮助
