@@ -232,3 +232,17 @@ udevadm test [options] [devpath]
 
 -h, --help
 	打印帮助
+
+
+udevadm test-builtin [options] [command] [devpath]
+
+为设备 devpath 运行内置命令，并打印 debug 输出
+
+-h, --help
+	打印帮助
+
+
+
+参见
+udev(7)
+systemd-udevd.service(8)
