@@ -189,3 +189,29 @@ udevadm control [options]
 
 -h, --help
 	打印帮助
+
+
+udevadm monitor [options]
+
+监听 内核 uevent 以及 被 udev 规则 发送的 事件，并打印它们的 devpath
+当对比 kernel uevent 和 udev 事件的时间戳，可用于为事件测时
+
+-k, --kernel
+	打印内核 uevent
+
+-u, --udev
+	打印规则处理之后的 udev 事件
+
+-p, --property
+	同时打印事件的属性
+
+-s, --subsystem-match=string[/string]
+	通过 subsystem[/devpath] 来过滤事件
+	匹配上的事件将被过滤掉
+
+-t, --tag-match=string
+	通过属性来过滤事件
+	匹配上标签的事件将被过滤
+
+-h, --help
+	打印帮助
