@@ -1,0 +1,78 @@
+systemd-udevd 监听内核 uevent
+对于每个事件， systemd-udevd 依照 udev 规则处理相应的事件，参见 udev(7)
+
+守护进程的行为可以通过以下方式修改：
+配置 udev.conf(5)
+命令行选项
+环境变量
+内核命令
+udevadm control 命令
+
+
+
+命令行选项
+
+/usr/lib/systemd/systemd-udevd [options]
+
+--daemon
+	成为守护进程
+
+--debug
+	打印 debug 信息至 StdErr
+
+--children-max=
+	限制同时处理的事件数
+
+--exec-delay=
+	延迟指定秒数的 RUN 指令的执行
+	对于检查在 coldplug 期间，由于载入无法工作的内核模块，导致系统崩溃十分有效
+
+--event-tiemout=
+	设置等待事件完成的秒数
+	超过这个时间之后，事件将被终结
+	默认为 30 秒
+
+--resolve-name=
+	指定 udevadm 何时解析 用户和群组名
+	当设置为 early（也即默认值）时，解析规则时，名称即被解析
+	当设置为 late 时，名称将为每个事件解析
+	设置为 never 时，没有名称将被解析，所有的设备的全部被 root 拥有
+
+--help
+	打印帮助
+
+--version
+	查看版本号
+
+
+
+内核命令行
+
+所有起始为 “rd.” 的参数，将被 systemd-udevd 在 initrd 中使用
+
+udev.log-priority=, rd.og-priority=
+	设置 log 级别
+
+udev.children-max=, rd.udev.children-max=
+	设置最大并行处理事件数
+
+udev.exec-delay=. rd.udev.exec-delay=
+	延迟指定秒数的 RUN 指令的执行
+	对于检查在 coldplug 期间，由于载入无法工作的内核模块，导致系统崩溃十分有效
+
+udev.event-tiemout=, rd.udev.event-timeout=
+	设置等待事件完成的秒数
+	常用于处理内核模块初始化时间过长以致被终结的问题
+
+net.ifnames=
+	控制网络界面自动命名为可读名称的行为
+	默认开启
+	设置为 0 关闭
+
+
+
+参见
+
+udev.conf(5)
+udev(7)
+udevadm(8)
