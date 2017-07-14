@@ -1,0 +1,137 @@
+gdb GUN Debug 工具
+
+GDB 的作用是让你查看另一个正在运行的程序的内部的执行状态，或是另一个程序崩溃时，程序的状态
+
+GDB 可以做以下四个主要的事情（加上其他支持的内容），帮你捕获 bug
+
+<1> 启动你的程序，明确任何可能影响程序行为的事物
+
+<2> 让你的程序在特定情况下停止
+
+<3> 当你的程序停止时，检查什么发生了
+
+<4> 修改你程序中的东西，这样你就可以暂时纠正这个错误，并查找其他的错误
+
+GBD 可用于检查 C C++ Fortran Modula-2 程序
+
+GDB 通过 shell 命令 gdb 启动
+一旦启动，就从终端中去读命令，直到读取到 "quit" 就结束 GDB
+可以键入 help 来获取信息
+
+可以以不加参数或选项的形式启动 gdb，但最常用的情况会添加 1 至 2 个参数
+
+指定可执行程序的参数
+
+gdb [程序]
+
+指定一个可执行程序以及一个核心文件
+
+gdb [程序] [核心文件]
+
+指定一个 PID 来 debug 一个进程
+
+gdb [程序] [PID]
+gdb -p [PID]
+
+将使 GDB 附在进程 [PID] 上（除非有一个和 [PID] 同名的文件；因为 GDB 首先检查 核心文件）
+使用 -p 选项则可省略 程序名
+
+以下是最常用的 GDB 命令：
+
+break [file:] functiop
+	（在文件中）设置一个断点
+
+run [arglist]
+	（附加参数的）启动程序
+
+bt
+	打印程序的栈
+
+print expr
+	打印出表达式的值
+
+c
+	（在暂停之后，比如遇到了 断点）接续运行你的程序
+
+next
+	（在暂停之后）执行程序的下一行，并跳过所有在该行调用的函数
+
+edit [file:]function
+	进入当前程序停下的源码行
+
+list [dile:]function
+	答应当前程序停下的源码行附近的源码行
+
+step
+	（在暂停之后）执行程序的下一行，并执行所有在该行调用的函数
+
+help [name]
+	打印 GDB 命令名称，或者 GDB 通用信息
+
+quit
+	退出 GDB
+
+
+相关文章：
+	Using GDB: A Guide to GNU Source-Level Debugger,
+		by Richard M. Stallman and Roland H. Pesch
+
+
+
+选项
+	若没有特殊的指定，则 GDB 第一个参数默认的 flag 为 -se，若第二个参数是文件，则默认的 flag 为 -c
+
+	-h, -help
+		打印帮助文件
+
+	-s, -symbols=file
+		读取文件中的符号表
+
+	-write
+		启用写入可执行文件和核心文件
+
+	-e, -exec=file
+		适当时，将文件作为可执行文件执行
+		配合 核心 dump 检查纯数据
+
+	-se=file
+		从文件中读取符号表，并将该文件作为可执行文件使用
+
+	-c, -core=file
+		使用该文件作为 核心 dump 使用
+
+	-x, -command=file
+		从文件中读取并执行 GDB 命令
+
+	-ex command
+		执行指定的 GDB 命令
+
+	-d, -directory=directory
+		将路径加入搜索源码的路径
+
+	-nh
+		不要从 ~/.gdbinit 中执行命令
+
+	-n, -nx
+		不要从任何 .gdbinit 初始化文件中执行命令
+
+	-q, -quiet
+		不要打印介绍和版权信息
+		在 -batch 模式中默认被关闭
+
+	-batch
+		以批处理模式运行
+		执行所有以 -x 指定的命令文件（以及 .gdbinit，若没有被禁止）后，返回 返回值 0
+		返回非 0 值，若执行命令时出现错误
+
+	-cd=directory
+		使用指定的目录作为 GDB 的工作目录
+
+	-f, -fullname
+		【EMACS 相关】
+
+	-b bps
+		通过串口使用 GDB 远程 debug 时，设置行速度（波特率 或者 比特率）
+
+	-tty=device
+		使用指定设备作为 StdIn 和 StdOut 的设备
