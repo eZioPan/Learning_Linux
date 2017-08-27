@@ -358,6 +358,7 @@ blkid 就可以用来查询它们的 UUID
 
 列出当指定磁盘的各类信息以及分区状态
 parted [device] print
+【parted 命令详见 07补、 parted 命令】
 
 
 
@@ -750,3 +751,4 @@ parted [设备] [命令 <参数>]
 新建分区 mkpart [primary|logical|extended] [ext4|vfat|xfs] 开始位置 结束位置
 显示分区 print
 删除分区 rm [分区]
+【parted 命令详见 07补、 parted 命令】
