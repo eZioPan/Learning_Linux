@@ -1,0 +1,159 @@
+名称
+	parted -- 分区操作程序
+
+
+
+语法
+	parted [options] [device [command [options...]...]]
+
+
+
+描述
+	parted 是一个分区操作程序
+	它支持多种分区表格式，包括 MS-DOS 和 GPT
+	它常用于对于为新系统创建空间，重新规划磁盘使用，以及将数据拷贝至新的硬盘
+
+	这篇手册简明地描述了 parted
+	完全手册以 GNU Info 的格式给出
+
+
+
+选项
+	-h, --help
+		显示帮助文件
+
+	-l, --list
+		罗列所有块设备的所有分区布局
+
+	-m, --machine
+		将输出变为机器可解析的样式
+
+	-s, --script
+		不要弹出任何用户干预的提示
+
+	-v, --version
+		显示版本
+
+	-a aligment-type, --align aligment-type
+		为新创建的分区设置对齐，合法的对齐类型有：
+
+		none
+			使用磁盘格式所允许的最小对齐
+
+		cylinder
+			将分区对准至磁柱
+
+		minimal
+			使用磁盘拓扑信息所提供的最小对齐
+			这个值和 optimal 值将使用自盘所提供的布局信息，将逻辑分区表地址对齐至磁盘的实际的物理区块
+			最小值是最小所需的对齐值，用于将分区正确地对齐至物理区块，以防止性能下降
+
+		optimal
+			使用磁盘拓扑信息给出的最优对齐值
+			对齐至多个物理区块大小后，保证了最优化的性能
+
+
+
+命令
+	[device]
+		将要使用的块设备
+		当未指定时，使用 parted 第一个找到的块设备
+
+	[command [options]]
+		指定将要执行的命令
+		若没有给出指令，则 parted 将显示一个命令提示
+		可能的命令有：
+
+			help [command]
+				打印通用帮助，或者对于指定命令的帮助
+
+			align-check type partition
+				检查分区是否满足了指定类型的约束
+				类型必须是 minimal 或者 optimal
+
+			mklabel label-type
+				从 label-type 中创建一个新的磁盘标签（分区标签）
+
+				label-type 应为以下的一种
+					aix/amiga/bsd/dvh/gpt/loop/mac/msdos/pc98/sun
+
+			mkpart part-type [fs-type] start end
+				创建一个 分区类型为 part-type，文件系统为 fs-type（若指定的话） 的分区
+				在指定的开始位 start 和结束位 end 之间创建（默认单位是 MegaBytes）
+
+				fs-type 应为以下的一种：
+					ext2/ext3/ext4/fat16/fat32/hfs/hfs+/linux-swap/ntfs/reiserfs/xfs
+
+				part-type 应为以下的一种：
+					primary/logical/extended
+
+			name partition name
+				设置分区的名字
+				该选项仅对 Mac PC98 以及 GPT 磁盘标签有效
+				若需要，名字可以被放在引号之中
+
+			print
+				显示分区表
+
+			quit
+				离开 parted
+
+			rescue start end
+				在 start 和 end 之间，寻找并救援一个遗失的分区
+				若 parted 找到了该分区，则会提示是否要在分区表中为其创建一个条目
+
+			rm partition
+				删除一个分区
+
+			select device
+				选择一个设备作为当前设备来编辑
+				这个设备通常应为 Linux 硬盘设备，
+				但也可以是一个分区，
+				一个软件 RAID 设备
+				或者 LVM 逻辑卷
+
+			set partition flag state
+				修改分区 flag 的状态，
+
+				支持的 flag 有：
+					boot/root/swap/hidden/raid/lvm/lba/legacy_boot/palo
+
+				state 应为：
+					on 或 off 中的一个
+
+			unit unit
+				设置显示地址和大小的单位
+				并且用这个单位来解析用户输入的大小（若用户没有明确指定单位的话）
+
+				unit 可以是如下中的一个：
+				s	(扇区)
+				B	(字节)
+				kB	(千字节)
+				MB	(十进制兆字节)
+				MiB	(二进制兆字节)
+				GB
+				GiB
+				TB
+				TiB
+				%	(设备总大小的百分比)
+				cyl	(磁柱号)
+				chs	(磁柱/磁头/扇区号)
+				compact	(输入以 megabyte 为单位，输出则采用人类可读格式)
+
+			toggle partition flag
+				翻转扇区的某个 flag 的状态
+
+			version
+				显示版本信息和版权信息
+
+
+
+反馈 BUG
+	反馈 BUG 至 <bug-parted@gun.org>
+
+
+
+参见
+	fdisk(8)
+	mkfs(8)
+	parted 的完整手册存储在以 info(1) 格式的 GUN 分区软件手册中
