@@ -3,7 +3,7 @@ lspci 罗列当前所有的 PCI/PCIe 信息
 
 
 Linux 下的 Disk 工具中的 Restore Disk Image... 会直接将 iso 文件按照原格式覆写至指定磁盘中
-也就是说，若 iso 文件为可启动光盘，则会将 U 盘覆写为 usb-dvd，而且 Windows 无法正确修改这种磁盘分区表
+也就是说，若 iso 文件为可启动光盘，则会将 U 盘覆写为 usb-dvd
 
 
 
@@ -34,8 +34,7 @@ systemctl restart systemd-logind
 
 CentOS7 下对于 exFAT 文件格式的支持
 
-在 http://li.nux.ro/download/nux/dextop/el7/x86_64/ 中有编译好的 exfat-utils 和 fuse-exfat 包
-但由于版本过老，并不适合使用
+注：在 http://li.nux.ro/download/nux/dextop/el7/x86_64/ 中有编译好的 exfat-utils 和 fuse-exfat 包
 
 我们选择从源码编译 exfat 的支持
 
@@ -85,6 +84,10 @@ autoreconf --install
 
 make uninstall
 
+
+有关 exfat 在 linux 上自动挂在无法正确识别文件系统的问题：
+<1> 若磁盘是在 windows 上格式化为 exfat，则在 linux 上挂在的时候，便不需要指定文件系统
+<2> 若磁盘是在 linux 上格式化为 exfat，则在 linux 上挂在的时候，需要使用 -t exfat 参数来指定文件系统
 
 
 设置屏幕的亮度
