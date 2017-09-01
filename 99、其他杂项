@@ -86,8 +86,9 @@ make uninstall
 
 
 有关 exfat 在 linux 上自动挂在无法正确识别文件系统的问题：
-<1> 若磁盘是在 windows 上格式化为 exfat，则在 linux 上挂在的时候，便不需要指定文件系统
-<2> 若磁盘是在 linux 上格式化为 exfat，则在 linux 上挂在的时候，需要使用 -t exfat 参数来指定文件系统
+若 exfat 分区没有分区标签，则linux 无法自动识别分区的文件系统
+若确定分区的文件系统的确为 exfat，请使用 exfatlabel 为该分区添加一个标签即可
+【已提交 Issue】https://github.com/relan/exfat/issues/75
 
 
 设置屏幕的亮度
