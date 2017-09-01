@@ -71,7 +71,7 @@
 				检查分区是否满足了指定类型的约束
 				类型必须是 minimal 或者 optimal
 
-			mklabel label-type
+			mklabel,mktable label-type
 				从 label-type 中创建一个新的磁盘标签（分区标签）
 
 				label-type 应为以下的一种
@@ -91,6 +91,18 @@
 				设置分区的名字
 				该选项仅对 Mac PC98 以及 GPT 磁盘标签有效
 				若需要，名字可以被放在引号之中
+
+			disk_set FLAG STATE
+				修改磁盘的一个 flag
+				一个 flag 的状态要么是 on 要么是 off
+				一些或所有的 flag 是否可用，取决于该磁盘的 disk label
+				可用的磁盘标签有：
+					pmbr_boot
+						（GPT） - 这个 flag 启用了 GPT 的 保护 MBR 分区的启动标签
+				磁盘标签会在 print 命令的 Disk Flags 行显示
+				在机器可读模式中，它们会作为输出的最后一个字段出现
+
+			disk_toggle [FLAG]
 
 			print
 				显示分区表
