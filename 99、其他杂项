@@ -152,6 +152,24 @@ AcceptEnv 字段未被注释
 
 
 
+有关 vim 的上下左右键/方向键/arrow key，数字小键盘/numpad，退格键/backspace 无法使用的解决方案
+
+一般来说出现这种问题是由于自定义了 ~/.vimrc 或 /etc/vimrc 导致的
+
+请在 vimrc 文件的首行添加
+
+set nocompatible
+
+将 vim 的模式设置为非兼容 vi 模式，以支持方向键以及小键盘
+
+在首行之后的任意一行添加
+
+set backspace=indent,eol,start
+
+来让退格键正常使用
+
+
+
 MacOS 的 ls 命令的配置
 
 MacOS 的 ls 命令继承自 FreeBSD

@@ -26,8 +26,8 @@ eg.
 
 
 
-# 有关于 从 putty 中登录，vim 无法正常使用 Numpad 数字小键盘 的解决方法
-# 在 putty 中设置 Terminal -- Features --Disable application keypad mode
+# 有关于 从 putty 中登录，vim 无法正常使用 方向键 数字小键盘 退格键 的解决方法
+# 参见 99、其他杂项 中的相关设置
 
 
 
