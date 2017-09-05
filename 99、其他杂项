@@ -91,6 +91,7 @@ make uninstall
 【已提交 Issue】https://github.com/relan/exfat/issues/75
 
 
+
 设置屏幕的亮度
 
 echo <屏幕亮度> | sudo tee /sys/class/backlight/nv_backlight/brightness
@@ -114,6 +115,7 @@ CentOS 解析其他 mDNS(avahi/bonjour) 主机
 但 CentOS7 无法利用 avahi-daemon 解析其他 mDNS 主机名
 需要安装 nss-mdns 向 nss 中加入 mdns 的模块
 来使系统可以利用 avahi 提供的 mDNS 解析
+nss-mdns 由 epel 源提供
 yum install nss-mdns
 
 #！ 注1: 将 mDNS 服务加入 firewalld 的 public 域让 mDNS 服务通过防火墙
