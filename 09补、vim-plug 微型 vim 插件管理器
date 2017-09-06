@@ -1,0 +1,134 @@
+vim-plug 是 vim 上众多插件管理器中的一个
+
+vim-plug 的项目地址为
+
+http://github.com/junegunn/vim-plug
+
+
+默认的安装方式在项目主页有，但是我们想要将其安装至非默认的地址，使其能被全部用户使用
+
+
+
+思路：
+
+<1> 使用 /etc/vimrc 而非 ~/.vimrc 作为配置文件
+	将 vim-plug 的配置以及所含有的插件能被所有用户所读取
+
+<2> 建立 /etc/vim 目录，并将该路径添加至 vim 的插件识别路径中
+
+
+
+操作步骤：
+
+<1> 创建 /etc/vim 目录以及 /etc/vimrc 文件
+
+	# mkdir /etc/vim
+	# touch /etc/vimrc
+
+
+	注意，由于 /etc/vimrc 是全局配置文件，若清空，则需要从新设置原先开启的功能
+
+
+<2> 初步编辑 /etc/vimrc
+
+	# vim /etc/vimrc
+
+	这是我的配置文件
+
+	" 设置 vim 为与 vi 不兼容的模式
+	" 确保方向键和小键盘使用正常
+	set nocompatible
+
+	" 让退格键正常工作
+	set backspace=indent,eol,start
+
+	" 显示当前所在的模式
+	set showmode
+
+	" 显示行号
+	set nu
+
+	" 显示高亮
+	set hlsearch
+
+	" 保存时自动将上一版命名为 <文件名>~
+	set backup
+
+	" 设置背景为暗调
+	set bg=dark
+
+	" 设置 table 长度为 4 个空格
+	set ts=4
+
+	" 设置不扩展 table 为空格
+	set noexpandtab
+
+	" 开启语法高亮
+	syntax on
+
+	" 将自定义的插件目录 添加至 runtimepath 识别的路径中
+	set runtimepath+=/etc/vim
+
+
+<3> 在 /etc/vim 下创建目录 autoload，并下载 vim-plug 至 autoload 中
+
+	# mkdir /etc/vim/autoload
+	# curl -fLo /etc/vim/autoload/plug.vim \
+		https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+
+
+<4> 再次编辑 /etc/vimrc 文件，追加如下内容
+
+	# vim /etc/vimrc
+
+	" 'vim-plug' 开始段
+	" 括号中为将要存放其他插件的路径
+	" 路径务必使用单引号引起来
+	call plug#begin('/etc/vim/plugged')
+
+	" Plug 开头，表示单个插件的配置
+	" 单引号中为该插件在 github 中的简化路径
+	" 此处以 vim-go 作为样例
+	" 大括号表示该行所指定的插件的参数
+	" for 表示在那种文件类型时才启动该插件
+	" 可以查看该插件目录下 ftdetect/ 下的文件来查找这个字段值
+	Plug 'fatih/vim-go' { 'for': 'go' }
+
+	" 'vim-plug' 结束段
+	call plug#end()
+
+
+<5> 启动 vim，并在命令模式输入
+
+	:PlugInstall
+
+	此时， vim-plug 会自动搜索 /etc/vimrc 中出现但未安装的插件，自动进行拉取和配置
+
+
+至此，基本的配置就完成了
+
+
+
+其他常见命令
+
+PlugInstall [name ...] [#threads]	安装插件
+PlugUpdate [name ...] [#threads]	安装或更新插件
+PlugClean[!]						清除不用的目录 （添加叹号会不提示直接清除）
+PlugUpgrade							升级 vim-plug 本身
+PlugStatus							检查插件的状态
+PlugDiff							检查本版和上版插件之间的差别
+PlugSnapshot[!] [output path]		生成恢复当前插件快照的脚本
+
+
+
+每插件选项
+
+
+branch/tag/commit	使用仓库中的制定的 分支/标签/提交
+rtp					具有 vim 插件的次级目录
+dir					插件的自定义目录
+as					为插件取别名
+do					更新后钩子 (字符串 或 函数调用)
+on					按需载入：命令 或 <Plug>-mappings
+for					按需载入：文件类型
+frozen				除非明确指定请勿更新
