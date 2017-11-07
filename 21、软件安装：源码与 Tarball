@@ -1,0 +1,165 @@
+什么是开源代码，编译器和可执行文件
+
+Linux 系统真正可识别的可执行文件是二进制文件（binary program），比如 /usr/bin/passwd 或 /bin/touch 这戏文件即为二进制程序
+
+使用 file 命令可以查看一个文件是否为可执行二进制文件
+
+EG.
+
+[eP@ePCt ~]$ file /bin/bash
+
+返回
+
+/usr/bin/bash: ELF 32-bit LSB executable, ARM, version 1 (SYSV), dynamically linked (uses shared libs), for GNU/Linux 2.6.32, BuildID[sha1]=4bb5107c254a7cd2796d20a61f11b4414cd49281, stripped
+
+
+若文件为可执行文件，则 file 命令显示可执行文件的类型（ELF 32-bit LSB excutable），同时说明是否使用动态库链接（shared libs）
+
+源码（纯文本文件）在经过 编译器 编译与链接 之后，就可以生成一个可执行文件了
+
+Linux 上的标准程序语言为 C
+Linux 上标准的 C 语言编译器为 gcc
+
+编译过程会产生目标文件（Object file），大多数目标文件都以 .o 作为后缀名
+而 C 语言的源码多以 .c 作为后缀名
+
+
+在引用或调用其他外部程序时，或是利用其他软件提供的函数时，需要在编译的过程中将相应的函数库添加进入，
+也就是编译器将代码和调用的函数库做链接（Link），来产生正确的可执行文件
+
+
+Linux 内核提供了很多函数库，这些函数库大多放置在 /usr/include /usr/lib /usr/lib64 路径下
+
+
+
+什么是 make 与 configure
+
+直接利用 gcc 来进行编译并不简单，因为一套软件不会只有一个程序，也不止仅有一个源码文件
+所以除了每个主程序与副程序需要写编译指令之外，还需要写链接的内容
+我们可以通过 make 命令与相关的功能来简化编译过程需要输入的命令
+
+当执行 make 时，make 会在当前目录下搜索 Makefile（或 makefile）这个文件，而 Makefile 则记录了源码该如何编译的详细信息
+make 会自动判断源码是否变更，而自动更新可执行文件
+
+一般软件开发商都会写一个检测程序来检测用户的工作环境，以及工作环境是否具有软件编译和执行所需的其他文件，
+该检测程序检测完毕之后，就会创建 Makefile，这个检测程序的文件名通常为 configure 或者 config
+
+一般来说，检测程序会检测的资料大概有以下这些：
+
+<1> 是否有合适的编译器
+<2> 是否存在所需的函数库和其他依赖软件
+<3> 是否由合适的操作系统，包括 Linux 内核版本
+<4> 内核的头文件（header include）是否存在（驱动程序必须要的检测）
+
+
+
+什么是 Tarball 软件
+
+利用 tar 打包，再利用 gzip bzip2 xz 压缩过后的源码文件，即为 Tarball 文件
+一般一个 Tarball 文件中包含以下文件
+
+<1> 程序的源码
+<2> 检测程序文件（configure、config 等文件名）
+<3> 软件的安装与使用说明（INSTALL 或 README）
+
+非常重要的就是 INSTALL 和 README 文件了，通常我们只能参考这两个文件来安装啦
+
+
+
+
+
+C 语言代码的简单编写和编译
+
+
+
+1、编写 helloworld 源码
+
+[eP@ePCt ~]$ vim hello.c
+
+写入以下内容
+
+#include <stdio.h>
+int main(void)
+{
+        printf("Hello World\n");
+}
+
+
+
+2、编译与执行
+
+[eP@ePCt ~]$ gcc hello.c
+
+会产生可执行文件 a.out
+
+运行文件 a.out
+
+[eP@ePCt ~]$ ./a.out
+
+输出 Hello World
+
+
+在预设状态下，如果我们直接以 gcc 编译源码，且不加上任何参数，则可执行文件的名称会被自动设置为 a.out
+若要产生 目标文件 或者 修改 可执行文件的名称，则使用以下命令
+
+[eP@ePCt ~]$ gcc -c hell.c
+
+会产生目标文件 hello.o
+
+[eP@ePCt ~]$ gcc -o hello hello.o
+
+会产生可执行文件 hello
+
+运行文件 hello
+
+[eP@ePCt ~]$ ./hello
+
+输出 Hello World
+
+
+
+主、副程序的链接：副程序的编译
+
+在下面的例子中，我们让 thanks.c 调用了 thanks_2.c 这个程序，则需要这么写：
+
+[eP@ePCt ~]$ vim thanks.c
+
+输入以下内容
+
+#include <stdio.h>
+int main(void){
+	printf("Hello World\n");
+	thanks_2();					// 调用 thanks_2 这个函数
+}
+
+[eP@ePCt ~]$ vim thanks_2.c
+
+输入以下内容
+
+#include <stdio.h>
+void thanks_2(void){
+	printf("Thank you!\n");
+}
+
+编译与链接
+
+[eP@ePCt ~]$ gcc -c thanks.c thanks_2.c
+
+将产生 thanks.o thanks_2.o 这两个文件
+
+[eP@ePCt ~]$ gcc -o thanks thanks.o thanks_2.o
+
+将产生 thanks 可执行文件
+
+运行文件 hello
+
+[eP@ePCt ~]$ ./hello
+
+输出
+
+Hello World
+Thank you!
+
+
+为了方便修改任何一个 .c 文件之后，不需要再次编译另一个没有修改的文件，可以将 .c 文件编译为 .o 文件，
+编译好修改后的文件后，只要执行链接即可
