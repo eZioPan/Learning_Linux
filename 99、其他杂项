@@ -200,3 +200,9 @@ CentOS7 下的 NTP Client 配置
 命令 chronyc
 服务 chronyd
 配置文件 /etc/chrony.conf /etc/chrony.keys
+
+
+
+Rapberry Pi centos repo
+
+https://armv7.dev.centos.org/
