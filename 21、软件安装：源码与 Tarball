@@ -163,3 +163,110 @@ Thank you!
 
 为了方便修改任何一个 .c 文件之后，不需要再次编译另一个没有修改的文件，可以将 .c 文件编译为 .o 文件，
 编译好修改后的文件后，只要执行链接即可
+
+
+笔记注释：
+
+上面的代码也可以如下执行来直接获得编译结果
+
+[eP@ePCt ~]$ gcc -o thanks thanks.c thanks_2.c
+
+
+或者将源码做如下修改，简化编译命令
+
+[eP@ePCt ~]$ mv thanks_2.c thanks_2.h
+
+[eP@ePCt ~]$ vim thanks.c
+
+修改至以下内容
+
+#include <stdio.h>
+#include "thanks_2.h"			// 先查找当前目录后再查找标准目录
+int main(void){
+	printf("Hello World\n");
+	thanks_2();					// 调用 thanks_2 这个函数
+}
+
+接着直接编译
+
+[eP@ePCt ~]$ gcc -o hello thanks.c
+
+也可以得到正确编译的文件
+
+
+
+如果想优化编译后的二进制文件的执行效率，可以加入 -O （大写o）参数
+如果想看到编译过程中产生的警告，可以使用 -W<参数>
+特别的，如果想看到编译时产生的所有警告，请使用 -Wall
+
+[eP@ePCt ~]$ gcc -O -c thanks.c thanks_2.c
+
+[eP@ePCt ~]$ gcc -Wall -c thanks.c thanks_2.c
+
+
+
+调用外部库文件
+
+EG.计算 sin 值
+
+[eP@ePCt ~]$ vim sin.c
+
+输入以下内容
+
+#include <stdio.h>
+#include <math.h>
+int main(void){
+	float value;
+	value = sin ( 3.14 / 2 );
+	printf("%f\n",value);
+}
+
+执行编译
+
+[eP@ePCt ~]$ gcc sin.c
+
+gcc 会自动寻找系统默认的库文件
+
+
+<1>
+
+任何动态库文件都以 lib<库名>.so 作为文件名
+
+其中 .so 后缀名表示 shared object
+
+任何静态库文件都 lib<库名>.a 作为文件名
+
+其中 .a 后缀名表示 archive
+
+对于不能自动识别的库文件，需要手动指定，编译时使用命令 -l<库名>，其中 l 表示 library 这个单词
+
+假设上述 sin.c 文件无法自动寻找库文件，则需要使用以下命令
+
+[eP@ePCt ~]$ gcc -lm sin.c
+
+其中 -lm 为调用了 libm.so 这个文件
+
+
+<2>
+
+系统标准库文件一般都存放在 /lib /lib64 目录下
+
+若要额外指定附加库文件所在的目录，可以使用 -L<库文件所在目录> 来指定
+
+假设上述 sin.c 文件无法自动寻找库文件所在目录，则需要使用以下命令
+
+[eP@ePCt ~]$ gcc -L/lib64 -lm sin.c
+
+
+<3>
+
+头文件用于写入一些函数和类结构体的声明
+
+系统标准头文件一般都存放在 /usr/include 目录下
+
+若源码引用的头文件既不在系统标准头文件目录或者与源码同一层目录下，
+可以使用 -I<头文件所在目录> 来指定
+
+假设上述 sin.c 文件无法自动找到 math.h 这个文件，则需要使用以下命令
+
+[eP@ePCt ~]$ gcc -I/usr/include -L/lib64 -lm sin.c
