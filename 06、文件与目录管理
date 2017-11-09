@@ -430,3 +430,10 @@ eg.
 从 exfat 文件系统上拷贝文件至本地，会默认开启可执行权限，快速修改方法
 
 find . -perm -0777 -exec chmod 0644 {} \;
+
+
+eg2.
+
+仅查找当前目录下的普通文件，并移动至子目录下
+
+find . -maxdepth 1 -type f -exec mv {} subdir \;
