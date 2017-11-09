@@ -217,3 +217,28 @@ list-x11-keymap-variants [LAYOUT], list-x11-keymap-options
 系统防火墙配置
 详见文件
 20补2、firewalld 相关配置
+
+
+
+查看硬件信息
+
+dmidecode
+	-t, --type <TYPE>
+	选择要输出的类型
+	可用的关键字
+	bios system baseboard chassis processor memory cache connector slot
+	以及 0 至 42 个 DMI 数字
+	数字详解 见 man deidecode
+
+
+
+其他系统检测命令
+
+gdisk dmesg vmstat lspci lsusb iostat
+
+
+
+磁盘自检工具
+
+smartctl
+
