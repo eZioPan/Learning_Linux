@@ -270,3 +270,19 @@ gcc 会自动寻找系统默认的库文件
 假设上述 sin.c 文件无法自动找到 math.h 这个文件，则需要使用以下命令
 
 [eP@ePCt ~]$ gcc -I/usr/include -L/lib64 -lm sin.c
+
+
+
+笔记注释：
+
+对于共享库的编译，可以使用如下的命令：
+
+gcc -shared -fpic -o lib<库名>.so <库代码>.c
+
+其中 -shared 表示编译为共享库， -fpic 表示编译的 Flag 为 Position-Independent Code，简单理解为可以同时被多个程序使用而不出错
+
+对于引用了共享库程序的编译：
+
+gcc -L<so文件地址> -l<库名> -Wl,-rpath=<预计so文件将要存放的位置> -o <二进制文件名> <主程序源码>.c
+
+其中 -Wl 表示其后的选项需要传递给 linker，-rpath 表示 runtime path，也就是动态链接器需要寻找库文件的位置
