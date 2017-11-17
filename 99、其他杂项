@@ -86,9 +86,10 @@ make uninstall
 
 
 有关 exfat 在 linux 上自动挂在无法正确识别文件系统的问题：
-若 exfat 分区没有分区标签，则linux 无法自动识别分区的文件系统
+若 exfat 分区没有分区标签，则 linux 无法自动识别分区的文件系统
 若确定分区的文件系统的确为 exfat，请使用 exfatlabel 为该分区添加一个标签即可
 【已提交 Issue】https://github.com/relan/exfat/issues/75
+【Issue 已关闭】原作者 relan 认为是 redhat 的 blkid 的问题，等待 redhat 解决
 
 
 
