@@ -96,3 +96,118 @@ main(int argc, char* argv[])
 	printf("Hello world\n");
 	return 0;
 }
+
+
+创建 configure 脚本
+
+
+不用手动创建 configure 脚本，我们需要创建一个 m4sh 格式——结合了 m4 宏以及 POSIX shell 脚本——的 configure.ac 文件，
+来描述 configure 文件将要做什么
+
+我们需要的第一个 m4 宏称为 AC_INIT，它将初始化 autoconf 并为我们打包的程序设置一些基础的信息
+本程序叫做 helloworld，版本号是 0.1，维护者是 george@thoughtbot.com：
+
+
+AC_INIT([helloworld], [0.1], [george@thoughtbot.com])
+
+
+我们将在该项目中使用 automake，所以我们需要使用 AM_INIT_AUTOMAKE 宏来初始化它：
+
+
+AM_INIT_AUTOMAKE
+
+
+接着，我们需要告诉 autoconf 有关于我们的 configure 脚本需要寻找的依赖
+在这个案例中， configure 脚本仅需要寻找 C 编译器
+我们可以用 AC_PROG_CC 宏来设置：
+
+
+AC_PROG_CC
+
+
+若有其它的依赖，我们需要用其他的 m4 宏来发现它们；
+举例来说，AC_PATH_PROG 宏用于从用户定义的 PATH 中寻找给定的程序
+
+现在我们已经罗列了我们的依赖，我们可以使用它们了
+我们前面看到一个典型的 configure 脚本将使用它从用户系统上找到的信息，从 Makefile.in 模板中构建 Makefile
+
+下一行使用 AC_CONFIG_FILES 宏来告诉 autoconf configure 脚本应该这样做：它应该找到一个被称为 Makefile.in 的文件，
+用类似于 0.1 这样的值，替换类似于 @PACKAGE_VERSIOIN@ 这样占位符，并将结果写入 Makefile 中
+
+
+AC_CONFIG_FILES([Makefile])
+
+
+最终，当我们告诉了 autoconf 所有我们的 configure 脚本应该做的事情之后，我们可以调用 AC_OUTPUT 宏来输出这个脚本：
+
+
+AC_OUTPUT
+
+
+这就是所有的东西了
+与将要生成的 4737 行的 configure 脚本来说，一切还不错
+
+
+AC_INIT([helloworld], [0.1], [george@thoughtbot.com])
+AM_INIT_AUTOMAKE
+AC_PROG_CC
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT
+
+
+我们几乎就要完成打包，并分发我们的程序了，但是我们依旧缺少一些东西
+我们的 configure 脚本希望一个 Makefile.in 文件，让它可以替换所有那些系统特定的变量进去，但到目前为止，我们还没有创建那个文件
+
+
+
+创建 Makefile
+
+
+与 configure 脚本一样， Makefile.in 模板也是非常的长而复杂的
+所以我们不会手写它，我们写一个更短的 Makefile.am 文件，而 automake 将使用它为我们生成 Makefile.in
+
+首先，我们需要设置一些选项来告诉 automake 关于工程的布局
+由于我们并没有遵循 GNU 项目的标准布局，我们警告 automake 这是一个 foreign 项目：
+
+
+AUTOMAKE_OPTIONS = foreign
+
+
+下一步，我们告诉 automake 我么希望 Makefile 构建一个名为 helloworld 的程序：
+
+bin_PROGRAMS = helloworld
+
+
+这行涵盖了很多的信息，感谢 automake 的 uniform naming scheme
+
+PROGRAMS 后缀被称为一个 primary
+它告诉 automake helloworld 这个文件的属性
+举例来说，PROGRAMS 需要被构建，而 SCRIPTS 和 DATA 则不需要被构建
+
+bin 前缀告诉 automake 这里罗列的文件应该被安装至由变量 bindir 所定义的目录下
+autotools 为我们定义了很多目录——包含 bindir, libdir, pkglibdir——但我们也可以定义我们自己的
+
+若我们想安装一些 Ruby 脚本作为我们程序的一部分，我们可以定义个 rubydir 变量，
+并告诉 automake 将我们的 Ruby 文件安装到那里
+
+
+rubydir = $(datadir)/ruby
+ruby_DATA = myscript.rb my_other_script.rb
+
+
+附加的前缀可以在安装目录前被添加，用于更加细调 automake 的行为
+
+由于我们已经定义了一个 PROGRAM，我们需要告诉 automake 从那里寻找源文件
+在当前的案例中，前缀是这些源码构建出来的程序名，而不是它们应该被安装的地方：
+
+
+helloworld_SOURCES = main.c
+
+
+这里是我们的 helloworld 程序的完整的 Makefile.am 文件
+与 configure.ac 与 configure 脚本的关系一样，它也比它生成的 Makefile.in 短太多了：
+
+
+AUTOMAKE_OPTIONS = foreign
+bin_PROGRAMS = helloworld
+helloworld_SOURCES = main.c
