@@ -211,3 +211,66 @@ helloworld_SOURCES = main.c
 AUTOMAKE_OPTIONS = foreign
 bin_PROGRAMS = helloworld
 helloworld_SOURCES = main.c
+
+
+
+将它们组合起来
+
+
+现在我们写好了我们的配置文件，我们可以运行 autotools，并生成完整的 configure 脚本和 Makefile.in 模板了
+
+首先，我们需要生成一个 m4 环境以供 autotools 使用：
+
+
+aclocal
+
+
+现在我们可以运行 autoconf 来将我们的 configure.ac 转化为 configure 脚本，
+并用 automake 将 Makefile.am 转化为 Makefile.in：
+
+
+autoconf
+automake --add-missing
+
+
+
+分发程序
+
+
+终端用户不需要看见我们的 autotools 设置，所以我们可以仅分发 configure 脚本和 Makefile.in，
+而不用包含我们用来生成它们的文件
+
+幸运的是，autotools 也能帮注我们分发
+Makefile 包含了各种有趣的 target，其中包含了一个用于构建包含了分发所需要的所有工程文件的 tarball 的 target：
+
+./configure
+make dist
+
+
+你甚至可以测试你分发的包是否可以在各种条件下安装：
+
+make distcheck
+
+
+
+总览
+
+
+现在我们知道这些咒语的来源，以及它们是如何运行的了！
+
+在维护者的系统上：
+
+
+aclocal					# 设置 m4 环境
+autoconf				# 从 configure.ac 生成 configure
+automake --add-missing	# 从 Makefile.am 生成 Makefile.in
+./configure				# 从 Makefile.in 生成 Makefile
+make distcheck			# 使用 Makefile 构建并测试一个用于分发的 tarball
+
+
+在终端用户系统上：
+
+
+./configure		# 从 Makefile.in 生成 Makefile
+make			# 使用 Makefile 构建程序
+make install	# 使用 Makefile 安装程序
