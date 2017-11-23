@@ -207,3 +207,22 @@ CentOS7 下的 NTP Client 配置
 Rapberry Pi centos repo
 
 https://armv7.dev.centos.org/
+
+
+
+启用 DHCP 客户端
+
+使电脑使用其他路由器/电脑提供的 DHCP 服务自动获取IP
+
+dhclient [网络接口1] [网络接口2] ...
+
+注意2，若想让所有可以使用 DHCP client 的网络接口都使用 DHCP client，则可以不指定任何接口
+
+注意1，若电脑具有多个网络接口，且想同时使用 DHCP client，请务必在同一行中指定所有需要 DHCP client 的网络接口
+
+若已经启动了 DHCP client，则需要使用下面的命令先释放 DHCP 资源，再执行上面的操作
+
+
+释放 dhcp 提供的资源（也就是释放 lease）
+
+dhclient -r
