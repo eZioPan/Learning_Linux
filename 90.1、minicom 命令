@@ -320,3 +320,22 @@ Y
 
 Z
 	打印帮助屏幕
+
+
+
+【中间省略】
+
+
+
+文件
+	Minicom 在一个目录中保存它的配置文件，通常为
+	/var/lib/minicom /usr/local/etc 或者 /etc
+	要找出默认的目录，输入命令 minicom -h
+	你也可能会找到 runscript(1) 的示例文件，以及字符转换表的示例（也可能在 /usr/doc/minicom* 的子目录下）
+	在那个目录中，转换表的名字类似于 mc.*，但你可能想将其拷贝至你的主目录中，并以 . 作为文件名开头
+
+	minirc.*
+	$HOME/.minirc.*
+	$HOME/.dialdir
+	$HOME/minicom.log
+	/usr/share/locale/*/LC_MESSAGES/minicom.mo
