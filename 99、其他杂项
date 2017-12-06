@@ -226,3 +226,10 @@ dhclient [网络接口1] [网络接口2] ...
 释放 dhcp 提供的资源（也就是释放 lease）
 
 dhclient -r
+
+
+windows 上的开源虚拟串行（COM 口）软件地址
+http://com0com.sourceforge.net/
+
+linux 上的开源虚拟串行（ttyS）软件
+https://github.com/freemed/tty0tty/
