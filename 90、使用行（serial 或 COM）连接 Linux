@@ -16,6 +16,8 @@
 
 之后，在虚拟机管理软件中就可以各自自行设置，将串口的 GUEST 部分设置为一个端口，将 HOST 部分指向 HOST 机器的虚拟端口
 
+## 注意，如果不需要模拟出真实的“串口”特性，仅希望能通过串口这种方式来链接虚拟设备与主机设备的，
+## 可以直接创建/使用 pipe 来作为输入输出的端口
 
 
 二、被连接 Linux 的配置
@@ -32,7 +34,7 @@ GRUB_TERMIAL="console serial"
 让 Grub 本身同时使用 系统默认设备 和 串行 输出屏幕/读取输入
 
 <2> 添加 GRUB_SERIAL_COMMAND 为
-GRUB_SERIAL_COMMAND="serial --unit=0 --speed=115200 word=8 --parity=no --stop=1"
+GRUB_SERIAL_COMMAND="serial --unit=0 --speed=115200 --word=8 --parity=no --stop=1"
 来指定 Grub 本身使用的串行的参数
 可用的参数有
 unit 指定使用的端口，0 表示系统的第一个端口，在 Linux 上一般为 /dev/ttyS0
