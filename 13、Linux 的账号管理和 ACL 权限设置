@@ -94,7 +94,7 @@ root:x:0:
 第 4 栏：可加入这个群组的账户名
 
 书写方法：冒号后紧跟账户名，账户名和账户名之间仅用逗号 , 隔开，不加空格
-eg. root@x:0:eP,ep
+eg. root:x:0:eP,ep
 
 
 注意，一个群组中可以包含多个账户，一个账户也可以加入多个群组
@@ -415,7 +415,7 @@ ACL 基础概念
 (2.1) Entry tag 可以包含的内容：
 	  ACL_USER_OBJ		代表该行定义 文件所有者 的权限（被写作 user 或 u）
 	  ACL_USER			代表该行定义 指定用户 的权限（被写作 user 或 u）
-	  ACL_GROUP_OBJ	代表该行指定 文件群组 的权限（被写作 group 或 g）
+	  ACL_GROUP_OBJ		代表该行指定 文件群组 的权限（被写作 group 或 g）
 	  ACL_GROUP			代表该行指定 指定群组 的权限（被写作 group 或 g）
 	  ACL_MASK			代表 ACL_{USER, GROUP_OBJ, GROUP} 能获取的最大权限（被写作 mask 或 m）
 	  ACL_OTHER			代表 未出现 在该文件的 任何 Access Entry 的 用户 或 群组 的权限（被写作 other 或 o）
@@ -579,13 +579,13 @@ PAM 与 其他程序的互动流程
 以 /etc/pam.d/passwd 为例
 
 #%PAM-1.0												# PAM 的版本说明
-auth       include      system-auth						# 每行都是一次验证
-account    include      system-auth
-password   substack     system-auth
--password   optional    pam_gnome_keyring.so use_authtok
-password   substack     postlogin
+auth		include		system-auth						# 每行都是一次验证
+account		include		system-auth
+password	substack	system-auth
+-password	optional	pam_gnome_keyring.so use_authtok
+password	substack	postlogin
 
-验证类型    控制标准      使用的 PAM 模块与模块的参数
+验证类型		控制标准		使用的 PAM 模块与模块的参数
 
 
 第 1 栏位：验证类型（Type）
