@@ -84,6 +84,7 @@ console=tty0 console=ttyS0,115200N1
 
 具体配置参见 90补1、minicom 命令
 
+# 对于 Linux host 的主机上使用 pipe file 连接的情况，需要使用 socat
 
 2、windows 使用 PuTTY 软件
 
