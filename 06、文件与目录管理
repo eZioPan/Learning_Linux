@@ -387,6 +387,12 @@ locate 通过部分文件名搜索文件所在路径
 find 搜索文件
 find [path] [option] [action]
 
+（0） 排除匹配上某个参数的文件
+在参数之前加 感叹号 !
+
+EG.
+find . ! -name "*.c" # 查找不以 .c 作为结尾的文件
+
 （1） 与时间相关的参数
 -[ctime|atime|mtime] [无/+/-] [天数]
 -newer file
