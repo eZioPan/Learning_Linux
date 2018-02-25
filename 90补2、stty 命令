@@ -77,3 +77,37 @@
 
 		* werase 字符
 			该 字符 将擦除最后被输入的单词
+
+	特殊设置
+		N
+			设置输入和输出速度为 N 波特
+
+		* cols N
+			告诉内核终端具有 N 列
+
+		* columns N
+			同 cols N
+
+		ispeed N
+			设置输入速度为 N
+
+		* line N
+			设置行（解析）守则（line discipline）为 N
+
+		min N
+			与 -icanon 连用，设置一次完整读取的最小字符数为 N
+
+		ospeed N
+			设置输入速度为 N
+
+		* rows N
+			告诉内核终端具有 N 行
+
+		* size
+			查看内核设置并输出行和列的数量
+
+		speed
+			打印终端速度
+
+		time N
+			与 -icanon 连用，设置读取超时为 十分之一秒的 N 倍
