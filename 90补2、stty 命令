@@ -145,3 +145,52 @@
 
 		* [-]cmspar
 			使用 "stick" (mark/space) 奇偶校验
+
+	输入设置
+		[-]brkint
+			Break 键产生中断信号
+
+		[-]icrnl
+			将回车键翻译为 newline
+
+		[-]ignbrk
+			忽略 Break 字符
+
+		[-]igncr
+			忽略回车
+
+		[-]ignpar
+			忽略奇偶校验错误的字符
+
+		* [-]imaxbel
+			对于一个字符产生铃音，但并不会刷写至一个已满的输入缓存中
+
+		[-]inlcr
+			将 newline 翻译为回车
+
+		[-]inpck
+			启用输入奇偶校验
+
+		[-]istrip
+			清除输入字符的高位（第8位）
+
+		* [-]iutf8
+			假设输入的字符是 UTF-8 编码的
+
+		* [-]iuclc
+			将大写字符翻译为小写字符
+
+		* [-]ixany
+			让任何字符重启输出，而不仅仅是 start 字符
+
+		[-]ixoff
+			启用 start/stop 字符的发送
+
+		[-]ixon
+			启用 XON/XOFF 流控制
+
+		[-]parmrk
+			标记奇偶校验错误（用一个 255-0 字符序列）
+
+		[-]tandem
+			同 [-]ixoff
