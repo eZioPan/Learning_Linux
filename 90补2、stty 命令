@@ -190,7 +190,56 @@
 			启用 XON/XOFF 流控制
 
 		[-]parmrk
-			标记奇偶校验错误（用一个 255-0 字符序列）
+			标记奇偶校验错误（用一个 255-0-character 字符序列）
 
 		[-]tandem
 			同 [-]ixoff
+
+	输出设置
+		* bsN
+			退格延迟风格， N 在 0 至 1 之间选择
+
+		* crN
+			回车延迟风格，N 在 0 至 3 之间选择
+
+		* ffN
+			制表符延迟风格，N 在 0 至 1 之间选择
+
+		* nlN
+			newline 延迟风格，N 在 0 至 1 之间选择
+
+		* [-]ocrnl
+			将回车翻译为 newline
+
+		* [-]ofdel
+			使用 delete 字符而非 null 字符作为填充
+
+		* [-]ofill
+			使用 fill（padding）字符而非计时作为延迟
+
+		* [-]olcuc
+			将小写字符转换为大写字符
+
+		* [-]onlcr
+			将 newline 转换为 回车-newline
+
+		* [-]onlret
+			newline 执行为一个回车
+
+		* [-]onocr
+			不要再第一列打印回车
+
+		[-]opost
+			后期处理 输出
+
+		* tabN
+			水平 tab 延迟风格， N 在 0 至 3 之间选择
+
+		* tabs
+			同 tab0
+
+		* -tabs
+			同 tab3
+
+		* vtN
+			竖直 tab 延迟风格， N 在 0 至 1 之间选择
