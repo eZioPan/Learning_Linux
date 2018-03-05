@@ -243,3 +243,58 @@
 
 		* vtN
 			竖直 tab 延迟风格， N 在 0 至 1 之间选择
+
+	本地设置
+		[-]crterase
+			回显 erase 字符 为 backspace-space-backspace
+
+		* crtkill
+			遵循 echoprt 和 echoe 的设置来执行清除所有行的操作
+
+		* -crtkill
+			遵循 echoctl 和 echok 的设置来执行清除所有行的操作
+
+		* [-]ctlecho
+			以 ^ 字符标记法回显 控制字符
+
+		[-]echo
+			回显输入的字符
+
+		* [-]echoctl
+			同 [-]ctlecho
+
+		[-]echoe
+			同 [-]crterase
+
+		[-]echok
+			在删除一个字符之后，回显一个 newline
+
+		* [-]echoke
+			同 [-]crtkill
+
+		[-]echonl
+			即便没有回显任何其他的字符也回显一个 newline
+
+		* [-]echoprt
+			在 “\” 和 “/” 之间，逆向回显被擦除的字符
+
+		[-]icanon
+			启用 erase, kill, wearse, rprnt 特殊字符
+
+		[-]iexten
+			启用 非 POSIX 特殊字符
+
+		[-]isig
+			启用 interrupt, quit, suspend 特殊字符
+
+		[-]noflsh
+			禁用 中断后刷写和退出特殊字符
+
+		* [-]prterase
+			同 [-]echoprt
+
+		* [-]tostop
+			停止背景工作中，尝试写入终端的工作
+
+		* [-]xcase
+			与 icanon 连用，对 “\” 后的大写字母进行转义
