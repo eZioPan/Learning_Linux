@@ -298,3 +298,83 @@
 
 		* [-]xcase
 			与 icanon 连用，对 “\” 后的大写字母进行转义
+
+	组合设置
+		* [-]LCASE
+			同 [-]lcase
+
+		cbreak
+			同 -icanon
+
+		-cbreak
+			同 icanon
+
+		cooked
+			等同设置 brkint ignpar istrip icrnl ixon opost isig icanon, eof
+			and eol 为默认字符
+
+		-cooked
+			同 raw
+
+		crt
+			同 echoe echoctl echoke
+
+		dec
+			同 echoe echoctl echoke -ixany intr ^c erase 0177 kill ^u
+
+		* [-]decctlq
+			同 [-]ixany
+
+		ek
+			erase and kill 字符默认值
+
+		evenp
+			同 parenb -parodd cs7
+
+		-evenp
+			同 -parenb cs8
+
+		* [-]lcase
+			同 xcase iuclc olcuc
+
+		litout
+			同 -parenb -istrip -opost cs8
+
+		-litout
+			同 parenb istrip opost cs7
+
+		nl
+			同 -icrnl -onlcr
+
+		-nl
+			同 icrnl -inlcr -igncr onlcr -ocrnl -onlret
+
+		oddp
+			同 parenb parodd cs7
+
+		-oddp
+			同 -parenb cs8
+
+		[-]parity
+			同 [-]evenp
+
+		pass8
+			同 -parenb -istrip cs8
+
+		-pass8
+			同 parenb istrip cs7
+
+		raw
+			同 -ignbrk -brkint -ignpar -parmrk  -inpck  -istrip  -inlcr
+			-igncr  -icrnl   -ixon   -ixoff   -iuclc  -ixany -imaxbel -opost
+			-isig -icanon -xcase min 1 time 0
+
+		-raw
+			同 cooked
+
+		sane
+			同 cread -ignbrk brkint -inlcr -igncr icrnl  -iutf8  -ixoff
+			-iuclc  -ixany  imaxbel opost -olcuc -ocrnl onlcr -onocr -onlret
+			-ofill -ofdel nl0 cr0 tab0 bs0 vt0 ff0 isig icanon  iexten  echo
+			echoe  echok  -echonl  -noflsh  -xcase  -tostop -echoprt echoctl
+			echoke, 所有特殊字符至其默认值
