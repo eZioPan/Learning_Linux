@@ -378,3 +378,8 @@
 			-ofill -ofdel nl0 cr0 tab0 bs0 vt0 ff0 isig icanon  iexten  echo
 			echoe  echok  -echonl  -noflsh  -xcase  -tostop -echoprt echoctl
 			echoke, 所有特殊字符至其默认值
+
+		处理连接至标准输入的 tty 行。
+		在没有参数的情况下，从 stty sane 打印波特率，line discipline，和 deviation。
+		在设置中字符可以字面表述，也可以以 ^c, 0x37, 0177 或者 127 的形式输入；
+		特殊值 ^- 或者 undef 用于禁用特殊字符。
