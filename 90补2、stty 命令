@@ -299,7 +299,7 @@
 		* [-]xcase
 			与 icanon 连用，对 “\” 后的大写字母进行转义
 
-	组合设置
+	Combination settings:
 		* [-]LCASE
 			同 [-]lcase
 
