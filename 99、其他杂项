@@ -47,9 +47,7 @@ git clone https://github.com/relan/exfat.git
 自动配置并编译
 cd exfat
 autoreconf --install
-# 见注意 2
-# ./configure
-./configure --prefix /usr
+./configure
 make
 
 ## 注意 1
@@ -58,18 +56,19 @@ make
 ## fuse-devel 这个包可以从 base 源 中找到，安装即可
 
 ## 注意 2
-## 默认情况下， ./configure 会将文件输出至 /usr/local/sbin 文件夹中（参见 ./configure 文件的 ac_default_prefix 行）
-## 最好将它修改为 /usr，方便在使用时，正确获得命令
-## 也就是 ./configure --prefix /usr
-
-## 注意 3
 ## 若要清理编译的文件，使用命令
 ## make clean
 
 接着以 root 权限安装文件
 make install
 
-到此为止，就可以正常使用了
+
+默认情况下，这组工具被安装在 /usr/local/sbin 中，以 sudo 运行时是无法看到的，需要手动 symbolic link 至 /usr/sbin 中
+执行以下操作
+cd /usr/local/sbin/
+find "$(pwd -P)" -type f -name '*exfat*' -exec ln -s {} /usr/sbin \;
+find "$(pwd -P)" -type l -name '*exfat*' -exec cp {} /usr/sbin \;
+
 
 删除 exfat 支持
 
@@ -78,11 +77,16 @@ make uninstall
 
 若删除了安装时的源码，重新执行
 autoreconf --install
-./configure --prefix /usr
+./configure
 
-最后执行
+接着执行
 
 make uninstall
+
+若做了 symbolic link 至 /usr/sbin 中
+卸载时还需执行以下操作
+cd /usr/sbin
+rm "*exfat*"
 
 
 有关 exfat 在 linux 上自动挂在无法正确识别文件系统的问题：
