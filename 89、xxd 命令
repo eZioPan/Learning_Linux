@@ -1,0 +1,88 @@
+名称
+	xxd - 产生一个 hexdump 或者反向这个操作
+
+语法
+	xxd -h[elp]
+	xxd [option] [infile [outfile]]
+	xxd -r[evert] [options] [infile [outfile]
+
+描述
+	xxd 对给定的文件或者标准输出创建 hexdump 。
+	它也可以将一个 hexdump 转换回其原始二进制样式。
+	与 uuencode(1) 和 uudecode(1) 相同，
+	它可以将二进制文件转换为“邮寄安全”的 ASCII 表示，
+	同时又具有解码至标准输出的优势。
+	而且，它可以用于给二进制文件打补丁
+
+选项
+	若未指定 infile，就从标准输入读取
+	若 infile 指定为 “-” 字符，则将从标准输入中读取
+	若未指定 outfile（或者对应位置上使用了 “-” 字符），则结果会发送至标准输出
+
+	注意，该程序使用了一个 “lazy” 解析器，也就是说，除非选项后带有参数，否则它仅会检查第一个选项字母
+	在单字母选项和其参数之间的空格是可选的
+	参数可以以十进制、十六进制，或者八进制表示法表示
+	也就是说， -c8 -c 8 -c 010 -cols 8 是等价的
+
+	-a | -autoskip
+		切换 autoskip：单个 “*” 表示 nul 行
+		默认关闭
+
+	-b | -bits
+		切换为比特（二进制数）镜像，而非 hexdump
+		这个选项将八进制数记为八个 “1” 或者 “0” 的组合，而非通常的 hexdump
+		每行前一十六进制补充一个行号，行末追加一个 ascii（或者 ebcdic）表示
+		命令行开关 -r -p -i 与该模式不兼容
+
+	-c cols | -cols cols
+		格式化为 <cols> 个八进制数一行
+		默认为 16 （-i: 12, -ps:30, -b:6）
+		最大为 256
+
+	-E | -EBCDIC
+		将字符编码从右手行 ASCII 变换为 EBCDIC
+		这并不会修改十六进制表示
+		该选项与 -r -p -i 连用时无意义
+
+	-g bytes | -groupsize bytes
+		在输出的每 <bytes> 个字节（两个十六进制数或者八个二进制位）之间插入一个分隔用白空格
+		指定 -g 0 来关闭编组
+		<bytes> 在通常模式为 2，在比特模式为 1
+		编组不会在 postscript 或者 include 样式中起效
+
+	-h | -help
+		打印可用命令综述并退出
+		不会执行任何 hexdump
+
+	-i | -include
+		输出为 C 的 include 文件样式
+		写入一个完全静态数组定义（以输入文件名作为名称），除非 xxd 从标准输入读取
+
+	-l len | -len len
+		在写入 <len> 个八进制数之后停止
+
+	-p | -ps | -postscript | -plain
+		输出为 postscript 连续 hexdump 样式
+		也被称为平铺 hexdump 样式
+
+	-r | -revert
+		反转操作：将 hexdump 转换（打补丁）至二进制模式
+		若不写至标准输出，xxd 将输出写入它的输出文件，但并不截断它
+		连用 -r -p 来读取 不含行信息和和特定行样式的平铺 hexdump
+		附加的白空格和行间断可出现在允许的任何地方
+
+	-seek offset
+		在 -r 之后使用：在 hexdump 文件中，偏移 <offset> 后，执行 revert 操作
+
+	-s [+][-]seek
+		起始于输入文件的绝对（相对） <seek> 字节的偏移
+		+ 表示 seek 是相对当前标准输入文件的位置（若并非从标准输入读取则无意义）
+		- 表示 seek 应该相对输入尾部偏移那么多字符（若与 + 连用：在当前标准输入文件位置之前）
+		若不含 -s 选项，则 xxd 从当前文件位置开始
+
+	-u
+		使用大写十六进制字母
+		默认为小写
+
+	-v | -version
+		显示版本字符串
