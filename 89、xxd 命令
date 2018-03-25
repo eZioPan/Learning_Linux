@@ -86,3 +86,41 @@
 
 	-v | -version
 		显示版本字符串
+
+附加说明
+	xxd -r 在计算行号信息时，有些内建的魔法
+	若输出文件时可 seek 的，那么每个 hexdump 行前端的行号可能是乱序的，或行可能丢失、重复
+	这些情况下，xxd 将会使用 lseek(2) 来寻找下一个位置
+	若输出文件是不可 seek 的，那么仅有 gap 是允许的， gap 应该被 null 字节填充
+
+	xxd -r 从不会产生解析错误
+	垃圾会静默跳过
+
+	当修改 hexdump 时，请注意 xxd -r 在读取到了足够列数的十六进制数据（参见选项 -c）之后，
+	会跳过该输入行其后的任何数据
+	这意同样味着，修改可打印 ascii（或 ebcdic）列永远被忽略
+	以 xxd -r -p 命令反转一个平铺（或者 postscript）样式的 hexdump，并不依赖正确的列数
+	这种情况下，任何像十六进制数对的字符都会被解释
+
+	注意下面两者的不同
+	% xxd -i file
+	与
+	% xxd -i < file
+
+	xxd -s +seek 可能与 xxd -s seek 并不相同，这是由于使用了 lseek(2) 来“回溯”输入
+	若输入源是标准输入，且标准输入的文件位置并不在 xxd 启动时给定的输入的文件的启动位置时，一个 “+” 将会产生不同的结果
+
+	下述的例子将有助于阐明（或更加迷惑）……
+
+	在读取前回溯标准输入是必要的，因为 “cat” 已经读取到了标准输入的尾部。
+	% sh -c "cat > plain_copy; xxd -s 0 > hex_copy" < file
+
+	将从文件位置 0x480（=1024+128）开始 hexdump
+	“+” 号表示“相对于当前位置”，因为 "128" 加在了 dd 停止后的 1k 的位置上
+	% sh -c "dd of=plain_snippet bs=1k count=1; xxd -s +128 > hex_snippet" < file
+
+	将从文件位置 0x100（=1024-768）开始 hexdump
+	% sh -c "dd of=plain_snippet bs=1k count=1; xxd -s +-768 > hex_snippet" < file
+
+	虽然，这个情况很少见，而且 “+” 的使用就已经非少见了
+	当 -s 使用时，作者偏向于通过 strace(1) 或 truss(1) 与 xxd 连用来观察效果
