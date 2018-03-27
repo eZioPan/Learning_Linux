@@ -124,3 +124,64 @@
 
 	虽然，这个情况很少见，而且 “+” 的使用就已经非少见了
 	当 -s 使用时，作者偏向于通过 strace(1) 或 truss(1) 与 xxd 连用来观察效果
+
+例子
+	打印文件中除了前三行（hex 0x30 字节）的所有内容
+	% xxd -s 0x30 file
+
+	打印从文件的倒数三行（hex 0x30 字节）的内容
+	% xxd -s -0x30 file
+
+	以连续 hexdump、每 20 个八进制一行的形式打印 120 个字节
+	% xxd -l 120 -ps -c 20 xxd.1
+
+	以 12 个八进制一行的形式打印该帮助页面的前 120 个字节
+	% xxd -l 120 -c 12 xxd.1
+
+	从文件 xxd.1 中摘取日期数据
+	% xxd -s 0x36 -l 13 -c 13 xxd.1
+
+	将 input_file 拷贝至 output_file，并将前 100 个字节的值改为 0x00
+	% xxd input_file | xxd -r -s 100 > output_file
+
+	修订 xxd.1 中的日期值
+	% echo "0000037: 3574 68" | xxd -r - xxd.1
+	% xxd -s 0x36 -l 13 -c 13 xxd.1
+
+	创建一个 65537 字节大小的文件，除了最后一个字节为 “A”（hex 0x41）之外，剩余字节全部为 0x00
+	% echo "010000: 41" | xxd -r > file
+
+	启用自动跳过来 hexdump 这个文件
+	% xxd -a -c 12 file
+
+	创建一个 1 字节的文件，其仅包含一个 “A” 字符
+	在 “-r -s” 之后的数字会附加在文件的行号后面；
+	总效果就是，前序字节被抑制了
+	% echo "010000: 41" | xxd -r -s -0x10000 > file
+
+	将 xxd 用作一个编辑器（比如 vim(1)）的过滤器来 hexdump 介于 “a” 和 “z” 之间的区域
+	:'a,'z!xxd
+
+	将 xxd 用作一个编辑器（比如 vim(1)）的过滤器来反解介于“a” 和 “z” 之间的区域的 hexdump 文件至二进制文件
+	:'a,'z!xxd -r
+
+	将 xxd 用作一个编辑器（比如 vim(1)）的过滤器，将某行 hexdump
+	!!xxd -r
+
+	从串行线上读取单个字符
+	% xxd -c1 < /dev/term/b &
+	% stty < /dev/term/b -echo -opost -isig -icanon min 1
+	% echo -n foo > /dev/term/b
+
+返回值
+	将返回下方的错误值：
+
+	0	未遇见任何错误
+	-1	操作不被支持（xxd -r -i 依旧不可行）
+	1	解析选项时错误
+	2	输入文件错误
+	3	输出文件错误
+	4,5	请求的 seek 值不可到达
+
+参见
+	uuencode(1), uudecode(1), patch(1)
