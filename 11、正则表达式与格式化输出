@@ -1,6 +1,6 @@
 正则表达式分为 基础正则表达式(basic RE) 和 扩展正则表达式(extended RE)
 
-对于 RE 的 可视化测试，可以进入 https://www.debuggex.com/
+对于 RE 的 可视化测试，可以进入 https://www.debuggex.com/ https://regex101.com
 
 语系的设置对正则表达式输出的结果又很大的影响
 
@@ -29,7 +29,7 @@ grep 的进阶选项
 grep [-AB] [--color=auto] <需匹配的字符串> [文件名]
 -A <num> 将匹配所在位置向后（after）的 n 行也列出来
 -B <num> 将匹配所在位置向前（before）的 n 行也列出来
-
+-P, --perl-regexp （实验性质的）启用 Perl 形式的正则表达式 
 
 
 basic RE 的语法
@@ -162,6 +162,9 @@ grep 'g.*g'
 
 这种写法表示：以g开头，以g结尾，且中间含有 0 个 或 多个 未知字符 的写法
 
+默认为 greedy search，也就是尽量长的匹配可能匹配上的内容，若要改为 lazy search，则连用问号 ? 如下所示
+
+grep -P 'g.*?g'
 
 
 字符{最少重复次数,最多重复次数}
