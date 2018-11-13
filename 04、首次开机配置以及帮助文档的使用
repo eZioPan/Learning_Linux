@@ -27,7 +27,7 @@ TTY 模式下的语言修改（影响GUI界面）
 localectl status 查询当前 所在地区的设置
 localectl set-locale [[localeKey]=[localeValue]] 设置地区设置
 eg. 切换为英文
-localectl set-locale LANG=en_GB.utf8
+localectl set-locale LANG=en_US.utf8
 
 或者
 在 CentOS7 的系统下，
@@ -35,7 +35,7 @@ localectl set-locale LANG=en_GB.utf8
 
 EG.基于中文的推荐设置
 
-localectl set-locale LANG=zh_cn.UTF-8 LC_TIME=en_GB.UTF-8
+localectl set-locale LANG=zh_CN.UTF-8 LC_TIME=en_US.UTF-8
 
 注意1：多个 locale 变量需要在同一个命令中声明
 	   否则就是后一个命令覆盖前面的命令
