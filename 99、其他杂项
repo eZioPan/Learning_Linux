@@ -157,6 +157,24 @@ AcceptEnv 字段未被注释
 
 
 
+有关 Putty 无法正常显示方框绘制字符（line-drawing）的解决方法
+
+
+在 C 语言库 NCURSES 输出方块绘制符时默认不检测显示终端是否会正确显示
+用于 VT100 终端 line-drawing 的 Alternate Character Set, a.k.a ACS
+
+此时使用 UTF-8 编码的 Putty 会错误的显示 ACS，可以向 shell 传递
+
+NCURSES_NO_UTF8_ACS=1
+
+或者
+
+export NCURSES_NO_UTF8_ACS=1
+
+让 NCURSES 库在检测到 UTF8 locale 后不要使用 ASC 来显示方框绘制符
+
+
+
 有关 vim 的上下左右键/方向键/arrow key，数字小键盘/numpad，退格键/backspace 无法使用的解决方案
 
 一般来说出现这种问题是由于自定义了 ~/.vimrc 或 /etc/vimrc 导致的
