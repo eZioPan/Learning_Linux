@@ -32,6 +32,30 @@ systemctl restart systemd-logind
 
 
 
+设置屏幕的亮度
+
+echo <屏幕亮度> | sudo tee /sys/class/backlight/nv_backlight/brightness
+
+屏幕亮度取值 0 至 100
+
+
+
+设置屏幕自动关闭
+
+即刻生效的临时设置
+
+setterm [--term <终端名>] --blank <关闭屏幕延时分钟数>
+
+自动加载的设置
+
+编辑 /etc/default/grub
+
+在 GRUB_CMDLINE_LINUX_DEFAULT 变量后追加参数 consoleblank=<关闭屏幕延时秒数>
+
+并使用 grub2-mkconfig 命令更新 grub
+
+
+
 CentOS7 下对于 exFAT 文件格式的支持
 
 注：在 http://li.nux.ro/download/nux/dextop/el7/x86_64/ 中有编译好的 exfat-utils 和 fuse-exfat 包
@@ -94,14 +118,6 @@ rm "*exfat*"
 若确定分区的文件系统的确为 exfat，请使用 exfatlabel 为该分区添加一个标签即可
 【已提交 Issue】https://github.com/relan/exfat/issues/75
 【Issue 已关闭】原作者 relan 认为是 redhat 的 blkid 的问题，等待 redhat 解决
-
-
-
-设置屏幕的亮度
-
-echo <屏幕亮度> | sudo tee /sys/class/backlight/nv_backlight/brightness
-
-屏幕亮度取值 0 至 100
 
 
 
