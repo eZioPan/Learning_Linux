@@ -223,6 +223,40 @@ alias la="ls -a"
 
 
 
+自定义终端窗口的标题
+
+环境变量 PS1 PS2 PS3 PS4 除了控制命令行提示符之外，也控制窗口的标题栏中的内容
+窗口标题栏可以通过转义序列 \e]0;标题内容\a 来设置
+其中 \e]0; 表示其后的序列将定义窗口标题，该标题可使用 bash 通用的转义字符来实现动态的显示
+\a 表明了窗口标题定义的结束
+
+eg.（MSYS2 的窗口定义）
+
+export PS1="\e]0;${MSYSTEM}: \w\a\e[32m\u@\H\e[0m \e[35m${MSYSTEM}\e[0m \e[33m\w\e[0m\n\$ "
+
+分析：
+
+\e]0;       标记窗口名的起始
+${MSYSTEM}  输出该环境变量的值
+:           输出一个冒号
+\w          当前的工作路径
+\a          标记窗口名的结束
+\e[32m      前景色（字符色）为绿色
+\u          当前用户的用户名
+@           输出一个 @ 字符
+\H          主机名
+\e[0m       清除前一个属性
+\e[35m      前景色（字符色）为紫色
+${MSYSTEM}  输出该环境变量的值
+\e[0m       清除前一个属性
+\e[33m      前景色（字符色）为黄色
+\w          当前的工作路径
+\e[0m       清除前一个属性
+\n          换行
+\$          根据 UID 输出字符 $ 或者 #
+
+
+
 关于 CentOS7 开机时提示 Fail to start LSB:Bring up/dowm networking 的解决办法
 
 systemctl enable NetworkManager-wait-online.service
