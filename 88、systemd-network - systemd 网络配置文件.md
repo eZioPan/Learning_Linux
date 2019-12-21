@@ -184,7 +184,7 @@ Name=*
 
 - `DHCP=`
 
-    启用 `DHCPv4` 且/或 `DHCPv6` 支持。  
+    启用 **DHCPv4** 且/或 **DHCPv6** 支持。  
     接受 `yes` `no` `ipv4` `ipv6`。  
     默认为 `no`。
 
@@ -516,3 +516,231 @@ Name=*
 - `AutoJoin=`
 
     接受一个布尔值。如果以太网交换机执行 **IGMP snooping**，则无法通过 `ip maddr` 命令在以太网层级加入多播组，因为交换机不会复制不具有多播地址的 IGMP 报文 的端口上的多播包。由命令 `ip link add vxlan` 创建的 Linux vxlan 界面，或者启用了对应组选项的 **networkd** 的 **netdev** 类型的 vxlan，可以满足加入需求。使用扩展了 `autojoin` 选项的 ip 地址命令，我们就可以为 openvswitch (OVS) 的 vxlan 以及其它需要接收 多播流量的 隧道机制 提供相似的功能。默认为 `no`。
+
+## `[Neighbor]` 段选项
+
+`[Neighbor]` 段接受下列键名。一个邻居段向 IPv6 的邻居表（neighbor table）或 IPv4 的 ARP 表 中加入一行永久、静态的条目，该条目为该链路上与网络匹配的给定的硬件地址。指定多个 `[Neighbor]` 段来配置多个静态邻居。
+
+- `Address=`
+
+    邻居的 IP 地址。
+
+- `LinkLayerAddress=`
+
+    邻居的链路层地址（MAC 地址 或者 IP 地址）。
+
+## `[IPv6AddressLabel]` 段选项
+
+一个 `[IPv6AddressLabel]` 段接受下方键名。定义数个 `[IPv6AddressLabel]` 段来配置数个地址标签。IPv6 地址标签用于地址选择（address selection）。参见 *RFC 3484*。 Precedence 在用户空间控制， 仅标签本身存储在内核中。
+
+- `Label=`
+
+前缀的标签是一个 `0` 至 `4294967294` 的无符号整型。 `0xffffffff` 为保留数值。该键必须存在。
+
+- `Prefix=`
+
+IPv6 前缀是一个具有前缀长度的地址，用 `/` 隔开。该键必须存在。
+
+## `[RoutingPolicyRule]` 段选项
+
+一个 `[RoutingPolicyRule]` 接受下列键名。指定多个 `[RoutingPolicyRule]` 来配置多条规则。
+
+- `TypeOfService=`
+
+    指定 `0` 至 `255` 的一个数字，该数字用于匹配一个的服务类型。
+
+- `From=`
+
+    指定要匹配的源地址前缀。可能会跟随一个斜线以及前缀的长度。
+
+- `To=`
+
+    指定要匹配的目标地址的前缀。可能会跟随一个斜线以及前缀的长度。
+
+- `FirewallMark=`
+
+    指定要匹配的 **iptables firewall mark** 值 （该值介于 `1` 和 `4294967295`）。
+
+- `Table=`
+
+    指定若匹配上 **rule selector**，则需要用于查找的 **routing table identifier**。接受下列值： `default` `main` `local`， 或一个介于 `1` 至 `4294967295` 之间的数字。  
+    默认为 `main`。
+
+- `Priority=`
+
+    指定该规则的优先级。 `Priority=` 为一个无符号整型。数字越大优先级越低，所有规则按照数字的升序方向处理。
+
+- `IncomingInterface=`
+
+    指定要匹配的来源设备。若界面为回环（loopback），则仅匹配来自本主机的包。
+
+- `OutgoingInterface=`
+
+    指定要匹配的外流（outgoing）设备。外流界面仅针对从绑定在某设备上的本地套字节发出的包裹。
+
+- `SourcePort=`
+
+    指定匹配 **forwarding information base (FIB)** 规则的源 IP 端口或端口段。一个端口段通过 小端口、横线、大端口 的格式来指定。  
+    默认为未设置。
+
+- `DestinationPort=`
+
+    指定匹配 **forwarding information base (FIB)** 规则的目标 IP 端口或端口段。一个端口段通过 小端口、横线、大端口 的格式来指定。  
+    默认为未配置。
+
+- `IPProtocol=`
+
+     指定匹配 **forwarding information base (FIB)** 规则的 IP 协议。接受 IP 协议名，比如 `tcp` `udp` `sctp`，或者 IP 协议号，比如 `6`（对应 `tcp`） `17`（对应 `udp`）。  
+     默认为未配置。
+
+- `InvertRule=`
+
+    接受布尔值。是否反转该规则。  
+    默认为假。
+
+- `Family=`
+
+    接受 `ipv4` `ipv6` `both`。  
+    默认情况下， **address family** 由 `To=` 或 `From=` 的地址决定。若未指定 `To=` 和 `From=`，则默认为 `ipv4`。
+
+## `[NextHop]` 段选项
+
+`[NextHop]` 段接受下列键名。指定多个 `[NextHop]` 段来配置多个下一跳。下一跳用来操控内核的下一跳表的条目。
+
+- `Gateway=`
+
+    与 `[Network]` 段中的一致。该键为必须键。
+
+- `Id=`
+
+    下一跳的 id（一个无符号整型）。若未指定或设置为 `0`，则由内核自动选择。
+
+## `[Route]` 段选项
+
+`[Route]` 段接受下列键名。指定多个 `[Route]` 段来配置多个路由。
+
+- `Gateway=`
+
+    如 `[Network]` 段所描述的。
+
+- `GatewayOnLink=`
+
+    接受布尔值。若设置为真，则内核不必检测网关是否真的直连至该设备（比如，内核不必检测网关是否连入了本地网络），我们即可以向内核的路由表插入条目，同时抑制内核针对该条目的警报。  
+    默认为假。
+
+- `Destination=`
+
+    目标路由的前缀。可能紧跟一个 `/` 以及前缀的长度。若不指定，则架设为全长（full-length）主机路由。
+
+- `Source=`
+
+    源路由的前缀。可能紧跟一个 `/` 以及前缀的长度。若不指定，则架设为全长（full-length）主机路由。
+
+- `Metric=`
+
+    路由的 **metric**（一个无符号整型）。
+
+- `IPv6Preference=`
+
+    指定 路由偏好的（如 *RFC4191* 中所描述的）**Router Discovery** 信息。可以为 `low` 该路由具有最低优先级，`medium` 该路由具有默认偏好，`high` 该路由具有最高偏好。
+
+- `Scope=`
+
+    路由的作用域，可以为 `global` `site` `link` `host` `nowhere`。  
+    对于 IPv4 路由，若 `Type=` 为 `local` 或 `nat`，则默认为 `host`；  
+    若 `Type=` 为 `broadcast` 或 `multicast` 或 `anycast`，则默认为 `link`；
+    其他情况默认均为 `global`。
+
+- `PreferredSource=`
+
+    该路由偏好的源地址。该地址必须符合 *inet_pton(3)* 中的描述。
+
+- `Table=`
+
+    该路由的 **table identifier**，接受 `default` `main` `local` 或介于 `1` 至 `4294967295` 之间的数。  
+    这张表可以用 `ip router show table <num>` 来获取。  
+    若未设置，且 `Type=` 为 `local` `broadcast` `anycast` `anycast` `nat`，则值为 `local`。  
+    其他情况的默认值为 `main`。
+
+- `Protocol=`
+
+    该路由的 **protocol identifier**，接受 `0` 至 `255` 之间的数，或特定的值 `kernel` `boot` `static` `ra` `dhcp`。  
+    默认值为 `static`。
+
+- `Type=`
+
+    指定该路由的类型。接受 `unicast` `local` `broadcast` `anycast` `multicast` `blackhole` `unreachable` `prohibit` `throw` `nat` `xresolve`。  
+    若为 `unicast`，则定义一条普通路由，例如，一个指明了通向目标网络地址路径的路由。  
+    若为 `blackhole`，导向该路由的包将被静默丢弃。  
+    若为 `unreachable`，导向该路由的包将被丢弃，并生成 **ICMP** 信息 **Host Unreachable**。  
+    若为 `prohibit`，导向该路由的包将被丢弃，并生成 **ICMP** 信息 **Communication Administratively Prohibited**。  
+    若为 `throw`，当前路由表的路由查找将失败，路由选择流程将返回 路由策略数据库（**Routing Policy Database, RPDB**）。  
+    默认为 `unicast`。
+
+- `InitialCongestionWindow=`
+
+    在启动 TCP 连接时，所要使用的 TCP 初始拥塞窗口（congestion window）。在一个 TCP 会话的初始阶段，当一个客户端请求一个资源时，服务器的初始拥塞窗口决定了在初始数据传送中需要发送多少字节。  
+    接受的字节大小介于 `1` 与 `4294967295`(2^32-1)之间。支持常用后缀 `K` `M` `G`，且底数为 `1024`。  
+    若未设置，将使用内核的默认值。
+
+- `InitialAdvertisedReceiveWindow=`
+
+    TCP 初始提议接收窗口是 在一个连接上 初始化的可以缓存的接收数据（以字节计）的数量。在等待来自接收端的 ACK 和窗口更新之前，发送方主机仅可以发送的的数据量。  
+    接受的字节大小介于 `1` 与 `4294967295`(2^32-1)之间。支持常用后缀 `K` `M` `G`，且底数为 `1024`。  
+    若未设置，将使用内核的默认值。
+
+- `QuickAck=`
+
+    接受一个布尔值。  
+    当为真时，启用该路由的 TCP **quick ack mode**。  
+    若未设置，将使用内核默认值。
+
+- `FastOpenNoCookie=`
+
+    接受一个布尔值。  
+    当为真时，启用无需基于每路由 **cookie** 的 TCP **fastopen**。  
+    若未设置，将使用内核默认值。
+
+- `TTLPropagate=`
+
+    接受一个布尔值。  
+    当为真时，启用 **TTL propagation at Label Switched Path (LSP) egress**。  
+    当未设置时，使用内核默认值。
+
+- `MTUBytes=`
+
+    以字节为单位为路由设置最大传输单元。支持常用后缀 `K` `M` `G`，且底数为 `1024`。
+
+    注意，若 IPv6 在界面上启用，且选择的 MTU 值小于 `1280`（IPv6 最小 MTU），都会将该值设置为 `1280`。
+
+- `IPServiceType=`
+
+    接受字符串 `CS6` 或 `CS4`。  
+    用于设置 IP 服务类型至 **CS6（网络控制）**，或 **CS4（实时）**。  
+    默认为 `CS6`。
+
+## `[DHCPv4]` 段选项
+
+若在 `DHCP=` 选项中配置了，则在 `[DHCPv4]` 段配置 DHCPv4 客户端：
+
+- `UseDNS=`
+
+    若为真（默认值），则来自 DHCP 服务器的 DNS 服务器将优先于任何静态配置的 DNS 服务器。
+
+    该选项对应 **resolv.conf(5)** 的 **nameserver** 选项。
+
+- `RoutesToDNS=`
+
+    若为真（默认值），则接受来自 DHCP 服务器的通向 DNS 服务器的路由。当 `UseDNS=` 被禁用，则该设置被忽略。默认为假。
+
+- `UseNTP=`
+
+    若为真（默认值），则相较于任何静态配置的 NTP 服务器，**systemd-timesyncd** 将优先使用来自 DHCP 服务器的 NTP 服务器。
+
+- `UseSIP=`
+
+    若为真（默认值），则来自 DHCP 服务器的 SIP 服务器将被保存至状态文件中，并可以通过函数 `sd_network_link_get_sip_server()` 读取。
+
+- `UseMTU=`
+
+    若为真，则当前链路界面的最大传输单元将使用来自 DHCP 服务器的值。若设置了 `MTUBytes=`，则忽略该设置。默认为假。
