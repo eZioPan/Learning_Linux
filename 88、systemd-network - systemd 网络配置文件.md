@@ -371,7 +371,7 @@ Name=*
 
 - `IPv6ProxyNDPAddress=`
 
-    一个 IPv6 地址，该地址的的邻居通告信息将被代理。该选项可多次声明。**systemd-networkd** 将会将 `IPv6ProxyNDPAddress=` 的条目添加至 IPv6 邻居代理表中。  
+    一个 IPv6 地址，该地址的的邻居通告报文将被代理。该选项可多次声明。**systemd-networkd** 将会将 `IPv6ProxyNDPAddress=` 的条目添加至 IPv6 邻居代理表中。  
     该选项将隐含 `IPv6ProxyNDP=yes`，但若 `IPv6ProxyNDP` 被设置未假，则该设置无效果。  
     当未设置时，使用内核默认值。
 
@@ -642,7 +642,7 @@ IPv6 前缀是一个具有前缀长度的地址，用 `/` 隔开。该键必须�
 
 - `IPv6Preference=`
 
-    指定 路由偏好的（如 *RFC4191* 中所描述的）**Router Discovery** 信息。可以为 `low` 该路由具有最低优先级，`medium` 该路由具有默认偏好，`high` 该路由具有最高偏好。
+    指定 路由偏好的（如 *RFC4191* 中所描述的）**Router Discovery** 报文。可以为 `low` 该路由具有最低优先级，`medium` 该路由具有默认偏好，`high` 该路由具有最高偏好。
 
 - `Scope=`
 
@@ -672,9 +672,9 @@ IPv6 前缀是一个具有前缀长度的地址，用 `/` 隔开。该键必须�
     指定该路由的类型。接受 `unicast` `local` `broadcast` `anycast` `multicast` `blackhole` `unreachable` `prohibit` `throw` `nat` `xresolve`。  
     若为 `unicast`，则定义一条普通路由，例如，一个指明了通向目标网络地址路径的路由。  
     若为 `blackhole`，导向该路由的包将被静默丢弃。  
-    若为 `unreachable`，导向该路由的包将被丢弃，并生成 **ICMP** 信息 **Host Unreachable**。  
-    若为 `prohibit`，导向该路由的包将被丢弃，并生成 **ICMP** 信息 **Communication Administratively Prohibited**。  
-    若为 `throw`，当前路由表的路由查找将失败，路由选择流程将返回 路由策略数据库（**Routing Policy Database, RPDB**）。  
+    若为 `unreachable`，导向该路由的包将被丢弃，并生成 **ICMP** 报文 **Host Unreachable**。  
+    若为 `prohibit`，导向该路由的包将被丢弃，并生成 **ICMP** 报文 **Communication Administratively Prohibited**。  
+    若为 `throw`，当前路由表的路由查找将失败，路由选择流程将返回 路由策略数据库（**Routing Policy Database**, **RPDB**）。  
     默认为 `unicast`。
 
 - `InitialCongestionWindow=`
@@ -744,3 +744,165 @@ IPv6 前缀是一个具有前缀长度的地址，用 `/` 隔开。该键必须�
 - `UseMTU=`
 
     若为真，则当前链路界面的最大传输单元将使用来自 DHCP 服务器的值。若设置了 `MTUBytes=`，则忽略该设置。默认为假。
+
+- `Anonymize=`
+
+    接受布尔值。若为真，则向 DHCP 服务器发送的选项将遵循 *RFC 7844 (Anonymity Profiles for DHCP Clients)* 来最小化可以透露出身份的信息。默认为假。
+
+    当 `MACAddressPolicy=` 设置为 `random` 时（参见 *systemd.link(5)*）,该值才应该被设置为真。
+
+    注意，该选项会覆盖其他选项。具体来说，下列变量将被忽略：`SendHostname=` `ClientIdentifier=` `UseRoutes=` `SendHostname=` `UseMTU=` `VendorClassIdentidier=` `UseTimezone=`
+
+    启用了该选项会让 DHCP 请求模仿从 **Microsoft Windows** 中发送的请求，来减少分辨不同机器的能力。这意味着 DHCP 请求大小将增加，且租用数据将比通常更加全面，虽然大多数请求的数据并不会被用上。
+
+- `SendHostname=`
+
+    若为真（默认值），机器的主机名将被发送至 DHCP 服务器。注意机器的主机名只能包含 7-bit ASCII 小写字符，且不具有空格和点，且必须被格式化为有效的 DNS 域名。其他情况下，即便该值设置为真，主机名也不会被发送。
+
+- `UseHostname=`
+
+    若为真（默认值），来自 DHCP 服务器的主机名将作为系统的瞬态主机名（transient hostname）。
+
+- `Hostname=`
+
+    将该值作为主机名发送至 DHCP 服务器，而非机器的主机名。注意机器的主机名只能包含 7-bit ASCII 小写字符，且不具有空格和点，且必须被格式化为有效的 DNS 域名。
+
+- `UseDomains=`
+
+    接受一个布尔值，或者特定值 `route`。当为真时，来自 DHCP 服务器的域名将作为该链路的 DNS 搜索域名，与 `Domains=` 设置的效果类似。若设置为 `router`，则来自 DHCP 服务器的域名将仅用于路由 DNS 请求，但不用于搜索，与参数前缀了 `~` 的 `Domain=` 设置的效果类似。默认为假。
+
+    建议仅在可信网络上启用，因为该选项将影响所有主机名，特别是单标签主机名的解析。通常来说，仅将提供的域名作为路由域名而非搜索域名是相对安全的，这样就不会影响单标签名在本地的解析。
+
+    当设置为真时，该设置与 *resolve.conf(5)* 中的域名选项对应。
+
+- `UseRoutes=`
+
+    若为真（默认值），将从 DHCP 服务器请求静态路由，且该路由具有 **1024** 的 metric，且根据路由的目的地和网关，具有 **global**、**link**、**host** 三个不同的作用域。  
+    若目的地在本地链路上，比如 **127.x.x.x**，或与链路自身地址相同，则作用域被设置为 `host`。其他情况，若网关为 null（直连路由），将使用 `link` 作用域。其他任何情况，作用域默认为 `global`。
+
+- `UseTimezone=`
+
+    若为真，则来自 DHCP 服务器的时区将作为本地系统的时区。默认为 `no`。
+
+- `ClientIdentifier=`
+
+    要使用的 DHCPv4 客户端标识（DHCPv4 client identifier）。  
+    接受 `mac` `duid` `duid-only`。  
+    若设置为 `mac`，则使用链路的 MAC 地址。  
+    若设置为 `duid`，则使用符合 *RFC4361* 的用户 ID（RFC4361-compliant Client ID），该 ID 由 `IAID` 和 `DUID`（见下方）组合而成。  
+    若设置为 `duid-only`，则仅使用 **DUID**，这可能并不符合 RFC，但有些设置需要这样。  
+    默认为 `duid`。
+
+- `VendorClassIdentifier=`
+
+    制造商类别标识符，用来区分制造商类别和配置。
+
+- `UserClass=`
+
+    一个 DHCPv4 客户端可以用 `UserClass` 选项来区分它所代表的用户或应用的类别或分类。该选项包含的信息为一个字符串，该字符串表示了该客户端属于哪个用户类别。每个类别都设置了一个 DHCP server 用来区分用户的区分信息字符串。接受一个白空格区分的字符串列表。
+
+- `MaxAttempts=`
+
+
+    指定要尝试多少次 DHCPv4 客户端配置。接受一个数字，或者 `infinity`。默认为 `infinity`。注意重试的间隔时间是指数增长的，这样即便该数字很大也不会产生网络过载。
+
+- `DUIDType=`
+
+    覆盖全局 **DUIDType** 设置在该网络上的设置。参见 *networkd.conf(5)* 了解可能值的描述。
+
+- `DUIDRawData=`
+
+    覆盖全局 **DUIDRawData** 设置在该网络上的设置。参见 *networkd.conf(5)* 了解可能值的描述。
+
+- `IAID=`
+
+    该界面的 DHCP 身份相关标识符（**DHCP Identity Association Identifier**, **IAID**），是一个 32-bit 的无符号整型。
+
+- `RequestBroadcast=`
+
+    在 IP 地址配置前，要求服务器使用广播报文。这对于不可以接受 RAW 包的设备，或者在配置了一个 IP 地址之前根本无法接收包的设备是必须的。  
+    从另一方面说，该选项在广播包被过滤掉的网络中不允许被启用。
+
+- `RouteMetric=`
+
+    为来自 DHCP 服务器的路由设置路由 metric。
+
+- `RouteTable=`
+
+    DHCP 路由的表标识（介于 `1` 至 `4294967295` 之间的一个数，或用 `0` 表示未设置）。该表可以用 `ip route show table <num>` 来获取。
+
+    当与 `VRF=` 连用时，除非该参数被指定，否则使用 VFR 的路由表。
+
+- `ListenPort=`
+
+    允许 DHCP 客户端监听自定义的端口。
+
+- `SendRelease=`
+
+    若为真，则 DHCPv4 客户端在停止时发送 DHCP 释放包（DHCP release packet）。默认为真。
+
+- `BlackList=`
+
+    白空格隔开的 IPv4 地址列表。若来自 DHCP 服务器的地址在该列表中，则被拒绝。
+
+- `RequestOptions=`
+
+    白空格隔开的列表，由 `1` 至 `254` 之间的整型组成。
+
+- `SendOption=`
+
+    在 DHCPv4 请求中发送一个任意的选项。接受一个用冒号隔开的 DHCP 选项号、数据类型和数据（`option:type:value`）。选项号必须是 `1` 至 `254` 之间的整型。类型必须是 `uint8` `uint16` `uint32` `ipv4address` 或 `string`。在数据字符串中的特殊字符可以用 C-type 转义字符表示。该设置可多次指定。若指定了空字符，则前序指定的所有选项都将清空。默认为未设置。
+
+## `[DHCPv6]` 段选项
+
+若在 `DHCP=` 中启用或被 **IPv6 Router Advertisement** 调用，则 `[DHCPv6]` 段配置 DHCPv6 客户端：
+
+- `UseDNS=`, `UseNTP=`
+
+    同 `[DHCPv4]` 段中的描述。
+
+- `RapidCommit=`
+
+    接受一个布尔值。DHCPv6 客户端可以通过 快速双报文交换（rapid two-message exchange）（征求与答复（solicit and reply））从 DHCPv6 服务器获取配置参数。当同时在 DHCPv6 客户端和服务器开启 **rapid commit** 选项，将使用双报文交换，而非默认的四方法交换（four-method exchange）（征求、宣告、请求和答复（solicit, advertise, request, and reply））。双报文交换提供快速的客户端配置，对网络负载较重的情形比较有利。参见 *RFC 3315* 了解详情。默认为真。
+
+- `ForceDHCPv6PDOtherInformation=`
+
+    接受一个布尔值，当设置了路由通告报文中的 `Other information` bit 时，也强制 DHCPv6 运行在有状态模式。默认情况下，若路由通告报文仅设置了 `Other information` bit，则 DHCPv6 以无状态行为请求网络信息，且使用 双报文信息请求与信息回复报文交换（two-message Information Request and Information Reply message exchange）。在 *RFC 7084* 中，需要 **WPD-4**，对自定义边界路由（Customer Edge router）更新了行为，这样有状态的 DHCPv6 前缀委托（DHCPv6 Prefix Delegation），在路由通告仅设置了 `Other information` 时也会一并请求。该选项启用了 CE 行为，区分了其他情况下不可能自动区分 `Other information` 的意图。默认该选项为假，在设备应该作为 CE 路由，却没有前缀被委托的情况下开启。
+
+- `PrefixDelegationHint=`
+
+    接受一个带前缀长度的 IPv6 地址，就如 `[Network]` 段中的 `Address=` 一样。指定 DHCPv6 客户端请求路由器将前缀提示包含进 DHCPv6 征求。前缀范围 `1` 至 `128`。默认为未设置。
+
+## `[IPv6AcceptRA]` 段选项
+
+若在 `IPv6AcceptRA=` 中启用了，则在 `[IPv6AcceptRA]` 段配置 IPv6 路由宣告（RA）客户端：
+
+- `UseDNS=`
+
+    若为真（默认值），从路由宣告中获取的 DNS 服务器将优先于任何静态配置的 DNS 服务器。
+
+    该选项对应 *resolve.conf(5)* 中 名称服务器选项。
+
+- `UseDomains=`
+
+    接受一个布尔值，或特别的值 `route`。当为真时，通过 IPv6 路由宣告（RA）获取的域名将作为该链路的 DNS 搜索域名，与 `Domains=` 设置的效果类似。若设置为 `router`，则通过 IPv6 路由宣告（RA）获取的域名将仅用于路由 DNS 请求，但不用于搜索，与参数前缀了 `~` 的 `Domain=` 设置的效果类似。默认为假。
+
+    建议仅在可信网络上启用，因为该选项将影响所有主机名，特别是单标签主机名的解析。通常来说，仅将提供的域名作为路由域名而非搜索域名是相对安全的，这样就不会影响单标签名在本地的解析。
+
+    当设置为真时，该设置与 *resolve.conf(5)* 中的域名选项对应。
+
+- `RouteTable=`
+
+    路由宣告发送路由的表标识（介于 `1` 至 `4294967295` 之间的一个数，或用 `0` 表示未设置）。该表可以用 `ip route show table <num>` 来获取。
+
+- `UseAutonomousPrefix=`
+
+    若为真（默认值），从路由宣告获取的自治前缀（autonomous prefix）将优先于任何静态配置的自治前缀。
+
+- `UseOnLinkPrefix=`
+
+    若为真（默认值），从路由宣告获取的在链路前缀（onlink prefix）将优先于任何静态配置的在链路前缀。
+
+- `BlackList=`
+
+    白空格分隔的 IPv6 前缀列表。若通过路由宣告获取的 IPv6 前缀落在该列表中，就被忽略。
