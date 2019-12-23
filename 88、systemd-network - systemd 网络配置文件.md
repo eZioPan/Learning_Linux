@@ -32,7 +32,7 @@ network.network
 Name=*
 ```
 
-该段可接受下方的键名：
+该段可接受下方的键：
 
 - `MACAddress=`
 
@@ -131,7 +131,7 @@ Name=*
 
 ## `[Link]` 段选项
 
-`[Link]` 段接受下列键名：
+`[Link]` 段接受下列键：
 
 - `MACAddress=`
 
@@ -176,7 +176,7 @@ Name=*
 
 ## `[Network]` 段选项
 
-`[Network]` 段接受下列键名：
+`[Network]` 段接受下列键：
 
 - `Description=`
 
@@ -519,7 +519,7 @@ Name=*
 
 ## `[Neighbor]` 段选项
 
-`[Neighbor]` 段接受下列键名。一个邻居段向 IPv6 的邻居表（neighbor table）或 IPv4 的 ARP 表 中加入一行永久、静态的条目，该条目为该链路上与网络匹配的给定的硬件地址。指定多个 `[Neighbor]` 段来配置多个静态邻居。
+`[Neighbor]` 段接受下列键。一个邻居段向 IPv6 的邻居表（neighbor table）或 IPv4 的 ARP 表 中加入一行永久、静态的条目，该条目为该链路上与网络匹配的给定的硬件地址。指定多个 `[Neighbor]` 段来配置多个静态邻居。
 
 - `Address=`
 
@@ -531,7 +531,7 @@ Name=*
 
 ## `[IPv6AddressLabel]` 段选项
 
-一个 `[IPv6AddressLabel]` 段接受下方键名。定义数个 `[IPv6AddressLabel]` 段来配置数个地址标签。IPv6 地址标签用于地址选择（address selection）。参见 *RFC 3484*。 Precedence 在用户空间控制， 仅标签本身存储在内核中。
+一个 `[IPv6AddressLabel]` 段接受下方键。定义数个 `[IPv6AddressLabel]` 段来配置数个地址标签。IPv6 地址标签用于地址选择（address selection）。参见 *RFC 3484*。 Precedence 在用户空间控制， 仅标签本身存储在内核中。
 
 - `Label=`
 
@@ -543,7 +543,7 @@ IPv6 前缀是一个具有前缀长度的地址，用 `/` 隔开。该键必须�
 
 ## `[RoutingPolicyRule]` 段选项
 
-一个 `[RoutingPolicyRule]` 接受下列键名。指定多个 `[RoutingPolicyRule]` 来配置多条规则。
+一个 `[RoutingPolicyRule]` 接受下列键。指定多个 `[RoutingPolicyRule]` 来配置多条规则。
 
 - `TypeOfService=`
 
@@ -605,7 +605,7 @@ IPv6 前缀是一个具有前缀长度的地址，用 `/` 隔开。该键必须�
 
 ## `[NextHop]` 段选项
 
-`[NextHop]` 段接受下列键名。指定多个 `[NextHop]` 段来配置多个下一跳。下一跳用来操控内核的下一跳表的条目。
+`[NextHop]` 段接受下列键。指定多个 `[NextHop]` 段来配置多个下一跳。下一跳用来操控内核的下一跳表的条目。
 
 - `Gateway=`
 
@@ -617,7 +617,7 @@ IPv6 前缀是一个具有前缀长度的地址，用 `/` 隔开。该键必须�
 
 ## `[Route]` 段选项
 
-`[Route]` 段接受下列键名。指定多个 `[Route]` 段来配置多个路由。
+`[Route]` 段接受下列键。指定多个 `[Route]` 段来配置多个路由。
 
 - `Gateway=`
 
@@ -803,7 +803,6 @@ IPv6 前缀是一个具有前缀长度的地址，用 `/` 隔开。该键必须�
 
 - `MaxAttempts=`
 
-
     指定要尝试多少次 DHCPv4 客户端配置。接受一个数字，或者 `infinity`。默认为 `infinity`。注意重试的间隔时间是指数增长的，这样即便该数字很大也不会产生网络过载。
 
 - `DUIDType=`
@@ -906,3 +905,215 @@ IPv6 前缀是一个具有前缀长度的地址，用 `/` 隔开。该键必须�
 - `BlackList=`
 
     白空格分隔的 IPv6 前缀列表。若通过路由宣告获取的 IPv6 前缀落在该列表中，就被忽略。
+
+## `[DHCPServer]` 段选项
+
+若在上面的 `DHCPServer=` 启用了，则在 `[DHCPServer]` 段配置 DHCP 服务器：
+
+- `PoolOffset=`, `PoolSize=`
+
+    配置要分发的地址池。地址池为一段连续的 IP 地址序列，该 IP 地址序列应该在为服务器配置的子网网段中，且不包含子网地址和广播地址。  
+    `PoolOffset=` 定义了地址池的起始位置，该起始位置以从子网开头的偏移量计算，或者设置为 `0` 来使用默认值。  
+    `PollSize=` 定义了该池中 IP 地址的数量，或者设置为 `0` 来使用默认值。  
+    默认情况下，地址池从子网号之后的第一个地址开始，直到用尽除了该子网广播地址之外的所有地址。若地址池包含了服务器地址（默认值），则该地址将会被保留，不会分发给客户端。
+
+- `DefaultLeaseTimeSec=`, `MaxLeaseTimeSec=`
+
+    控制要传递给客户端的 默认 和 最大 DHCP 租期。这些选项使用秒做单位，或者其它通用的时间单位，以后缀为准。默认租期用于客户端未指定特定的租期时使用。若客户端要求的租期长于最长租期，则仅提供最长租期的时间。默认的租期为 1h，默认的最大租期为 12h。若 DHCP 租用配置数据频繁的变动，需要客户端时常学习新设置时，可以调低租期。使用较长的租期来减少生成的 DHCP 网络流量。
+
+- `EmitDNS=`, `DNS=`
+
+    接受一个布尔值。配置分发给客户端的 DHCP 租用是否需要包含 DNS 信息。默认为 `yes`。可以通过 `DNS=` 选项配置将要发送给客户端的 DNS 服务器地址，该地址由一系列 IPv4 地址组成。若 `EmitDNS=` 启用，却没有配置 DNS 服务器，则服务器会从具有正确服务器配置的“上行”（"uplink"）界面中传播至客户端。“上行”界面由系统中具有最高优先级的默认路由决定。  
+    注意，该信息在该租用分发时获取，并不会将其后了解到的 DNS 或 NTP 服务器涵盖在内。DNS 服务器传播不会将 **/etc/resolv.conf** 的内容包括在内。  
+    同时也要注意，即便上行网络的配置改变，分发也不会改变。为了保证客户端收到最新的上行 DNS 服务器信息，最好通过上文描述 `MaxLaeseTimeSec=` 缩短 DHCP 租期/。
+
+- `EmitNTP=`, `NTP=`
+
+    与上文描述的 `EmitDNS=` 与 `DNS=` 设置类似，这些设置配置了 NTP 服务器信息是否应该随着 DHCP 租用一同发送。与 `EmitDNS=` 和 `DNS=` 具有相同的语法、传播语义和默认值。
+
+- `EmitSIP=`, `SIP=`
+
+    与上文描述的 `EmitDNS=` 与 `DNS=` 设置类似，这些设置配置了 SIP 服务器信息是否应该随着 DHCP 租用一同发送。与 `EmitDNS=` 和 `DNS=` 具有相同的语法、传播语义和默认值。
+
+- `EmitRouter=`
+
+    与上文描述的 `EmitDNS=` 设置类似，这些设置配置了 路由选项 是否应该随着 DHCP 租用一同发送。与 `EmitDNS=` 具有相同的语法、传播语义和默认值。
+
+- `EmitTimezone=`, `Timezone=`
+
+    接受一个布尔值。这些设置配置了 时区信息 是否应该随着 DHCP 租用一同发送。默认值为 `yes`。`Timezone=` 设置接受一个时区字符串（比如 `Europe/Berlin` 或 `UTC`）用来传递给客户端。若没有设置明确的时区，则传递本地主机的系统时区设置，该设置由 */etc/localtime* 符号链接决定。
+
+- `SendOption=`
+
+    通过 DHCPv4 服务器发送一个裸选项。接受一个 DHCP 选项号、一个数据类型和一个数据（"option:type:value"）。  
+    选项号是一个介于 `1` 至 `254` 之间的数。  
+    数据类型接受 `uint8` `uint16` `uint32` `ipv4address` `string`。  
+    数据字符串中的特殊字符可以用 C-type 转义字符转义。  
+    该选项可以多次指定。  
+    若指定了空字符串，则清楚前序指定的选项。  
+    默认为未设置。
+
+## `[IPv6PrefixDelegation]`
+
+若在上面的 `IPv6PrefixDelegation=` 启用了，则 `[IPv6PrefixDelegation]` 包含了发送 IPv6 路由宣告的设置，以及是否作为路由出现。IPv6 网络前缀使用一个或多个 `[IPv6Prefix]` 段定义。
+
+- `Managed=`, `OtherInformation=`
+
+    接受一个布尔值。控制当 `Managed=` 设置为真时，是否使用 DHCPv6 服务器获取 IPv6 地址；或者当 `OtherInformation=` 设置为真时，通过 DHCPv6 为网络链接获取信息时，是否仅获取附加网络信息。两个设置默认均为假，意味着 DHCPv6 服务器不被使用。
+
+- `RouterLifetimeSec=`
+
+    接受一个时间值。以秒为单位配置 IPv6 路由的生命周期（lifetime）。若设置，则该主机也在路由宣告中声明他自己为该网络链接的一个 IPv6 网络。当未设置时，主机并不会作为一个路由。
+
+- `RouterPreference=`
+
+    若 `RouterLifetimeSec=` 不为零，则配置 IPv6 路由选项。有效值为 `high` `medium` `low`，也可以使用 `normal` 和 `default` 表示 `medium`。参见 *RFC 4191* 了解详情。默认值为 `medium`。
+
+- `EmitDNS=`, `DNS=`
+
+    当 `EmitDNS=` 为真时，通过路由宣告报文发送由 `DNS=` 指定一个列表的递归式的 DNS 服务器的 IPv6 地址。若 `DNS=` 为空，则 DNS 服务器从 `[Network]` 段读取。若 `[Network]` 段同样未包含任何 DNS 服务器，从上行链路中具有最高优先级的默认路由中获取 DNS 服务器。当 `EmitDNS=` 为假时，DNS 服务器信息不随路由宣告报文一同发送。`EmitDNS=` 默认为真。
+
+- `EmitDomains=`, `Domains=`
+
+    当 `EmitDomains=` 未真时，通过路由宣告报文发送的 DNS 搜索域名列表。若 `Domains=` 未空，则 DNS 搜索域名从 `[Network]` 段读取。若 `[Network]` 段同样未包含任何 DNS 搜索域名，从上行链路中具有最高优先级的默认路由中获取 DNS 搜索域名。当 `EmitDomain=` 为假时，DNS 搜索域名信息不随路由宣告报文一同发送。`EmitDNS=` 默认为真。
+
+- `DNSLifetimeSec=`
+
+    以秒为单位的 `DNS=` 列表中的 DNS 服务器，以及 `Domains=` 列表中的 搜索域名的生命周期（lifetime）。
+
+## `[IPv6Prefix]` 段选项
+
+一个或多个 `[IPv6Prefix]` 段包含了将通过路由宣告发送的 IPv6 前缀。参见 *RFC 4861* 了解更多细节。
+
+- `AddressAutoconfiguration=`, `OnLink=`
+
+    接受一个布尔值，指定 IPv6 地址是否能通过该前缀自动配置；或者该前缀是否能用于在链路判定（onlink determination）。两个设置默认均为真，来简化配置。
+
+- `Prefix=`
+
+    将要分发的 IPv6 前缀。与配置静态 IPv6 地址类似，该设置配置为一个 IPv6 前缀、一个前缀长度，以及期间的分隔符 `/`。由于每个前缀的生命周期（lifetime）、地址自动配置和在链路状态都不尽一样，需要使用多段 `[IPv6Prefix]` 段配置多个 IPv6 前缀。
+
+- `PreferredLifetimeSec=`, `ValidLifetimeSec=`
+
+    以秒计为单位的 偏好 以及 有效 的前缀生命周期。`PreferredOLifetimeSec=` 默认值为 `604800` 秒（一周），`ValidLifetimeSec=` 默认为 `2592000` 秒（30 天）。
+
+## `[IPv6RoutePrefix]` 段选项
+
+一个或多个 `[IPv6Prefix]` 段包含了将通过路由宣告发送的 IPv6 前缀路由。参见 *RFC 4191* 了解更多细节。
+
+- `Route=`
+
+    将要发送的 IPv6 路由。与配置静态 IPv6 路由类似，该设置配置为一个 IPv6 前缀路由、一个前缀路由长度，以及期间的分隔符 `/`。使用多个 `[IPv6PrefixRoutes]` 段配置多个 IPv6 前缀路由。
+
+- `LifetimeSec=`
+
+以秒计算的路由前缀的生命周期（lifetime）。`LifetimeSec=` 默认为 `604800` 秒（一周）。
+
+## `[Bridge]` 段选项
+
+`[Bridge]` 接受下列键：
+
+- `UnicastFlood=`
+
+    接受一个布尔值。控制 当一个 **转发数据库**（FDB）条目缺失，且通过该端口无法得知目标地址时，桥接是否应将流量泛洪（flood traffic）。当未设置时，使用内核默认值。
+
+- `MulticastFlood=`
+
+    接受一个布尔值。控制 当一个 **多播组数据库**（MDB）条目缺失，且通过该端口无法得知目标地址时，桥接是否应将流量泛洪（flood traffic）。当未设置时，使用内核默认值。
+
+- `MulticastToUnicast=`
+
+    接受一个布尔值。**多播至单播**（multicast to unicast）基于桥接的 **多播嗅探**（multicast snooping）功能。这意味着单播副本将仅发送至对其感兴趣的主机上。当未设置时，使用内核默认值。
+
+- `NeighborSuppression=`
+
+    接受一个布尔值。配置是否在该端口上抑制 ARP 和 ND 邻居（ND neighbour）。当未设置时，使用内核默认值。
+
+- `Learning=`
+
+    接受一个布尔值。配置是否在该端口上启用 MAC 地址学习。当未设置时，使用内核默认值。
+
+- `HairPin=`
+
+    接受一个布尔值。配置是否将包从接收它的端口上发送回去。当该 flag 为假时，桥接不会将转发流量传回接收的端口。当未设置时，使用内核的默认值。
+
+- `UseBPDU=`
+
+    接受一个布尔值。配置桥接端口是否要处理 **生成树桥接协议数据单元**（STP Bridge Protocol Data Units）。当未设置时，使用内核的默认值。
+
+- `FastLeave=`
+
+    接受一个布尔值。该 flag 允许桥接器从一个端口处接收到一个 **IGMP Leave** 报文后，立刻停止该端口的多播流量。仅在该桥接上启用了 **IGMP 嗅探** 时有效。当未设置时，使用内核的默认值。
+
+- `AllowPortToBeRoot=`
+
+    接受一个布尔值。配置一个端口是否允许成为根端口（root port）。仅当在桥接上启用了 **生成树协议**（STP） 时有效。当未设置时，使用内核的默认值。
+
+- `ProxyARP=`
+
+    接受一个布尔值。配置是否在该端口开启 ARP 代理。当未设置时，使用内核的默认值。
+
+- `ProxyARPWiFi=`
+
+    接受一个布尔值。配置 ARP 代理是否应该在该端口上启用，以满足 **IEEE 802.11** 和 **Hotspot 2.0** 规范的扩展要求。当未设置时，将使用内核的默认值。
+
+- `MulticastRouter=`
+
+    配置该端口为连接至多播路由的端口。具有多播路由的端口将接受所有的多播路由。使用 `no` 来关闭该端口的多播路由，`query` 让系统检测路由的存在，`permanent` 来在该端口永久开启多播流量转发，`temporary` 在该端口临时启用多播路由，而不依照输入的请求。当未设置时，使用内核的默认值。
+
+- `Cost=`
+
+    设置从该界面发送包的“花费”（"cost"）。桥接的每个端口可能具有不同的速度，花费被用于决定使用哪个链路。更快的端口应该具有更低的花费。该值为一个 `1` 至 `65535` 之间的数。
+
+- `Priority=`
+
+    设置在该界面上发送包的“优先级”（"priority"）桥接的每个端口可能具有不同的优先级，优先级被用于决定该使用哪个链路。更低的值具有更高的优先级。该值为介于 `0` 至 `63` 之间的整型。**Networkd** 不会设置任何默认值，也就是说将使用内核的默认值 `32`。
+
+## `[BridgeFDB]` 段选项
+
+`[BridgeFDB]` 段管理了一个端口的转发数据库表（forwarding database table），接受下列键。指定多个 `[BridgeFDB]` 段来配置多个静态 MAC 表条目。
+
+- `MACAddress=`
+
+    如 `[Network]` 段所描述的。该值必须存在。
+
+- `Destination=`
+
+    接受一个 目标 VXLAN 隧道端点（destinatino VXLAN tunnel endpoint）的 IP 地址。
+
+- `VLANId=`
+
+    新静态 MAC 表条目的 VLAN ID。若不指定，则不在新静态 MAC 表条目上追加 VLAN ID 信息。
+
+- `VNI=`
+
+    用来连接远程 VXLAN 隧道端点的 VXLAN 网络识别码（VXLAN Network Identifier）（或 VXLAN 段 ID（VXLAN Segment ID））。接受一个介于 `1` 至 `16777215` 之间的值。默认为未设置。
+
+- `AssociatedWith=`
+
+    指定该地址所关联的地方。接受 `use` `self` `master` `router`。  
+    `use` 意味着该地址正被使用。用户空间可以使用该选项向内核指明该 fdb 条目正被使用。  
+    `self` 意味着该地址与端口驱动的 fdb 相关联。通常为硬件。  
+    `master` 意味着该地址与主设备 fdb 相关联。  
+    `router` 意味着目标地址与一个路由相关联。注意，若指向的设别时一个 VXLAN 类型的设别，且启用了路由短路（route shortcircuit），则该项有效。  
+    默认值为 `self`。
+
+## `[CAN]` 段选项
+
+`[CAN]` 段管理控制器局域网（Controller Area Network （CAN bus））并接受下方的键。
+
+- `BitRate=`
+
+    以 位每秒 为单位的 CAN 设备的字节率。常用的国际单位制前缀（`K` `M`）也可以使用，且其底数为 **1000**。
+
+- `SamplePoint=`
+
+    可选采样点，使用具有一个小数点的百分数（e.g. `70%`，`87.5%`）或千分数（e.g. `875‰`）
+
+- `RestartSec=`
+
+    自动重启的延迟时间。若设置为非零值，则在总线掉线后的指定时间之后，将自动触发 CAN 控制器的重启。次秒级的延时可以通过小数指定（e.g. `0.1s`）或者使用 `ms` `us` 后缀。使用 `infinity` 或者 `0` 将关闭自动重启。默认禁用自动重启。
+
+- `TripleSampling=`
+
+    接受一个布尔值。当为 `yes` 时，将使用三个采样（而非一个）中取众数的方法来决定一个收到的 bit 的值。当未设置时，使用内核的默认值。
