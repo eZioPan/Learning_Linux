@@ -28,7 +28,7 @@ network.network
 
 一个网络文件与一个设备匹配的条件是，所有在 `[Match]` 段出现的内容都被满足。当一个网络文件不含有任何有效的 `[Match]` 段时，该文件将匹配所有的界面，此时 **systemd-networkd** 将发出警告。提示：若要避免警告，并清楚指明全部的界面都应该被匹配，则添加下面的行：
 
-```systemd
+```systemd.network
 Name=*
 ```
 
@@ -43,7 +43,7 @@ Name=*
 
     *例子：*
 
-    ```systemd
+    ```systemd.network
     MACAddress=01:23:45:67:89:ab 00-11-22-33-44-55 AABB.CCDD.EEFF
     ```
 
@@ -76,7 +76,7 @@ Name=*
 
     *Example：* 如果一个 `.network` 具有以下行：
 
-    ```systemd
+    ```systemd.network
     Property=ID_MODEL_ID=9999 "ID_VENDOR_FROM_DATABASE=vendor name" "KEY=with \"quotation\""
     ```
 
@@ -156,7 +156,7 @@ Name=*
 
 - `AllMulticast=`
 
-    接受布尔值。若设置为真，则驱动会呈递网络中所有的多播包。当启用多播路由时出现。
+    接受布尔值。若设置为真，则驱动会呈递网络中所有的多播网络包。当启用多播路由时出现。
 
 - `Unmanaged=`
 
@@ -268,19 +268,19 @@ Name=*
 
 - `LLDP=`
 
-    控制对 以太网 链路层发现协议（LLDP） 包的接收的支持。LLDP 为一个链路层协议，通常被专业路由以及桥接器实现，它们会声明一个系统是通过哪个物理端口连接的，以及一些其它的相关数据。  
-    接受布尔值或者特定的 `routers-only`。当为真时，传入的 LLDP 包将被接受，并会维护一个关于所有 LLDP 邻居的数据库。若设置为 `routers-only`，则仅会收集来自各种类型的路由的 LLDP 数据，其它设备类型（比如工作站、电话等等）的 LLDP 包将被忽略。若为假，LLDP 收发将被关闭。  
+    控制对 以太网 链路层发现协议（LLDP） 网络包的接收的支持。LLDP 为一个链路层协议，通常被专业路由以及桥接器实现，它们会声明一个系统是通过哪个物理端口连接的，以及一些其它的相关数据。  
+    接受布尔值或者特定的 `routers-only`。当为真时，传入的 LLDP 网络包将被接受，并会维护一个关于所有 LLDP 邻居的数据库。若设置为 `routers-only`，则仅会收集来自各种类型的路由的 LLDP 数据，其它设备类型（比如工作站、电话等等）的 LLDP 网络包将被忽略。若为假，LLDP 收发将被关闭。  
     默认为 `routers-only`。  
-    使用 *networkctl(1)* 来罗列已收集的邻居设备数据。LLDP 仅在以太网链路上可用。参见 `EmitLLDP=` 从本地系统来发送 LLDP 包。
+    使用 *networkctl(1)* 来罗列已收集的邻居设备数据。LLDP 仅在以太网链路上可用。参见 `EmitLLDP=` 从本地系统来发送 LLDP 网络包。
 
 - `EmitLLDP=`
 
-    控制对于 以太网 链路层发现协议（LLDP）包的发送的支持。  
+    控制对于 以太网 链路层发现协议（LLDP）网络包的发送的支持。  
     接受布尔值或者特定的 `neareset-bridge` `non-tpmr-bridge` `customer-bridge`。  
-    默认为假，也就是关闭 LLDP 包的发送。若不为假，以固定的间隔向链路发送一个包含本地系统信息的短 LLDP 包。  
-    LLDP 包会包含本地主机名、本地机器 ID（与 *machine-id(5)* 中的一样）、本地界面名，以及系统的（在 *machine-info(5)* 中设置的）灵活主机名（pretty hostname）。LLDP 发送仅在以太网链路上启用。  
+    默认为假，也就是关闭 LLDP 网络包的发送。若不为假，以固定的间隔向链路发送一个包含本地系统信息的短 LLDP 网络包。  
+    LLDP 网络包会包含本地主机名、本地机器 ID（与 *machine-id(5)* 中的一样）、本地界面名，以及系统的（在 *machine-info(5)* 中设置的）灵活主机名（pretty hostname）。LLDP 发送仅在以太网链路上启用。  
     注意，这个设置会在网络上发送可以确认主机的数据，所以不应该在不可信网络中启用，在不可信网络中这些认证数据不应该可见。  
-    使用这个选项来允许其它系统确认它们是通过哪个界面与该系统相连的。三个特殊的值用来控制 LLDP 包的传播。`nearest-bridge` 设置仅允许该包传播至最近的相连的桥接器上，`non-tpmr-bridge` 允许通过 Two-Port MAC Relays 传播，但不允许其它类型的桥接器，`customer-bridge` 允许一直传播，直到到达一个特定的桥接器。具体概念参见 *IEEE 802.1AB-2016*。  
+    使用这个选项来允许其它系统确认它们是通过哪个界面与该系统相连的。三个特殊的值用来控制 LLDP 网络包的传播。`nearest-bridge` 设置仅允许该网络包传播至最近的相连的桥接器上，`non-tpmr-bridge` 允许通过 Two-Port MAC Relays 传播，但不允许其它类型的桥接器，`customer-bridge` 允许一直传播，直到到达一个特定的桥接器。具体概念参见 *IEEE 802.1AB-2016*。  
     注意将该值设置为真等价于 `nearest-bridge`，也就是推荐的也是最严格的传播级别。查看 `LLDP=` 选项来启用 LLDP 接收。
 
 - `BindCarrier=`
@@ -291,7 +291,7 @@ Name=*
 
     一个静态的包含它们的前缀长度的 IPv4 或者 IPv6 地址，用 `/` 隔开地址和前缀长度。多次指定这个值将配置多个地址。地址的格式必须符合 *inet_pton(3)* 中的描述。该选项是仅包含一个 `Address` 键的 `[Address]` 段的简略写法（参见下文）。该值可以被多次指定。
 
-    若指定的地址为 `0.0.0.0`（IPv4）或者 `::`（IPv6），则会自动从系统中未使用的地址池中占用一个地址段（address range）。注意，在 IPv4 中前缀长度必须大于等于 8，在 IPv6 中必须大于等于 64。获取地址段时，将于所有的网络界面，以及任何一致的网络配置文件进行比较，以防止地址段冲突。默认的系统级别的地址池包括 IPv4 的 `192.168.0.0/16` `172.16.0.0/12` `10.0.0.0/8`，以及 IPv6 的 `fd00::/8`。  
+    若指定的地址为 `0.0.0.0`（IPv4）或者 `::`（IPv6），则会自动从系统中未使用的地址池中占用一个地址段（address range）。注意，在 IPv4 中前缀长度必须大于等于 8，在 IPv6 中必须大于等于 64。获取地址段时，将于所有的网络界面，以及任何一致的网络配置文件进行比较，以防止地址段冲突。默认的系统级别的地址池网络包括 IPv4 的 `192.168.0.0/16` `172.16.0.0/12` `10.0.0.0/8`，以及 IPv6 的 `fd00::/8`。  
     这项功能在控制大量的动态创建的网络界面，且这些界面具有相同的网络配置，且需要自动地址段分配。
 
 - `Gateway=`
@@ -315,7 +315,7 @@ Name=*
 
 - `DNSDefaultRoute=`
 
-    接受一个布尔值。若为真，则该链路配置的 DNS 服务器将用于解析不匹配任何链路的 `Domains=` 设置的域名。若为假，则该链路配置的 DNS 服务器将永不用于这类域名，并仅用于解析至少匹配上该链路所配置的一个域名的名称。若不指定则默认为自动模式：若搜索条目不匹配任何已配置的域名，且没有配置 `routing-only` 域名，则将包路由至该链接。
+    接受一个布尔值。若为真，则该链路配置的 DNS 服务器将用于解析不匹配任何链路的 `Domains=` 设置的域名。若为假，则该链路配置的 DNS 服务器将永不用于这类域名，并仅用于解析至少匹配上该链路所配置的一个域名的名称。若不指定则默认为自动模式：若搜索条目不匹配任何已配置的域名，且没有配置 `routing-only` 域名，则将网络包路由至该链接。
 
 - `NTP=`
 
@@ -323,17 +323,17 @@ Name=*
 
 - `IPForward=`
 
-    配置系统的 IP 包转发（forwarding）。若启用，则会根据路由表转发由任何网络界面输入的包，并转发至任何其它界面上。  
+    配置系统的 IP 网络包转发（forwarding）。若启用，则会根据路由表转发由任何网络界面输入的网络包，并转发至任何其它界面上。  
     接受一个布尔值，或者 `ipv4` 或 `ipv6`，表示仅针对特定的地址组开启转发。它控制了该网络界面的 `net.ipv4.ip_forward` 以及 `net.ipv6.conf.all.forwarding` sysctl 选项（参见 *ip-sysctl.txt* 了解 sysctl 的选项）。  
     默认为 `no`。  
 
     注意：这个选项公职了一个全局的内核选项，因此它是一个单向设置：若一个网络启用了这个设置，则全局设置即被启用；但是，即便所有开启该选项的网络之后被再次关闭，它也不会被关闭。
 
-    要让 IP 包转发仅发生在特定的网络界面，请使用防火墙。
+    要让 IP 网络包转发仅发生在特定的网络界面，请使用防火墙。
 
 - `IPMasquerade=`
 
-    在网络界面上配置 IP 伪装（IP masquerading）。若启用，则从网络界面传入的包看起来就像是从本地主机传来的一样。  
+    在网络界面上配置 IP 伪装（IP masquerading）。若启用，则从网络界面传入的网络包看起来就像是从本地主机传来的一样。  
     接受一个布尔值。隐含了 `IPForward=ipv4`。  
     默认为 `no`
 
@@ -359,11 +359,11 @@ Name=*
 
 - `IPv6HopLimit=`
 
-    配置 IPv6 跳数限制（Hop Limit）。对于每个转包的路由，跳数限制就减 1。当跳数限制到达 0 时，包即被丢弃。当未设置时，使用内核默认值。
+    配置 IPv6 跳数限制（Hop Limit）。对于每个转网络包的路由，跳数限制就减 1。当跳数限制到达 0 时，网络包即被丢弃。当未设置时，使用内核默认值。
 
 - `IPv4ProxyARP=`
 
-    接受一个布尔值。配置 IPv4 的 ARP 代理（proxy ARP）。APR 代理是一项技术，一个主机，通常未路由器，回复了一个应该由另一个机器回复的 APR 请求。使用了对它的身份进行“造假”，路由器接受了将包转发至“真实的”最终地址的任务（参见 *RFC 1027*）。当未设置时，使用内核的默认值。
+    接受一个布尔值。配置 IPv4 的 ARP 代理（proxy ARP）。APR 代理是一项技术，一个主机，通常未路由器，回复了一个应该由另一个机器回复的 APR 请求。使用了对它的身份进行“造假”，路由器接受了将网络包转发至“真实的”最终地址的任务（参见 *RFC 1027*）。当未设置时，使用内核的默认值。
 
 - `IPv6ProxyNDP=`
 
@@ -378,7 +378,7 @@ Name=*
 - `IPv6PrefixDelegation=`
 
     开启或关闭一个链路上的路由宣告的发送。接受的值为：  
-    `static`：发送在 `[IPv6PrefixDelegation]` 段 或者 `[IPv6Prefox]` 段 定义的前缀值  
+    `static`：发送在 `[IPv6PrefixDelegation]` 段 或者 `[IPv6Prefix]` 段 定义的前缀值  
     `dhcpv6`：需要使用为另一个链路配置的 DHCPv6 客户端的前缀，或者任何在 `[IPv6PrefixDelegation]` 段配置的、除了所有静态前缀配置的部分  
     `yes`：同时使用静态配置以及 DHCPv6  
     `no`：关闭 IPv6 前缀委派（prefix delegation）
@@ -515,7 +515,7 @@ Name=*
 
 - `AutoJoin=`
 
-    接受一个布尔值。如果以太网交换机执行 **IGMP snooping**，则无法通过 `ip maddr` 命令在以太网层级加入多播组，因为交换机不会复制不具有多播地址的 IGMP 报文 的端口上的多播包。由命令 `ip link add vxlan` 创建的 Linux vxlan 界面，或者启用了对应组选项的 **networkd** 的 **netdev** 类型的 vxlan，可以满足加入需求。使用扩展了 `autojoin` 选项的 ip 地址命令，我们就可以为 openvswitch (OVS) 的 vxlan 以及其它需要接收 多播流量的 隧道机制 提供相似的功能。默认为 `no`。
+    接受一个布尔值。如果以太网交换机执行 **IGMP snooping**，则无法通过 `ip maddr` 命令在以太网层级加入多播组，因为交换机不会复制不具有多播地址的 IGMP 报文 的端口上的多播网络包。由命令 `ip link add vxlan` 创建的 Linux vxlan 界面，或者启用了对应组选项的 **networkd** 的 **netdev** 类型的 vxlan，可以满足加入需求。使用扩展了 `autojoin` 选项的 ip 地址命令，我们就可以为 openvswitch (OVS) 的 vxlan 以及其它需要接收 多播流量的 隧道机制 提供相似的功能。默认为 `no`。
 
 ## `[Neighbor]` 段选项
 
@@ -572,7 +572,7 @@ IPv6 前缀是一个具有前缀长度的地址，用 `/` 隔开。该键必须�
 
 - `IncomingInterface=`
 
-    指定要匹配的来源设备。若界面为回环（loopback），则仅匹配来自本主机的包。
+    指定要匹配的来源设备。若界面为回环（loopback），则仅匹配来自本主机的网络包。
 
 - `OutgoingInterface=`
 
@@ -671,9 +671,9 @@ IPv6 前缀是一个具有前缀长度的地址，用 `/` 隔开。该键必须�
 
     指定该路由的类型。接受 `unicast` `local` `broadcast` `anycast` `multicast` `blackhole` `unreachable` `prohibit` `throw` `nat` `xresolve`。  
     若为 `unicast`，则定义一条普通路由，例如，一个指明了通向目标网络地址路径的路由。  
-    若为 `blackhole`，导向该路由的包将被静默丢弃。  
-    若为 `unreachable`，导向该路由的包将被丢弃，并生成 **ICMP** 报文 **Host Unreachable**。  
-    若为 `prohibit`，导向该路由的包将被丢弃，并生成 **ICMP** 报文 **Communication Administratively Prohibited**。  
+    若为 `blackhole`，导向该路由的网络包将被静默丢弃。  
+    若为 `unreachable`，导向该路由的网络包将被丢弃，并生成 **ICMP** 报文 **Host Unreachable**。  
+    若为 `prohibit`，导向该路由的网络包将被丢弃，并生成 **ICMP** 报文 **Communication Administratively Prohibited**。  
     若为 `throw`，当前路由表的路由查找将失败，路由选择流程将返回 路由策略数据库（**Routing Policy Database**, **RPDB**）。  
     默认为 `unicast`。
 
@@ -819,8 +819,8 @@ IPv6 前缀是一个具有前缀长度的地址，用 `/` 隔开。该键必须�
 
 - `RequestBroadcast=`
 
-    在 IP 地址配置前，要求服务器使用广播报文。这对于不可以接受 RAW 包的设备，或者在配置了一个 IP 地址之前根本无法接收包的设备是必须的。  
-    从另一方面说，该选项在广播包被过滤掉的网络中不允许被启用。
+    在 IP 地址配置前，要求服务器使用广播报文。这对于不可以接受 RAW 网络包的设备，或者在配置了一个 IP 地址之前根本无法接收网络包的设备是必须的。  
+    从另一方面说，该选项在广播网络包被过滤掉的网络中不允许被启用。
 
 - `RouteMetric=`
 
@@ -838,7 +838,7 @@ IPv6 前缀是一个具有前缀长度的地址，用 `/` 隔开。该键必须�
 
 - `SendRelease=`
 
-    若为真，则 DHCPv4 客户端在停止时发送 DHCP 释放包（DHCP release packet）。默认为真。
+    若为真，则 DHCPv4 客户端在停止时发送 DHCP 释放网络包（DHCP release packet）。默认为真。
 
 - `BlackList=`
 
@@ -924,7 +924,7 @@ IPv6 前缀是一个具有前缀长度的地址，用 `/` 隔开。该键必须�
 - `EmitDNS=`, `DNS=`
 
     接受一个布尔值。配置分发给客户端的 DHCP 租用是否需要包含 DNS 信息。默认为 `yes`。可以通过 `DNS=` 选项配置将要发送给客户端的 DNS 服务器地址，该地址由一系列 IPv4 地址组成。若 `EmitDNS=` 启用，却没有配置 DNS 服务器，则服务器会从具有正确服务器配置的“上行”（"uplink"）界面中传播至客户端。“上行”界面由系统中具有最高优先级的默认路由决定。  
-    注意，该信息在该租用分发时获取，并不会将其后了解到的 DNS 或 NTP 服务器涵盖在内。DNS 服务器传播不会将 **/etc/resolv.conf** 的内容包括在内。  
+    注意，该信息在该租用分发时获取，并不会将其后了解到的 DNS 或 NTP 服务器涵盖在内。DNS 服务器传播不会将 **/etc/resolv.conf** 的内容网络包括在内。  
     同时也要注意，即便上行网络的配置改变，分发也不会改变。为了保证客户端收到最新的上行 DNS 服务器信息，最好通过上文描述 `MaxLaeseTimeSec=` 缩短 DHCP 租期/。
 
 - `EmitNTP=`, `NTP=`
@@ -941,17 +941,11 @@ IPv6 前缀是一个具有前缀长度的地址，用 `/` 隔开。该键必须�
 
 - `EmitTimezone=`, `Timezone=`
 
-    接受一个布尔值。这些设置配置了 时区信息 是否应该随着 DHCP 租用一同发送。默认值为 `yes`。`Timezone=` 设置接受一个时区字符串（比如 `Europe/Berlin` 或 `UTC`）用来传递给客户端。若没有设置明确的时区，则传递本地主机的系统时区设置，该设置由 */etc/localtime* 符号链接决定。
+    接受一个布尔值。这些设置配置了 时区信息 是否应该随着 DHCP 租用一同发送。默认值为 `yes`。`Timezone=` 设置接受一个时区字符串（比如 `Europe/Berlin` 或 `UTC`）用来传递给客户端。若没有设置明确的时区，则传递本地主机的系统时区设置，该设置由 /etc/localtime 符号链接决定。
 
 - `SendOption=`
 
-    通过 DHCPv4 服务器发送一个裸选项。接受一个 DHCP 选项号、一个数据类型和一个数据（"option:type:value"）。  
-    选项号是一个介于 `1` 至 `254` 之间的数。  
-    数据类型接受 `uint8` `uint16` `uint32` `ipv4address` `string`。  
-    数据字符串中的特殊字符可以用 C-type 转义字符转义。  
-    该选项可以多次指定。  
-    若指定了空字符串，则清楚前序指定的选项。  
-    默认为未设置。
+    通过 DHCPv4 服务器发送一个裸选项。接受一个 DHCP 选项号、一个数据类型和一个数据（"option:type:value"）。选项号是一个介于 `1` 至 `254` 之间的数。数据类型接受 `uint8` `uint16` `uint32` `ipv4address` `string`。数据字符串中的特殊字符可以用 C-type 转义字符转义。该选项可以多次指定。若指定了空字符串，则清楚前序指定的选项。默认为未设置。
 
 ## `[IPv6PrefixDelegation]`
 
@@ -1035,7 +1029,7 @@ IPv6 前缀是一个具有前缀长度的地址，用 `/` 隔开。该键必须�
 
 - `HairPin=`
 
-    接受一个布尔值。配置是否将包从接收它的端口上发送回去。当该 flag 为假时，桥接不会将转发流量传回接收的端口。当未设置时，使用内核的默认值。
+    接受一个布尔值。配置是否将网络包从接收它的端口上发送回去。当该 flag 为假时，桥接不会将转发流量传回接收的端口。当未设置时，使用内核的默认值。
 
 - `UseBPDU=`
 
@@ -1063,11 +1057,11 @@ IPv6 前缀是一个具有前缀长度的地址，用 `/` 隔开。该键必须�
 
 - `Cost=`
 
-    设置从该界面发送包的“花费”（"cost"）。桥接的每个端口可能具有不同的速度，花费被用于决定使用哪个链路。更快的端口应该具有更低的花费。该值为一个 `1` 至 `65535` 之间的数。
+    设置从该界面发送网络包的“花费”（"cost"）。桥接的每个端口可能具有不同的速度，花费被用于决定使用哪个链路。更快的端口应该具有更低的花费。该值为一个 `1` 至 `65535` 之间的数。
 
 - `Priority=`
 
-    设置在该界面上发送包的“优先级”（"priority"）桥接的每个端口可能具有不同的优先级，优先级被用于决定该使用哪个链路。更低的值具有更高的优先级。该值为介于 `0` 至 `63` 之间的整型。**Networkd** 不会设置任何默认值，也就是说将使用内核的默认值 `32`。
+    设置在该界面上发送网络包的“优先级”（"priority"）桥接的每个端口可能具有不同的优先级，优先级被用于决定该使用哪个链路。更低的值具有更高的优先级。该值为介于 `0` 至 `63` 之间的整型。**Networkd** 不会设置任何默认值，也就是说将使用内核的默认值 `32`。
 
 ## `[BridgeFDB]` 段选项
 
@@ -1117,3 +1111,290 @@ IPv6 前缀是一个具有前缀长度的地址，用 `/` 隔开。该键必须�
 - `TripleSampling=`
 
     接受一个布尔值。当为 `yes` 时，将使用三个采样（而非一个）中取众数的方法来决定一个收到的 bit 的值。当未设置时，使用内核的默认值。
+
+## `[TrafficControlQueueingDiscipline]` 段选项
+
+`[TrafficControlQueueingDiscipline]` 段管理流量控制（Traffic control）。它可以被用来配置内核的网络包调度器（packet scheduler），并为 UDP 或 TCP 应用模拟网络包延迟或丢失，或者限制特定服务的带宽来模拟互联网连接。
+
+- `Parent=`
+
+    指定父级队列规则（Queueing Discipline（qdisc））。接受 `root` 或 `clsact`。默认为 `root`。
+
+- `NetworkEmulatorDelaySec=`
+
+    指定要添加至从该网络界面发送的网络包需要延迟的固定时长。默认为未设置。
+
+- `NetworkEmulatorDelayJitterSec=`
+
+    指定要添加至从该网络界面发送的网络包需要延迟的选择时长（chosen delay）。默认为未设置。
+
+- `NetworkEmulatorPacketLimit=`
+
+    指定同一时间下，qdisc 可以持有的最大包裹数。一个介于 `0` 至 `4294967294` 之间的无符号整型。默认值为 1000。
+
+- `NetworkEmulatorLossRate=`
+
+    指定从该网络界面发送的网络包的独立丢包可能性。接受一个百分数，后缀以 `%`。默认为未设置。
+
+- `NetworkEmulatorDuplicateRate=`
+
+    指定在队列前要重复（duplicated）的包裹的选中百分比（chosen percent）。接受一个百分数，后缀以 `%`。默认为未设置。
+
+## `[BridgeVLAN]` 段选项
+
+`[BridgeVLAN]` 段管理桥接端口的 VLAN ID 的配置，接受下列的键。指定多个 `[BridgeVLAN]` 段来配置多个 VLAN 条目。`VLANFiltering=` 选项必须启用，参见 *systemd.netdev(5)* 中的 `[Bridge]` 段。
+
+- `VLAN=`
+
+    端口上允许的 VLAN ID。可以为一个单独的 ID，或者一个 M-N 的范围。VLAN ID 的有效值介于 `1` 至 `4094`。
+
+- `EgressUntagged=`
+
+    该处定义的 VLAN ID 将用于在网络帧离开时（on egress）移除标签（untag）。配置 `EgressUntagged=` 隐含了使用上文中的 `VLAN=`，并为传入（ingress）的网络帧启用 VLAN ID。可以为一个单独的 ID，或者一个 M-N 的范围。
+
+- `PVID=`
+
+    在该处定义的端口 VLAN ID（Port VLAN ID）将分配给所有传入的未标记的网络帧。`PVID=` 仅可以被使用一次。配置 `PVID=` 隐含了使用上文中的 `VLAN=`，并为传入的网络帧启用 VLAN ID。
+
+## 案例
+
+- 案例 1. 静态网络配置
+
+    ```systemd.network
+    # /etc/systemd/network/50-static.network
+    [Match]
+    Name=enp2s0
+
+    [Network]
+    Address=192.168.0.15/24
+    Gateway=192.168.0.1
+    ```
+
+    该配置使用静态地址启动了 enp2s0。指定的网关将作为一个默认路由。
+
+- 案例 2. 以太网链路上的 DHCP
+
+    ```systemd.network
+    # /etc/systemd/network/80-dhcp.network
+    [Match]
+    Name=en*
+
+    [Network]
+    DHCP=yes
+    ```
+
+    这将在所名称有以 en 开头的界面（i.e. 以太网界面）上启用 **DHCPv4** 以及 **DHCPv6**。
+
+- 案例 3. IPv6 前缀委派（Prefix Delegation）
+
+    ```systemd.network
+    # /etc/systemd/network/55-ipv6-pd-upstream.network
+    [Match]
+    Name=enp1s0
+
+    [Network]
+    DHCP=ipv6
+    ```
+
+    ```systemd.network
+    # /etc/systemd/network/56-ipv6-pd-downstream.network
+    [Match]
+    Name=enp2s0
+
+    [Network]
+    IPv6PrefixDelegation=dhcpv6
+    ```
+
+    这将在 “enp1s0” 上启用 **IPv6 PD**，并该该界面作为上行（upstream）界面，并启用 **DHCPv6 客户端**  
+    同时将 “enp2s0” 作为下行（downstream）界面，且将前缀委任给该界面。
+
+- 案例 4. 具有两个从链路的桥接
+
+    ```systemd.network
+    # /etc/systemd/network/25-bridge-static.network
+    [Match]
+    Name=bridge0
+
+    [Network]
+    Address=192.168.0.15/24
+    Gateway=192.168.0.1
+    DNS=192.168.0.1
+    ```
+
+    ```systemd.network
+    # /etc/systemd/network/25-bridge-slave-interface-1.network
+    [Match]
+    Name=enp2s0
+
+    [Network]
+    Bridge=bridge0
+    ```
+
+    ```systemd.network
+    # /etc/systemd/network/25-bridge-slave-interface-2.network
+    [Match]
+    Name=wlp3s0
+
+    [Network]
+    Bridge=bridge0
+    ```
+
+    这创建了一个桥接，并将设备 enp2s0 和 wlp3s0 附加上去。该桥接将具有指定的静态地址和网络号，以及通过网关指定的默认路由。所指定的 DNS 服务器将添加至全局 DNS 解析器列表中。
+
+- 案例 5.
+
+    ```systemd.network
+    # /etc/systemd/network/20-bridge-slave-interface-vlan.network
+    [Match]
+    Name=enp2s0
+
+    [Network]
+    Bridge=bridge0
+
+    [BridgeVLAN]
+    VLAN=1-32
+    PVID=42
+    EgressUntagged=42
+
+    [BridgeVLAN]
+    VLAN=100-200
+
+    [BridgeVLAN]
+    EgressUntagged=300-400
+    ```
+
+    该配置覆盖了前一个案例中的 enp2s0 界面的配置，并为该桥接端口启用了 VLAN。可使用的 VLAN ID 为 1-32，42，100-400。具有 VLAN ID 42，300-400 的网络包在离开该界面时将被移除标签。为标记的网络包到达该界面时将被赋予 VLAN ID 42。、
+
+- 案例 6. 多个隧道
+
+    ```systemd.network
+    # /etc/systemd/network/25-tunnels.network
+    [Match]
+    Name=ens1
+
+    [Network]
+    Tunnel=ipip-tun
+    Tunnel=sit-tun
+    Tunnel=gre-tun
+    Tunnel=vti-tun
+    ```
+
+    ```systemd.netdev
+    # /etc/systemd/network/25-tunnel-ipip.netdev
+    [NetDev]
+    Name=ipip-tun
+    Kind=ipip
+    ```
+
+    ```systemd.netdev
+    # /etc/systemd/network/25-tunnel-sit.netdev
+    [NetDev]
+    Name=sit-tun
+    Kind=sit
+    ```
+
+    ```systemd.netdev
+    # /etc/systemd/network/25-tunnel-gre.netdev
+    [NetDev]
+    Name=gre-tun
+    Kind=gre
+    ```
+
+    ```systemd.netdev
+    # /etc/systemd/network/25-tunnel-vti.netdev
+    [NetDev]
+    Name=vti-tun
+    Kind=vti
+    ```
+
+    这将启用界面 ens1 并用该界面创建 IPIP 隧道，SIT 隧道，GRE 隧道，VIT 隧道。
+
+- 案例 7. 绑定（bond）设备
+
+    ```systemd.network
+    # /etc/systemd/network/30-bond1.network
+    [Match]
+    Name=bond1
+
+    [Network]
+    DHCP=ipv6
+    ```
+
+    ```systemd.nedev
+    # /etc/systemd/network/30-bond1.netdev
+    [NetDev]
+    Name=bond1
+    Kind=bond
+    ```
+
+    ```systemd.network
+    # /etc/systemd/network/30-bond1-dev1.network
+    [Match]
+    MACAddress=52:54:00:e9:64:41
+
+    [Network]
+    Bond=bond1
+    ```
+
+    ```systemd.network
+    # /etc/systemd/network/30-bond1-dev2.network
+    [Match]
+    MACAddress=52:54:00:e9:64:42
+
+    [Network]
+    Bond=bond1
+    ```
+
+    这将创建一个名称为 bond1 的绑定设备，并将具有 MAC 地址 52:54:00:e9:64:41 和 52:54:00:e9:64:42 的两个设备作为从设备。将使用 IPv6 DHCP 获取一个地址。
+
+
+- 案例 8. 虚拟路由及转发（Virtual Routing and Forwarding （VRF））
+
+    将 bond1 界面 加入 VRF 主界面 vrf1。把该界面上生成的路由重定向至创建 VRF 时所建立的路由表中。对于 4.8 之前的内核，除非添加了特定的 ip 规则，否则流量不会重定向至 VFR。
+
+    ```systemd.network
+    # /etc/systemd/network/25-vrf.network
+    [Match]
+    Name=bond1
+
+    [Network]
+    VRF=vrf1
+    ```
+
+- 案例 9. MacVTap
+
+    启用了网络界面 macvtap-test 并将起附加至 enp0s25 上
+
+    ```systemd.network
+    # /usr/lib/systemd/network/25-macvtap.network
+    [Match]
+    Name=enp0s25
+
+    [Network]
+    MACVTAP=macvtap-test
+    ```
+
+- 案例 10. 一个具有底层物理设备的 Xfrm 界面
+
+    ```systemd.netdev
+    # /etc/systemd/network/27-xfrm.netdev
+    [NetDev]
+    Name=xfrm0
+
+    [Xfrm]
+    InterfaceId=7
+    ```
+
+    ```systemd.network
+    # /etc/systemd/network/27-eth0.network
+    [Match]
+    Name=eth0
+
+    [Network]
+    Xfrm=xfrm0
+    ```
+
+    这将创建一个 xfrm0界面，并将其绑定至设备 eth0。这允许基于硬件的 ipsec 负载转移至 eth0 网卡上。若不需要负载转移，xfrm 界面可以被分配至 lo 设备。
+
+## 参见
+*systemd(1)*, *systemd-networkd.service(8)*, *systemd.link(5)*, *systemd.netdev(5)*, *systemd-resolved.service(8)*
