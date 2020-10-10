@@ -1,0 +1,617 @@
+= Proxmox VE 安装实录
+:toc:
+
+[TIP]
+====
+本文档非常的长，但并非所有的内容都会被用上 +
+建议按照目录的顺序大致了解全文的内容之后，再根据需要选择性阅读
+====
+
+== 整体内容
+
+* 为虚拟环境准备的计算机硬件
+* Proxmox VE 的安装
+* Mellanox ConnectX-3 系列网卡在 Proxmox VE 下的配置
+* 安装简单的桌面环境，并安装浏览器
+* 显卡对虚拟机的直通
+* 存储设备对虚拟机的直通与虚拟机中（Windows 下）的驱动安装
+* 生成虚拟机以及容器的快照，以及利用快照回滚虚拟机和容器
+
+== 术语说明
+
+* link:https://proxmox.com/en/proxmox-ve[Proxmox VE] 下称 PVE
+* PVE 自身称为 Host 系统
+* 在 PVE 中运行的容器和虚拟机统称为 Guest 系统
+
+== 其它备注
+
+* PVE 使用 Debian 作为基础系统，在其上开发虚拟化套件，每版 PVE 对应的 Debian 系统版本和 Linux 内核版本参见 link:https://pve.proxmox.com/wiki/Roadmap[Roadmap]【安装 Host 的驱动时必须查阅】
+
+== 技能要求
+
+* 了解 bash 的使用
+* 了解 vi/vim/nano 的使用
+* 了解 apt 的使用
+* 能使用 make / gcc 编译软件
+* 对 linux 对硬件的管理有初步的了解
+* 会使用 psftp/sftp/putty/ssh
+* 会拆装 PCIe 板卡
+
+== 建议的硬件
+
+* *[必备]* Intel/AMD 支持虚拟化技术的 CPU (Intel VT-x / AMD AMD-V)
+* _[建议]_ Intel VT-d / AMD IOMMU 用于 PCI 设备直通
+* *[必备]* 预留至少 2GB 的内存，用于基础的 PVE 的运行
+** 若要使用桌面环境，则至少预留 3GB 的内存
+* _[建议]_ 预留核显/一张显卡用于 PVE 的运行
+* _[建议]_ 预留一只小硬盘用于承载 PVE 的运行，可以让虚拟机完全使用单个存储设备的全部资源
+
+== 安装流程
+
+=== 硬件准备工作
+
+. 在 BIOS 中启动虚拟化支持和硬件直通的支持（参阅各自 BIOS 的帮助）
+** 对于具有核显的 Intel CPU +
+ 在 BIOS 中 北桥设置 - 显示设置 - 首选显卡 设置为 [IGFX]；让 POST 信息通过核显输出
+. 将显示器接在核显端口/首张显卡出口
+
+[NOTE]
+====
+这里我加了一张 Mellanox ConnectX-3 MCX341A-XCB-Ax 的 10G SFP+ 网卡作为主力网卡 +
+但在安装时并未被识别，需要手动将网卡配置至端口 +
+且安装后使用系统附带的驱动较旧，可以xref:Mellanox ConnectX-3 Ethernet 网卡驱动的更新[更新网卡的驱动]
+====
+
+=== 安装介质准备
+
+. 准备 PVE 的 ISO 镜像文件，link:https://mirrors.tuna.tsinghua.edu.cn/proxmox/iso/[清华大学 tuna 镜像源的 PVE ISO] 里可以下载，且具有完整的开源部分的软件包镜像，可以愉快的使用
+. 准备启动 U 盘
+. 准备烧录软件
+** 在 Windows 使用的时 link:https://rufus.ie[Rufus]，若 Rufus 提示烧录方式，请选择，DD 模式
+** 在 MacOS 和 Linux 直接使用 `dd` 命令即可
+
+=== PVE 的安装
+
+. 安装时的注意事项
+.. 选择磁盘时，使用预留的小磁盘，选择的 Filesystem 可以为 ext4 或者 xfs
+.. Host 系统仅支持手动指定静态地址，且 Hostname 需为 FQDN 格式，也就是至少包含 *主机名* 和 *域名* 的格式，这里可以选择填写 pve.localdomain
+
+安装完成，并按要求重启后，就可以通过其它电脑登录 `+https://<PVE 的 IP 地址>:8006+` 来使用 WebUI 控制 PVE
+
+. 安装后的一些操作
+.. 登录 PVE 的 WebUI，在左侧切换到 PVE 这个节点（Node）的 Shell 菜单，这样我们就可以在远程使用 PVE 提供的 Shell 了
+.. 将 PVE 的软件包仓库指向 link:https://mirrors.tuna.tsinghua.edu.cn[清华大学 tuna 镜像源]
+... 根据 link:https://mirrors.tuna.tsinghua.edu.cn/help/debian/[tuna 源 debian 库的说明] 安装软件，并编辑 `/etc/apt/source.list`
+... 根据 link:https://mirrors.tuna.tsinghua.edu.cn/help/proxmox/[tuna 源 proxmox 库的说明] 编辑 `/etc/apt/source.list.d/` 下的文件
++
+[NOTE]
+====
+apt 命令比 apt-get 等命令更新一些，这里使用 apt 命令
+====
++
+... 使用 `apt update` 更新仓库数据
+.. 通过 `apt install vim` 安装 vim +
+或者通过 `apt install nano` 安装 nano
+.. 由于我们没有订阅 PVE 的服务，所有不能使用 PVE 的企业仓库，编辑 `/etc/apt/source.list.d/pve-enterprise.list`，用 `#` 注释 `deb ... pve-enterprise` 这行
+.. 使用 `apt upgrade` 更新系统，并重启
+.. [可选]安装 ifupdown2，让网络配置可以在运行时重载（WebUI 修改网络配置后需要使用）
++
+[source,shell]
+----
+apt install ipupfown2
+----
+
+=== 额外的 PVE 安装
+
+本段的内容可选内容，或者本次安装特殊的设置，仅作参考使用
+
+==== [可选] 移除无订阅的警告
+
+编辑 `/usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js` +
+查找 `data.status !== 'Active'` 所在的 if 判断语句 +
+将整个判断条件修改为 `if (false)` 即可
+
+==== [本案特例] 将 NVEMe SSD 追加至 PVE 存储
+
+. 在 WebUI -> 左侧 DataCenter -> pve -> 右侧 Disks 检查 nvme 设备 的 `Usage` 状态，这里是 /dev/nvme0n1
+.. 若为 Yes，则需要重建该 SSD 的 superblock +
+在 PVE 的 shell 中执行
++
+[source,shell]
+----
+parted /dev/nvme0n1 mklabel gpt
+----
++
+完成磁盘创建之后，重新检查设别的 `Usage` 状态，此时应该为 No
+.. 若为 No，则继续执行下面的操作
+. 在 WebUI -> 左侧 DataCenter -> pve -> 右侧 Disks -> LVM-Thin -> 顶部 Create: Thinpool 追加一个新的 Thin Pool
+
+此时在 WebUI 左侧的列表中就出现了一个新的类型为 Thin Pool 的 storage
+
+==== [本案特例] 启用 Mellanox ConnectX-3 网卡
+
+由于该机器仅接入了光纤，所以主板上的网卡并不能与外界正常通信，此时需要启用 ConnectX-3 网卡，让 PVE 接入网络 +
+PVE 默认使用 `vmbr0` 作为网络界面，其桥接了多个 Host 上的实际网络接口，并为虚拟机提供网络接入的能力 +
+所以要让 ConnectX-3 网卡作为 `vmbr0` 这个桥接界面的子网口 +
+同时，由于当前 PVE 未联网，所以需要在 PVE Host 本机上操作
+
+. 使用 `lspci | grep "ConnectX-3"` 命令，查询网卡的映射地址，我这里为 `03:00.0`
+. 使用 `ip link` 命令，查询网卡的名称，我这里为 `enp3s0`，与上面查到的网卡的映射地址对应
+. 编辑 `/etc/network/interfaces` 文件
+.. 将 `enp3s0` 加入网络配置文件
++
+./etc/network/interfaces
+----
+iface enp3s0 inet manual
+----
++
+.. 将 `enp3s0` 加入 `vmbr0` 的 `bridge_ports` 中
++
+./etc/network/interfaces
+----
+iface vmbr0 inet static
+...
+        bridge_ports enp3s0 enp0s31f6
+----
++
+.. [可选] 一般来说，要跑到 10Gbps 的速度，需要将 MTU 该至 9000，于是 `/etc/network/interfaces` 需要做如下配置
++
+[NOTE]
+====
+是否修改 MTU 需要参考与该网卡直连的交换机的设置
+====
++
+./etc/network/interfaces
+----
+...
+iface enp0s31f6 inet manual
+        mtu 9000
+...
+iface enp3s0 inet manual
+        mtu 9000
+...
+iface vmbr0 inet static
+...
+        bridge_ports enp3s0 enp0s31f6
+...
+        mtu 9000
+----
++
+. 使用 `ifdown vmbr0` 和 `ifup vmbr0` 重启 vmbr0 的配置
+. 使用 `ip addr` 可以看到 enp3s0 的主设备已经是 vmbr0，且已经处于 UP 状态了
+
+[TIP]
+====
+PVE 自带的 Mellanox 驱动较旧，可以 xref:Mellanox ConnectX-3 Ethernet 网卡驱动的更新[安装较新的驱动]
+====
+
+==== [可选] 安装图形界面
+
+如果不为 PVE 安装图形界面，则在 Host 主机上只能通过命令行使用 PVE，若要使用 WebUI 则只能在远程使用 +
+可以在 Host 主机上直接安装一个小型的桌面环境，支持浏览器运行即可 +
+这里我们选用的桌面环境和浏览器组合为 `lxde-core` 和 `chromium` +
+为了正确显示中文，还需要安装中文字体 `fonts-wqy-microhei` +
+要正确显示 emoji 字符，还需要安装 emoji 字体 `fonts-noto-color-emoji` +
+若要输入中文字符，则还需要安装中文输入法 `ibus-libpinyin libpinyin-utils zenity` +
+
+在 Host 主机上执行下面的操作
+
+. 安装 `apt install lxde-core chromium fonts-wqy-microhei fonts-noto-color-emoji ibus-libpinyin libpinyin-utils zenity`
+. 请不要以 root 的身份启动用户图形界面，这里需要创建一个普通账户
+.. `useradd --groups sudo --create-home --shell /bin/bash pveuser`
++
+[NOTE]
+====
+--groups sudo 表示将用户 pveuser 加入 sudo 这个组，方便该用户使用 sudo 命令 +
+--create-home 表示为该用户创建 home 目录，该目录为启动桌面所必备 +
+--shell /bin/bash 表示该用户默认使用的 shell 为 bash，方便操作
+====
++
+.. 为新创建的账户设置密码 +
+`passwd pveuser`
+. 启动图形化界面 +
+`systemctl isolate graphical.target`
+. 系统启动时自动进入图形化界面 +
+`systemctl set-default graphical.target`
++
+[NOTE]
+====
+* 切回命令行模式 `systemctl isolate multi-user.target` +
+并且可能需要按 Ctrl + Alt + F1 来切换至 TTY0
+* 启动时进入命令行界面 +
+`systemctl set-default multi-user.target`
+====
++
+. 以 pveuser 的账户登录桌面
+
+// break list
+
+* 启动 Chromium
+** 桌面左下角按钮 -> Internet -> Chromium Web Browser
+*** 在本机可以使用 `+https://127.0.0.1:8006+` 来登录 WebUI
+* 启动 Terminal
+** 桌面左下角按钮 -> System Tools -> LXTerminal
+* 启动文件管理器
+** 桌面左下角按钮 -> System Tools -> Task Manager
+
+== 安装虚拟机前的准备
+
+这里的准备主要与硬件直通相关，主要是对 PCIe 显卡的直通设置 +
+这些项目均是可选的，但直通之后能获得更加原生的体验
+
+[NOTE]
+====
+PVE 有关 PCI 直通的介绍 link:https://pve.proxmox.com/wiki/Pci_passthrough[Pci passthrough] +
+Arch Linux 关于 PCIe 直通的介绍 link:https://wiki.archlinux.org/index.php/PCI_passthrough_via_OVMF[PCI passthrough via OVMF]
+====
+
+=== 启用硬件设备直通
+
+[CAUTION]
+====
+这些配置均在 root 账户下完成，建议在 WebUI 的终端窗口中执行
+====
+
+PVE 使用 Linux 的 _IOMMU_ 和 _VFIO_ 两个模块实现硬件直通 +
+默认情况下，这两个模块并不会被启用，需要手动设置内核命令行，更新 initramfs 才能正常启用这两个模块
+
+. 启用 IOMMU
+.. 编辑 `/etc/default/grub` +
+ 为 `GRUB_CMDLINE_LINUX_DEFAULT` 参数追加 `intel_iommu=on iommu=pt` +
+形如 `GRUB_CMDLINE_LINUX_DEFAULT="quit intel_iommu=on iommu=pt"`
++
+[NOTE]
+====
+. 对于 AMD 的 CPU，将 `intel_iommu=on` 修改为 `amd_iommu=on`
+. `iommu=pt` 为可选参数，用于优化非直通的 PCI 设备的性能
+====
++
+.. 使用 `update-grub` 命令更新启动文件
+. 启用 VFIO
+.. 创建 `/etc/modules-load.d/vfio.conf`
+.. 输入如下内容
++
+./etc/modules-load.d/vfio.conf
+----
+vfio
+vfio_iommu_type1
+vfio_pci
+vfio_virqfd
+----
++
+.. 运行 `update-initramfs -u` 来更新 initramfs
+. 重启电脑
+
+=== 将显卡配置为可直通的状态
+
+如果需要将某张显卡完全交由某个虚拟机控制，则需要直通显卡 +
+直通显卡后，可以使用该显卡作为该虚拟机显示的输出，而且在该虚拟机中可以完全使用该显卡的全部功能
+
+[CAUTION]
+====
+GPU 直通的要点就是**不要让** Host 主机的系统使用/初始化要直通的 GPU， +
+下面所有的操作几乎都是围绕这个目的设置的
+====
+
+. 查看显卡当前的运行信息
+.. `lspci | grep VGA`，获得当前系统中显卡设备的初步信息 +
+我这里获得的结果为
+*** `00:02.0` 的 Intel HD Graphics 630 核心显卡
+*** `01:00.0` 的 NVIDIA GTX1080 独立显卡
+.. 这里将核显留给 Host 主机做显示用，直通 GTX1080 显卡给虚拟机
+.. `lspci -k -s 01:00.0` 查看独立显卡所使用的驱动 +
+这里我们得到当前正在使用的内核模块为 `nouveau`
+. 禁用 Linux 自带的显卡驱动，保证启动时显卡不被系统使用
+.. 新建/编辑 `/etc/modprobe.d/vga-blacklist.conf`
+.. 输入如下内容
++
+./etc/modprobe.d/vga-blacklist.conf
+----
+blacklist nouveau
+----
++
+[TIP]
+====
+若使用的是 AMD 的显卡，则要屏蔽的驱动应为 radeon
+====
++
+.. 运行 `update-initramfs -u` 来更新 initramfs
+.. 重启电脑
+.. `lspci -k -s 01:00.0`，再次查看独立显卡的内核使用情况，可以发现显卡设备已经不具有任何正在使用的内核模块了
+. 将 Host 主机上的显卡交由负责直通的 vfio_pci 内核模块驱动
++
+[NOTE]
+====
+由于 NVIDIA 显卡自带 HDMI 音频输出，其具有两个子设备，这里我们查看 `01:00` 整个设备的硬件情况
+====
++
+.. `lspci -n -s 01:00` 获得独立显卡的两个设备的 ID 分别为 `10de:1b80` 和 `10de:10f0`
+.. 根据上述两个 ID 值，创建 `/etc/modprobe.d/vfio.conf`
+.. 输入如下内容
++
+./etc/modprobe.d/vfio.conf
+----
+options vfio-pci ids=10de:1b80,10de:10f0
+----
++
+这样我们就提示系统，显卡将交由 vfio-pci 内核模块驱动
+.. 运行 `update-initramfs -u` 来更新 initramfs
+.. 重启电脑
+.. `lspci -k -s 01:00.0`，再次查看独立显卡的内核使用情况， +
+此时显卡正在使用的内核驱动为 `vfio-pci`，及证明显卡已经准备好直通了
+
+== 安装虚拟机
+
+这里以安装一台 Windows10 虚拟机为例
+
+=== 硬件设置
+
+* 若做了显卡直通，则将外置屏幕接入直通的显卡上
+
+=== 需要准备的文件
+
+* Windows 10 系统安装 ISO
+* virtio-win 驱动程序 ISO下载地址 link:https://docs.fedoraproject.org/en-US/quick-docs/creating-windows-virtual-machines-using-virtio-drivers/#virtio-win-direct-downloads[Direct downloads]
+
+=== PVE 中的设置
+
+. 将 Windows 系统的 ISO 和 virtio-win 的 ISO 上传到 PVE 的 local 存储中
+.. WebUI 左侧目录树中的 Datacenter -> pve -> local(pve) -> 右侧面板 Content -> 顶部的 Upload 按钮，选择 ISO 文件并上传
+. WebUI 顶部 Create VM 按钮，开始配置虚拟机的设置
+.. 勾选对话框底部的 Advanced 复选框
+.. General 选项卡
+*** Name： 为虚拟机起名字
+*** Start at boot：可以设置该虚拟机跟随 Host 系统启动而启动
+.. OS 选项卡
+*** ISO Image 选择 Windows 安装 ISO
+*** Guest OS Type 选择 Microsoft Windows
+*** Version 为 10/2016/2019
+.. System 选项卡
+*** Graphic card：若做了显卡直通，则选择 none，否则保持默认
+*** SCSI Controller：选择 VirtIO SCSI Single
+*** BIOS：使用 OVMF (UEFI)
+*** Storage：选择默认的 local-lvm，来存放一个 EFI 文件
+*** Machine：选择 q35
+.. Hard Disk 选项卡
+*** Bus/Device：选择 SCSI
+*** Storage：勾选新创建的 thin pool storage
+*** Disk size (GiB)：设置为需要的大小，不建议设置的太大，这个大小在后期是可扩大，但不可缩小的
+*** 勾选 Discard，可以在 Guset 系统释放磁盘的时候，同步释放 Host 主机上对应的磁盘镜像文件的大小.
+*** 勾选 SSD emulation
+*** 勾选 IO thread 以提高 IO 的性能
+.. CPU 选项卡
+*** Sockets: CPU 的数量，这里保持 1
+*** Cores：每 CPU 的核心数量，该值一般小于 Host 主机上实际的核心数量
+*** Type：如果不考虑虚拟机在不同的 Host 主机间迁移，则建议直接修改为 `host`，否则保持默认的 kvm64
+*** 若需要 Memory 在虚拟机开机时随时调整（也就是 hotplug），启动 `Enable NUMA`
++
+[CAUTION]
+====
+不是所有的 CPU 类型都能支持 CPU 和 Memory 的插拔，请注意
+====
++
+.. Memory 选项卡 +
+设置系统将使用的内存
+*** Memory (MiB)：Host 主机内存充足时会分配给该虚拟机的内存的量
+*** Minimum memory (MiB)：运行该虚拟机所需要的最小内存量
+*** Shares：若有多个虚拟机运行，且 Host 内存不足以满足全部虚拟机的内存需求时，内存分配的权重值
+*** Ballooning Device：是否启动可调整的内存管理机制 +
++
+[CAUTION]
+====
+Windows 系统需要借助驱动来实现 Ballooning Memory，因此会带来一些额外的开销 +
+不建议在关键性 Windows 系统上启用该选项
+====
++
+.. Netowrk 选项卡
+*** Model：VirtIO (paravirtualized)
+.. 检查配置并完成设置
+. 在 Guest 主机的 Hardware 项目中进行细节的配置
+.. 若要直通显卡，则追加 PCI Device
+*** 勾选 对话框底部的 Advanced
+*** Device 里选择准备好直通的显卡
+*** 勾选 All Functions、Primary GPU 和 PCI-Express
+.. 移除默认生成的 CD/DVD Drive
+.. 添加两个新的 CD/DVD Drive，Bus/Device 选择 SATA +
+其中一个选择 Windows 安装 ISO，另一个选择 virtio-win 的 ISO
++
+[CAUTION]
+====
+安装 Windows 过程中，切勿将 CD-ROM 的驱动器类型设置为 SCSI +
+Windows 自带的驱动并不能驱动 VirtIO SCSI 这类的设备
+====
++
+.. 若直通了显卡，并连接了外部显示器， +
+追加 USB Device，使用 Use USB Vndor/Device ID，将鼠标和键盘追加至 Guest 系统
++
+[WARNING]
+====
+若没有直通显卡，或显卡没有直连外部设备，则切勿将鼠标和键盘追加至 Guest 系统
+====
++
+. 在 Guest 的 Options 项目中进行其它细节的配置
+.. Boot Order 修改为
+*** Boot Device 1: `CD-ROM`
+*** Boot Device 2: `Disk 'scsi0'`
+.. 取消 Use tablet for pointer 的选项
+.. Hotplug 选项可勾选 Memory（需在 CPU 配置中启用了 `Enable NUMA`）和 CPU
++
+[CAUTION]
+====
+不是所有的 CPU 类型都能支持 CPU 和 Memory 的插拔，请注意
+====
+
+=== 安装 Windows 10 系统
+
+[TIP]
+====
+为保证若安装过程出现问题后能强制关闭虚拟机， +
+这里建议准备另一台可以登录 WebUI 的电脑以备不时之需
+====
+
+. 在 WebUI 中选中左侧新创建的虚拟机，并使用右侧顶部的 Start 按钮启动该虚拟机 +
+. 此时虚拟机首次启动
+** 若设置了显卡直通，且配置正常，则在直通给虚拟机的显卡所连接的屏幕应该会亮起，传递至虚拟机的 USB 鼠标和键盘会直接在虚拟机内部出现
++
+[WARNING]
+====
+若显卡不能被正常直通，请尝试下方的 xref:抽取显卡的 vbios[]
+====
++
+** 若未配置显卡直通，则在 虚拟机的 Console 选项中看到虚拟屏幕的出现
++
+[TIP]
+====
+“冷启动”虚拟机时，USB 键鼠可能会出现不能控制 WebUI，也不能控制虚拟机的状态，此时有两种解决的方法
+
+* 可以用另一台设备 `Reset` 一下虚拟机
+.. WebUI 左侧虚拟机 -> 右上角 Shutdown 按钮右侧的下拉箭头 -> Reset
+* 可以插拔一下 USB 键鼠 / USB 接收器，让 USB 被虚拟机识别 +
+此时可能已经错过 CD-ROM 的启动界面，进入了 UEFI Interactive Shell 中 +
+.. 此时需要注意提示的 Mapping table 中是否有 CD-ROM 的字样，找到 CD-ROM 对应的 `FS#:` 号，我这里分别为 `FS0` 和 `FS1` +
+.. 直接输入 `FS编号:` 并回车，进入该文件系统，
+... 使用 `ls` 命令罗列其中含有的文件
+... 找到 `EFI` 文件夹
+.... 若未找到则用 `FS编号:` 切换到另一个文件系统下
+... 用 `cd EFI` 进入该文件夹
+... 找到并进入 `BOOT` 文件夹
+... 找到 `BOOTX64.EFI` 文件，输入该文件名并回车，启动安装程序
+====
++
+. 正常安装 Windows
+. 在执行至 “你想将 Windows 安装在哪里？” 时，会提示需要驱动程序， +
+此时找到 virtio-win 对应的光盘下的 `+amd64\w10\vioscsi.inf+`，驱动的名称为 `Red Hat VirtIO SCSI pass-through controller` +
+安装该驱动
+. [可选] 安装以太网驱动程序： +
+定位至 virtio-win 对应的光盘下的 `+NetKVM\w10\amd64\netkvm.inf+`，驱动的名称为 `Red Hat VirtIO Ethernet Adapter`
++
+[TIP]
+====
+若不安装以太网驱动程序，则首次启动的配置为全离线配置
+====
++
+. 继续执行后续的系统安装
+
+=== 安装 Windows 系统后的配置
+
+. 找到 virtio-win 光盘镜像，并执行其根目录下的 `virtio-win-guest-tools.exe` 程序，补全全部的驱动程序
+. 关闭虚拟机
+. 找到 WebUI 中虚拟机的 Hardware 设置，移除两个 CD-ROM 设备
+. 找到 WebUI 中虚拟机的 Options 设置下的 QEMU Guest Agent 设置
+** 勾选 Use QEMU Guest Agent
+** 勾选 Run guest-trim after clone disk
+** 保持 Type 为 Default
+
+== 虚拟机的快照
+
+. 关闭虚拟机
+. 执行 备份/快照
+** 备份，是生成当前虚拟机的完整备份，可以用于导出和导入 +
+在虚拟机的 Backup 选项中可以操作
+** 快照，是对比已经生成的快照和当前虚拟机之间的差异，并记录差异的过程，和 Windows 的还原点类似 +
+在虚拟机的 Snapshots 选项中可以操作
+
+== 其它设置
+
+=== Mellanox ConnectX-3 Ethernet 网卡驱动的更新
+
+. 查找 ConnectX-3 当前使用的驱动
+.. 查找网卡的 PCI 编号 `lspci | grep "ConnectX-3"` 得到编号为 `03:00.0`
+.. 查看网卡的硬件信息 `lspci -k -s 03:00.0`，可以看到当前使用的驱动（内核模块）为 `mlx4_core`
+.. 查看内核模块的信息 `modinfo mlx4_core`
+.. 在 version 行可以看到系统自带的版本为 4.0-0
+. 下载最新的驱动
+.. 从 link:https://www.mellanox.com/products/ethernet-drivers/linux/mlnx_en[Mellanox EN Driver for Linux] 上查到，最新的支持 ConnectX-3 的 Linux 驱动版本为 LTS 状态的 4.9-0.1.7.4
+.. 选择 Debian 系统， PVE 6.2 使用的是 Debian 10.x 的版本，这里没有直接对应的，选择 10.0 版本的下载
+.. 下载好后解压
+. 编译驱动/安装配套的工具
+.. 由于没有完全对应内核版本的安装包，这里我们需要编译内核模块
++
+[CAUTION]
+====
+网卡驱动需要根据内核源文件进行编译，而 PVE 并不使用 linux 原生的 linux-headers +
+需要手动安装 pve-headers
+====
++
+.. 安装 PVE 特定的内核头文件 `apt install pve-headers`
+.. 执行 `./install --skip-distro-check -vv` 来启动安装
++
+[NOTE]
+====
+由于 PVE 修改了内核的名称，不再是 Debian， +
+所以附带 `--skip-distro-check` 来忽略分发版本的检测 +
+添加 `-vv` 来了解更多安装的细节
+====
++
+[NOTE]
+====
+由于要编译核心驱动，会花费比较长的时间，请耐心等待，切勿随意中断安装
+====
++
+.. 安装完成后，依照安装提供的指令，执行 `/etc/init.d/mlnx-en.d restart` 在运行时重载内核模块
+.. 查看内核模块的信息 `modinfo mlx4_core`
+.. 在 version 行可以看到系统自带的版本为 4.9-0.1.7，说明内核模块安装成功
+.. 可以选择重启或者继续使用
+
+=== 抽取显卡的 vbios
+
+若要直通的显卡设置正常，单在开机后出现无显示，在 Console 中看到 Windows 提示 error 43 +
+则有可能是显卡插在了首个 PCIe 卡槽上（一般是离 CPU 最近的 x16 卡槽），而主板恰好不能正常直通这个卡槽上的显卡 +
+此时需要手动抽取显卡的 BIOS，简称抽取 vbios
+
+[TIP]
+====
+更细节的抽取流程，请参考
+
+* link:https://pve.proxmox.com/wiki/Pci_passthrough#The_.27romfile.27_Option[PVE wiki - Pci passthrough - The 'romfile' Option] +
+* link:https://forums.unraid.net/topic/41951-gpu-passthrough-with-only-one-card/?do=findComment&comment=460914[unraid forums] +
+* link:https://wiki.archlinux.org/index.php/PCI_passthrough_via_OVMF_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)#%E5%9C%A8%E5%90%AF%E5%8A%A8%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%90%8E%E5%9C%A8dmesg%E4%B8%AD%E7%9C%8B%E5%88%B0%22BAR_3:_cannot_reserve_++[++mem++]++%22%E9%94%99%E8%AF%AF[Arch Linux wiki - VBIOS的UEFI (OVMF) 兼容] 的用 rom-parse 检查 vbios 版本的部分【非必须，要使用该工具，需具有用 c 工具链编译 c 源码文件的能力】
+====
+
+
+[CAUTION]
+====
+待抽取 vbios 的显卡在本次启动后不能被任何显卡驱动使用，也就是要在xref:_将显卡配置为可直通的状态[屏蔽了显卡驱动]之后才能执行
+====
+
+. 关闭 Host 机器，并将显卡移动至第二或者第三 PCIe 卡槽
+. 重启 Host 机器，并用 `lspci -k -s "显卡的 PCIe 编号"` 检查显卡当前的驱动状态
+** 若显卡被 `vfio-pci` 内核模块匹配，
+... 则通过 `cd /sys/bus/pci/drivers/vfio-pci` 命令切换到 vfio-pci 的驱动映射目录
+... 通过 `ls` 命令找到显卡的完整 PCI 编号
+... 通过 `echo "显卡的完整 PCI 编号" > unbind` 命令将显卡与 vfio-pci 解绑
+... 并再次检查显卡的驱动状态
+** 若显卡未被任何内核模块匹配，则继续执行下面的步骤
+. 正式抽取 vbios
+.. 执行 `cd /sys/bus/pci/devices/显卡的完整 PCI 编号` 移动到显卡设备的映射目录下
+.. 执行 `echo 1 > rom` 启动 vbios 的读取
+.. 执行 `cat rom > /tmp/vbios.bin` 抽取 vbios
++
+[TIP]
+====
+* 若提示错误 `cat: rom: Invalid argument`，则说明该设备未开启 vbios 的提取状态 +
+请再次确认 `echo 1 > rom` 被正确执行
+* 若提示错误 `cat: rom: Input/output error`，则说明该设备被显卡驱动绑定过，或者 vfio-pci 模块未正常解绑 +
+请重新确认显卡驱动的屏蔽，并查看 vfio-pci 与显卡的驱动状态
+====
++
+.. 执行 `echo 0 > rom` 关闭 vbios 的暴露
+.. 几乎每张显卡都具有不同的 vbios，建议为每张显卡都抽取 vbios，并指定不相同的文件名
+. 拷贝 vbios 至目标文件夹
+.. `cd /usr/share/kvm/` 移动至 KVM 自带的 rom/bios 文件夹
+.. *仔细对比生成的 vbios 文件名和 KVM 自带的 rom/bios 文件名，保证 vbios 与自带的文件名不相同*
++
+[WARNING]
+====
+*切莫删除、修改、覆盖 KVM 自带的文件*
+====
++
+.. 将生成的 vbios 拷贝至该目录下
+. 将 vbios 追加至虚拟机的配置中
+.. 在 WebUI 上查看虚拟机的信息
+*** 在虚拟机列表中查看虚拟机的 ID
+*** 在 Hardware 选项中显卡直通设备的名称（形如 `hostpci数字`）
+.. 修改 `/etc/pve/qemu-server/虚拟机ID.conf` 文件
+... 找到显卡对应的 `hostpci数字:`
+... 在行尾追加 `,romfile=vbios文件名`，注意和该行的前序配置之间要用逗号隔开，但不要加空格，vbios文件名不需要带目录路径，但需要写全文件名和后缀名（如果有的话）
+... 保存，并在 WebUI 中查看直通显卡的配置
