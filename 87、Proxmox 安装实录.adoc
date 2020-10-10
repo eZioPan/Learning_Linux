@@ -597,6 +597,7 @@ Windows 自带的驱动并不能驱动 VirtIO SCSI 这类的设备
 +
 .. 执行 `echo 0 > rom` 关闭 vbios 的暴露
 .. 几乎每张显卡都具有不同的 vbios，建议为每张显卡都抽取 vbios，并指定不相同的文件名
+. 若为了抽取 vbios 而从显卡解绑了 vfio-pci，可以通过重启 Host 主机，或者 `echo "显卡完整 PCIe 号" > /sys/bus/pci/drivers/vfio-pci/bind` 将 vfio-pci 绑定至显卡上
 . 拷贝 vbios 至目标文件夹
 .. `cd /usr/share/kvm/` 移动至 KVM 自带的 rom/bios 文件夹
 .. *仔细对比生成的 vbios 文件名和 KVM 自带的 rom/bios 文件名，保证 vbios 与自带的文件名不相同*
@@ -607,7 +608,8 @@ Windows 自带的驱动并不能驱动 VirtIO SCSI 这类的设备
 ====
 +
 .. 将生成的 vbios 拷贝至该目录下
-. 将 vbios 追加至虚拟机的配置中
+. 关机，并将显卡移动回原始的 PCIe 槽
+. 重启，并将 vbios 追加至虚拟机的配置中
 .. 在 WebUI 上查看虚拟机的信息
 *** 在虚拟机列表中查看虚拟机的 ID
 *** 在 Hardware 选项中显卡直通设备的名称（形如 `hostpci数字`）
