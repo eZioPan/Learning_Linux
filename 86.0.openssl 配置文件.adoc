@@ -28,7 +28,7 @@ OpenSSL CONF 库可被用于读取配置文件。该库可用于 OpenSSL 主（m
 
 **__值__**字符串是等号之后、行尾之前的字符串，任何首位的白空格都会被忽略。
 
-值字符串会执行变量扩展。可以通过 `$var` 或者 `${var}` 的形式来产生：该形式会在当前的段中查找该键对应的变量值。也可以使 `$section::name` 或者 `${section:name}` 形式的语法来引用其他段的变量。以 `$ENV:name` 的形式来获取环境变量中的值。也可以用 `ENV:name` 来设置环境变量值，这种方法仅对调用 `CONF` 库来查找环境变量时有效，对于直接调用 getenv() 无效。在变量扩展后，值字符串的长度不应该超过 64k，否则会出错。
+值字符串会执行变量扩展。可以通过 `$var` 或者 `${var}` 的形式来产生：该形式会在当前的段中查找该键对应的变量值。也可以使 `$section::name` 或者 `${section::name}` 形式的语法来引用其他段的变量。以 `$ENV::name` 的形式来获取环境变量中的值。也可以用 `ENV::name` 来设置环境变量值，这种方法仅对调用 `CONF` 库来查找环境变量时有效，对于直接调用 getenv() 无效。在变量扩展后，值字符串的长度不应该超过 64k，否则会出错。
 
 可以用任何形式的引号或者反斜线 `\` 来转义特定的字符。在值字符串的行尾使用 `\`，让该值跨行。也可以识别转义序列 `\n` / `\r` / `\b` / `\t`。
 
@@ -84,20 +84,277 @@ shortName = some object long name, 1.2.3.4
 
 === 引擎配置模块
 
+该 ENGINE 配置模块具有键名 `engines`。该变量的值指向一个包含更多 ENGINE 配置信息的段。
+
+由 `engines` 指向的段包含一个引擎名的表（参见下方的 `engine_id`）以及每个 ENGINE 特定的配置信息段。
+
+每个 ENGINE 的特定段用于设置默认的算法、载入动态库（dynamic）、执行初始化、以及发送控制（ctrls）。实际会执行的操作依照 __command__ 名，也就是键值对的键名。当前支持的命令见下方列表。
+
+举例：
+
+[source, openssl_conf]
+----
+[engine_section]
+
+# 配置名为 “foo” 的 ENGINE
+foo = foo_section
+# 配置名为 “bar” 的 ENGINE
+bar = bar_section
+
+[foo_section]
+... foo ENGINE 特定的命令 ...
+
+[bar_section]
+... bar ENGINE 特定的命令 ...
+----
+
+`engine_id` 命令用于指定 ENGINE 的名称。若要使用该命令，则该命令必须首先出现。举例：
+
+[source, openssl_conf]
+----
+[engine_section]
+# 一般来说因该由名为 “foo” 的 ENGINE 来处理
+foo = foo_section
+
+[foo_section]
+# 覆盖默认的名称，并用 “myfoo” 替代
+engine_id = foo
+----
+
+`dynamic_path` 命令从给出的路径中加载并添加一个 ENGINE。它等价于顺次发送以下的控制：附带路径参数的 `SO_PATH`，值为 `2` 的 `LIST_ADD`，对动态 ENGINE 的 `LOAD`。若该操作不符合需求，也可以直接通过控制命令向动态 ENGINE 发送替换的控制。
+
+`init` 命令决定是否要初始化 ENGINE。若值为 `0`，则 ENGINE 不会被初始化，若为 `1`，则尝试立刻初始化 ENGINE。若未出现 `init` 命令，则在一个 ENGINE 段中所有的命令都执行完成后，尝试执行一次初始化。
+
+`default_algorithms` 命令设置了会通过 ENGINE_set_default_string() 函数设置的 ENGINE 的默认算法。
+
+若键名不匹配上述任何一个命令名，则该键将作为控制命令发送至 ENGINE。命令的值就是控制命令的值。若命令的值为字符串 `EMPTY`，则向命令发送一个不具有值的控制。
+
+举例：
+
+[source, openssl_conf]
+----
+[engine_section]
+
+# 配置名为 “foo” 的 ENGINE
+foo = foo_section
+
+[foo_section]
+# 从 DSO 中加载引擎
+dynamic_path = /some/path/fooengine.so
+# foo 特定的控制
+some_ctrl = some_value
+# 另一个不具有值的控制
+other_ctrl = EMPTY
+# 提供全部的默认算法
+default_algorithms = ALL
+----
+
 === EVP 配置模块
+
+该模块具有键名 `alg_section`，指向一个具有算法的名称。
+
+当前支持的算法命令仅为 `fips_mode`，其值仅为布尔字符串 `off`。若 `fips_mode` 设置为 `on`，将报错，应为该库与 FIPS 不兼容。
 
 === SSL 配置模块
 
-== 注释
+该模块具有键名 `ssl_conf`，其指向一个具有 SSL 配置的段。
+
+SSL 配置段的每一行包含配置的名称，和包含它的段。
+
+每个配置段包含 `SSL_CONF` 需要的命令-值段。若以合适的配置名调用了 SSL_CTX_config() 或 SSL_config()，每个对将传入一个 `SSL_CTX` 或 `SSL` 结构。
+
+注意：配置段中首个点号之前的字符将被忽略，这样相同的命令就可以被多次使用。
+
+举例：
+
+[source, openssl_conf]
+----
+ssl_conf = ssl_sect
+
+[ssl_sect]
+
+server = server_section
+
+[server_section]
+
+RSA.Certificate = server-rsa.pem
+ECDSA.Certificate = server-ecdsa.pem
+Ciphers = ALL:!RC4
+----
+
+系统默认配置具有名称 `system_default`，若出现则用于任何 `SSL_CTX` 结构体的创建中。
+
+使用了系统默认值的配置案例：
+
+[source, openssl_conf]
+----
+ssl_conf = ssl_sect
+
+[ssl_sect]
+system_default = system_default_sect
+
+[system_default_sect]
+MinProtocol = TLSv1.2
+MinProtocol = DTLSv1.2
+----
+
+== 备注
+
+若配置文件尝试扩展一个不存在的变量，则会报错，该文件将不会被载入。可能发生在扩展一个不存在的环境变量中。举例来说，在前一个版本的 OpenSSL 中，默认的 OpenSSL 主配置文件会使用 `HOME` 的值，该变量在非 Unix 系统上不一定会出现，而导致错误。
+
+可以包含一个**__默认__**段来提供默认值：则当环境变量查找失败时，会转而使用默认值。要让其正确执行，默认值必须先于扩展定义于配置文件中。参见 xref:_案例[案例] 段来了解如何使用。
+
+若相同的变量存在与相同的段，则仅使用最后一次定义，前序的定义会被忽略。在特定的情况下相同的变量会出现多次，比如对 DN 的指定。绕行的办法是，在初始的点号之前添加字符，例：
+
+[source, openssl_conf]
+----
+1.OU="My first OU"
+2.OU="My Second OU"
+----
 
 == 案例
 
+运用了上述部分特性的案例配置文件
+
+[source, openssl_conf]
+----
+# 此处为默认段
+
+HOME=/temp
+RANDFILE = ${env::HOME}/.rnd
+configdir = $ENV::HOME/config
+
+[ section_one ]
+
+# 此时我们呢在 section one
+
+# 引号可接受前序和后续的白空格
+any = " any variable name "
+
+other = A string that can \
+conver serval lines \
+by including \\ characters
+
+message = Hello World\n
+
+[ section_two ]
+
+greeting = $section_one::message
+----
+
+下个案例展示了如何安全地扩展环境变量。
+
+假设你向让名为 `tmpfile` 的变量指向一个临时文件名。放置它的文件夹可以通过 `TEMP` 或者 `TMP` 环境变量取得，但它们可能完全没有被设置。若你使用了该环境变量，而该环境变量没有被定义，则在尝试载入该配置文件时会报错。在使用默认段之后，两个值均会首先查找 `TEMP`，若两者均不存在则使用 `/tmp`：
+
+[source, openssl_conf]
+----
+TMP=/tmp
+# 上述值在环境中不存在 TMP 时被使用
+TEMP=$ENV::TMP
+# 上述值在环境中不存在 TEMP 时被使用
+tmpfile=${ENV::TEMP}/tmp.filename
+----
+
+进入 FIPS 模式的 OpenSSL 库配置简单案例：
+
+[source, openssl_conf]
+----
+# Default appname: should match "appname" parameter (if any)
+# supplied to CONF_modules_load_file et al.
+openssl_conf = openssl_conf_section
+
+[openssl_conf_section]
+# Configuration module list
+alg_section = evp_sect
+
+[evp_sect]
+# Set to "yes" to enter FIPS mode if supported
+fips_mode = yes
+----
+
+注意：上述案例在不兼容 FIPS 模式的 OpenSSL 版本上会报错
+
+逐一设置系统使用的最低版本为 TLS 1.2 和 DTLS 1.2：
+
+[source, openssl_conf]
+----
+# openssl（包括 libssl）顶层的段
+openssl_conf = default_conf_section
+
+[default_conf_section]
+# 我们仅指定 “ssl 模块” 的配置
+ssl_conf = ssl_section
+
+[ssl_section]
+system_default = system_default_section
+
+[system_default_section]
+MibProtocol = TLSv1.2
+MinProtocol = DTLSv1.2
+----
+
+
+最小 TLS 协议应用于基于 TLS 的 `SSL_CTX` 对象，最小的 DTLS 协议应用于那些基于 DTLS 的。最大的版本可以通过 `MaxProtocol` 设置。
+
+更复杂的 OpenSSL 库配置。添加了 OID，且不进入 FIPS 模式：
+
+[source, openssl_conf]
+----
+# Default appname: should match "appname" parameter (if any)
+# supplied to CONF_modules_load_file et al.
+openssl_conf = openssl_conf_section
+
+[openssl_conf_section]
+# Configuration module list
+alg_section = evp_sect
+oid_section = new_oids
+
+[evp_sect]
+# This will have no effect as FIPS mode is off by default.
+# Set to "yes" to enter FIPS mode, if supported
+fips_mode = no
+
+[new_oids]
+# New OID, just short name
+newoid1 = 1.2.3.4.1
+# New OID shortname and long name
+newoid2 = New OID 2 long name, 1.2.3.4.2
+----
+
+所有的上述案例可以用于任何支持库配置的应用中，只要 “openssl_conf” 被修改值匹配任何合规的 “appname”。
+
+举例来说，若上述第二个案例保存为 “exanple.cnf”，那么命令行：
+
+[source, bash]
+----
+OPENSSL_CONF=example.cnf openssl asn1parse -genstr OID;1.2.3.4.1
+----
+
+将输出：
+
+[source, plain]
+----
+0:d=0 hl=2 l=4 prim: OBJECT :newoid1
+----
+
+显示 OID “newoid1” 已经作为 “1.2.3.4.1” 添加。
+
 == 环境变量
+
+OPENSSL_CONF::
+  配置文件的路径。在 set-user-ID 和 set-group-ID 程序中忽略。
+
+OPENSSL_EBGUBES::
+  引擎目录的路径。
 
 == BUG
 
+参见 link:https://www.openssl.org/docs/man1.1.1/man5/config.html[]
+
 == 参见
+
+参见 link:https://www.openssl.org/docs/man1.1.1/man5/config.html[]
 
 == 版权
 
-参见 link:https://www.openssl.org/docs/man1.1.1/man5/config.html[] COPYRIGHT 节
+参见 link:https://www.openssl.org/docs/man1.1.1/man5/config.html[]
