@@ -1,0 +1,152 @@
+= req
+
+== 名称
+
+openssl-req, req - PKCS#10 认证请求以及认证生成工具
+
+== 描述
+
+`req` 命令主要用于创建和处理 PKCS#10 格式额认证请求。它可以附加地创建自签名认证，比如创建用于根 CA 的自签名证书。
+
+== 选项
+// 
+// -help::
+// 
+// -inform DER|PEM::
+// 
+// -outform DER|PEM::
+// 
+// -in filename::
+// 
+// -sigopt nm:v::
+// 
+// -passin arg::
+// 
+// -out filename::
+// 
+// -passout arg::
+// 
+// -text::
+// 
+// -subject::
+// 
+// -pubkey::
+// 
+// -noout::
+// 
+// -modulus::
+// 
+// -verify::
+// 
+// -new::
+// 
+// -rand file...::
+// 
+// [-writerand file]::
+// 
+// -newkey arg::
+// 
+// -pkeyopt opt:value::
+// 
+// -key filname::
+// 
+// -keyform PEM|DER::
+// 
+// -keyout filename::
+// 
+// -nodes::
+// 
+// -digest::
+// 
+// -config filename::
+// 
+// -subj arg::
+// 
+// -multivalue-rdn::
+// 
+// -x509::
+// 
+// -days n::
+// 
+// -set-serial n::
+// 
+// -addext ext::
+// 
+// -extensions section::
+// 
+// -reqexts section::
+// 
+// -precert::
+// 
+// -utf8::
+// 
+// -nameopt option::
+// 
+// -reqopt::
+// 
+// -newhdr::
+// 
+// -batch::
+// 
+// -verbose::
+// 
+// -engine id::
+// 
+// -keygen_engine id::
+
+略
+
+== 配置文件选项
+
+配置选项通过配置文件的 **req** 节指定。若在全部的配置文件中，特定节（比如 `req`）中不包含特定的值，则会搜索初始的未命名节或者 **default** 节。
+
+可用的选项在下方说明。
+
+input_password output_password::
+输入私钥文件的密码（若存在），以及输出密钥文件的密码（若要创建）。命令行选项 `passin` `passout` 覆盖配置文件的值。
+
+default_bits::
+指定密钥的默认位（bit）长度。 +
+该选项与 `-new` 选项连用，来生成一个新的密钥。可以在 `-newkey` 选项明确指定密钥的长度来覆盖该选项。最小可用值位 512 bits。若不指定则使用 2048 bits。
+
+default_keyfile::
+写入时，默认的私钥文件名。若不指定则写入标准输出。它可以由 `-keyout` 选项覆盖。
+
+oid_file::
+指定一个文件，包含附加的**对象标识符**（OBJECT IDENTIFIERS）。文件中的每行应该包含数字形式的对象标识符，一个白空格，接着是短名，一个白空格，最后是长名。
+
+oid_section::
+
+RANDFILE::
+
+encrypt_key::
+
+default_md::
+
+string_mask::
+
+req_extensions::
+
+x509_extensions::
+
+prompt::
+
+utf8::
+
+attributes::
+
+distinguished_name::
+
+== 识别名和属性段格式
+
+== 案例
+
+== 备注
+
+== 诊断
+
+== BUG
+
+== 参见
+
+== 版权
