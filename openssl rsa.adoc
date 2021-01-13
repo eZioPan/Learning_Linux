@@ -1,0 +1,141 @@
+= rsa
+
+== 名称
+
+openssl-rsa, rsa - RSA 密钥处理工具
+
+== 描述
+
+`rsa` 命令处理 RSA 密钥。它们可以在各种形式之间转换，并可以打印出其中的成分。**注意**该命令使用传统的 SSLeay 兼容格式为私钥加密：更新的程序应该通过 `pkcs8` 命令使用更安全的 **PKCS#8** 格式。
+
+== 选项
+
+-help::
+打印使用信息
+
+-inform DER|PEM::
+指定输入的格式。`DER` 选项使用一种兼容 PKCS#1 RSAPrivateKey 或者 SubjectPublicKeyInfo 的 ASN1 DER 编码格式。`PEM` 格式为默认格式：它由 base64 编码的 DER 格式，以及附加的头行和尾行组成。对于输入来说，PKCS#8 格式的私钥也可以接受。
+
+-outform DER|PEM::
+指定输入格式，该选项和 `-inform` 选项具有相同的含义和默认值。
+
+-in filename::
+指定要从其中读取密钥的的文件名，若不指定则使用标准输入。若密钥被密码加密，则会提示输入密码。
+
+-passin arg::
+输入文件的密码来源。要了解 `arg` 参数的格式，参见 link:https://www.openssl.org/docs/man1.1.1/man1/openssl.html[openssl(1)] 的 **PASS PHRASE ARGUMENTS** 节。
+
+-out filename::
+指定要写入密钥的输入文件名，若不指定则输出至标准输出。若设置了任何加密选项，则会提示输入密码。输出文件名**不应该**与输入文件名同名。
+
+-passout password::
+输出文件的密码来源。要了解 `arg` 参数的格式，参见 link:https://www.openssl.org/docs/man1.1.1/man1/openssl.html[openssl(1)] 的 **PASS PHRASE ARGUMENTS** 节。
+
+-aes128, -aes192, -aes256, -aria128, -aria192, -aria256, -camellia128, -camellia192, -camellia256, -des, -des3, -idea::
+这些选项在输出私钥之前，会用指定的加密方法加密私钥。会提示输入一个密码。若不指定其中任何一个参数，则密钥以明文方式记录。这意味着使用 `rsa` 工具读取一个被加密的密钥，而不设置加密选项，可以被用于移除密钥的加密密码；若设置加密方式，则可以用于添加或修改加密密码。仅可用于 PEM 格式的输出文件。
+
+-text::
+除了打印编码过的版本，也用明文的方式一同打印各种公钥或私钥的成员。
+
+-noout::
+该选项阻止输出编码过的密钥。
+
+-modules::
+该选项会打印密钥的模数的值。
+
+-check::
+该选项检查一个 RSA 私钥的一致性。
+
+-pubin::
+默认情况下，输入文件读取的是私钥：使用这个选项指出读取的是公钥。
+
+-pubout::
+默认情况下，输出的是私钥：使用这个选项则输出公钥。若输入是公钥，则输出自动指定该值。
+
+-RSAPublicKey_in, -RSAPublicKey_out::
+同 `-pubin` 和 `-pubout`，但使用 **RSAPublicKey** 格式。
+
+-engine id::
+指定一个（以唯一的 `id` 字符串确定的）引擎，让 `rsa` 尝试获得指定引擎的可用参考，若需要也会初始化它。该引擎会设置为所有可用算法的默认引擎。
+
+== 备注
+
+PEM 私钥格式使用下述头行和尾行：
+
+[source]
+----
+-----BEGIN RSA PRIVATE KEY-----
+-----END RSA PRIVATE KEY-----
+----
+
+PEM 公钥格式使用下述头行和尾行：
+
+[source]
+----
+-----BEGIN PUBLIC KEY-----
+-----END PUBLIC KEY-----
+----
+
+PEM **RSAPublicKey** 格式使用下述头行和尾行：
+
+[source]
+----
+-----BEGIN RSA PUBLIC KEY-----
+-----END RSA PUBLIC KEY-----
+----
+
+== 案例
+
+从 RSA 私钥中移除密码：
+
+[source, bash]
+----
+openssl rsa -in key.pem -out keyout.pem
+----
+
+用三重 DES 加密一个私钥：
+
+[source, bash]
+----
+openssl rsa -in key.pem -des3 -out keyout.pem
+----
+
+将私钥从 PEM 格式转换为 DER 模式：
+
+[source, bash]
+----
+openssl rsa -in key.pem -outform DER -out keyout.der
+----
+
+将私钥的成分打印至标准输出：
+
+[source, bash]
+----
+openssl rsa -in key.pem -text -noout
+----
+
+仅输出私钥的公共部分：
+
+[source, bash]
+----
+openssl rsa -in key.pem -pubout -out pubkey.pem
+----
+
+输出 **RSAPublicKey** 格式的私钥的公共部分：
+
+[source, bash]
+----
+openssl rsa -in key.pem -RSAPublicKey_out -out pubkey.pem
+----
+
+== BUG
+
+参见 link:https://www.openssl.org/docs/man1.1.1/man1/rsa.html[]
+
+== 参见
+
+参见 link:https://www.openssl.org/docs/man1.1.1/man1/rsa.html[]
+
+== 版权
+
+参见 link:https://www.openssl.org/docs/man1.1.1/man1/rsa.html[]
