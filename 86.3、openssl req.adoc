@@ -122,7 +122,7 @@ openssl-req, req - PKCS#10 证书请求以及证书生成工具
 字段的值将作为 UTF8 字符串解码，默用 ASCII 方式解码。这表示字段值，无论来自终端或者来自配置文件，必须是有效的 UTF8 字符串。
 
 -nameopt option::
-决定如何显示主体名和签发机构名。`option` 参数可以是单个选项，或者用逗号分隔的多个选项。也可以多次设置 **-nameopt** 来设置多个选项。参见文档 link:https://www.openssl.org/docs/man1.1.1/man1/x509.html[x509(1)]。
+决定如何显示主体名和签发者名。`option` 参数可以是单个选项，或者用逗号分隔的多个选项。也可以多次设置 **-nameopt** 来设置多个选项。参见文档 link:https://www.openssl.org/docs/man1.1.1/man1/x509.html[x509(1)]。
 
 -reqopt::
 自定义使用 `-text` 时的输出格式。`option` 参数可以是单个选项，或者用逗号分隔的多个选项。 +
