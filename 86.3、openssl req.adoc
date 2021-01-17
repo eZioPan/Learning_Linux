@@ -1,0 +1,420 @@
+= req
+
+== 名称
+
+openssl-req, req - PKCS#10 证书请求以及证书生成工具
+
+== 描述
+
+`req` 命令主要用于创建和处理 PKCS#10 格式额证书请求。它可以额外地创建自签名证书，比如创建用于根 CA 的自签名证书。
+
+== 选项
+
+-help::
+打印使用信息。
+
+-inform DER|PEM::
+指定了输入的格式。`DER` 选项使用了一种兼容 PKCS#10 的 ASN1 DER 编码。`PEM` 格式为默认格式：包含了附加了额外的头行和尾行的 base64 编码的 **DER**。
+
+-outform DER|PEM::
+指定了输出格式，选项具有与 `-inform` 选项相同的含义和默认值。
+
+-in filename::
+指定了要读取请求的输入文件，若不指定则从标准输入读取。仅当不指定创建选项（`-new` 以及 `-newkey`）时，才会读取请求。
+
+-sigopt nm:v::
+在签名或者验证时，要传递给签名函数的选项。名称和值均为算法特定的。
+
+-passin arg::
+输入文件的密码来源。输出文件附带密码的来源。关于 **arg** 选项的更多信息，参阅 link:https://www.openssl.org/docs/man1.1.1/man1/openssl.html[openssl(1)] 的 **PASS PHRASE ARGUMENTS** 节。
+
+-out filename::
+指定要写入的输出文件名，默认值为标准输出。
+
+-passout arg::
+输出文件的密码来源。关于 **arg** 选项的更多信息，参阅 link:https://www.openssl.org/docs/man1.1.1/man1/openssl.html[openssl(1)] 的 **PASS PHRASE ARGUMENTS** 节。
+
+-text::
+以文本形式打印请求。
+
+-subject::
+打印请求主体（若指定了 `-x509` 则输出证书的主体）
+
+-pubkey::
+输出公钥。
+
+-noout::
+阻止输出编码后的请求。
+
+-modulus::
+打印请求中的公钥的模数的值。
+
+-verify::
+检验请求中的签名。
+
+-new::
+该选项生成一个新的证书请求。它将提示用户输入相关的字段值。实际会提示的值以及其最大最小值将在配置文件以及任何请求扩展中定义。 +
+若未使用 `-key` 选项，它将会通过配置文件定义的信息生成一个新的 RSA 私钥。
+
+-rand file...::
+指定单个或多个文件，包含随机数据，作为随机数生成器的种子。指定多个文件时，文件名之间用操作系统特定的分隔符加以区分。Windows 上用分号 `;`，OpenVMS 上用逗号 `,`，其它系统用 `:`。
+
+[-writerand file]::
+将随机信息输出至指定的文件中。可在 `-rand` 参数后使用。
+
+-newkey arg::
+该选项会创建一个新的证书请求以及一个新私钥。参数可以从多种形式中选取一种。`rsa:nbits`，其中 `nbits` 为位的数量，生成一个 **nbits** 长度的 RSA 密钥。若忽略 `nbits`，比如指定 `-newkey rsa`，则使用配置文件中的默认密钥长度。 +
+所有其它的算法均支持 `-newkey alg:file` 格式，其中的 file 可以是一个算法参数文件，该文件通过 `genpkey -genparam` 命令，或者具有合适算法的密钥的 X.509 证书。 +
+`dsa:filename` 通过 `filename` 文件中的参数生成 DSA 密钥。`ec:filesname` 生成 EC 密钥（在 ECDSA 或者 ECDH 算法中可用），`gost2001:filename` 生成 GOST R 34.10-2001 密钥（要求在配置文件中配置了 **ccgost** 引擎）。若仅指定了 `gost2001`，则应通过 `-pkeyopt paramset:X` 指定一个参数集。
+
+-pkeyopt opt:value::
+将公钥算法选项 `opt` 的值设置为 `value`。不同的公钥算法和实现方式具有不同的选项集。参见 **genpkey** 文档的 **KEY GENERATION OPTIONS** 了解详情。
+
+-key filname::
+指定用于读取私钥的文件。对于 PEM 格式的文件，也接受 PKCS#8 格式的私钥。
+
+-keyform PEM|DER::
+在 `-key` 参数中指定的私钥的格式。默认值为 `PEM`。
+
+-keyout filename::
+新生成的私钥将写入的文件。若不指定该选项，则使用配置文件中指定的文件名。
+
+-nodes::
+若创建了一个私钥，同时又指定了该选项，则该私钥不会被加密。
+
+-__digest__::
+指定要为请求签名的信息摘要。可以使用任何被 OpenSSL **dgst** 命令支持的签名。该选项覆盖配置文件中指定的签名函数。 +
+有些公钥算法会覆盖该选择。比如，DSA 签名总是使用 SHA1，GOST R 34.10 签名总是使用 GOST R 34.11-94（`-md_gost94`）, Ed25519 和 Ed448 从不使用任何摘要。
+
+-config filename::
+允许指定一个替代的配置文件。额外的，了解默认值的描述，参阅 link:https://www.openssl.org/docs/man1.1.1/man1/openssl.html[openssl(1) 的 “COMMAND SUMMARY”]
+
+-subj arg::
+为新的请求设置主体名，或者在处理请求时取代主体名。arg 必须以 `/type0=value0/type1=value1/type2=...` 的格式指定，关键字字符可以使用反斜线 `\` 来转义，白空格会被保留。允许使用空值，但对应的类型将不会被包含在请求中。
+
+-multivalue-rdn::
+该选项导致 **-subj** 参数以支持完整多值 RDN 的方式被解析。举例： +
+`/DC=org/DC=OpenSSL/DC=users/UID=123456+CN=John Doe` +
+若不使用 **-multi-rdn**，那么 UID 的值为 `123456+CN=John Doe`。
+
+-x509::
+该选项输出一个自签名的证书，而非一个证书请求。它通常用于生成一个测试证书，或者自签名根证书。加入证书的扩展信息（如果有的话），均在配置文件中给出。除非使用了 **set_serial** 选项，会使用一个大型随机数作为序列号。 +
+若通过 **-in** 选项指定了已有的请求，则将其转换为自签名证书，否则会生成一个新证书。
+
+-days n::
+当使用了 **-x509** 后，指定该参数来设置证书能认证的天数，其它情况则忽略该参数。`n` 应该为正整数。默认值为 30 天。
+
+-set-serial n::
+当输出自签名证书时，所使用的序列号。可以为十进制值，或者以 `0x` 开头的十六进制值。
+
+-addext ext::
+为证书（若指定的 **-x509** 选项）、或证书请求追加一个特定的扩展。其参数必须如在配置文件中一样，以 key=value 的形式出现。 +
+该参数可以出现多次。
+
+-extensions section -reqexts section::
+这些选项指定了包含证书扩展（若设置了 **-x509** 选项）或证书请求扩展的额外段。它允许在相同的配置文件中使用不同的段来达到各种目的。
+
+-precert::
+将向证书中加入一个毒药（poison）扩展，让证书为“预证书（pre-certificate）”（参见 RFC6962）。它可上交至认证透明度（Certificate Transparency）日志，来获得一个签署证书时间戳（signed certificate timestamps (SCTs)）。在移除毒药并签署证书前，这些签名证书时间戳将作为扩展嵌入预证书中。 +
+它隐含了 **-new** 标识。
+
+-utf8::
+字段的值将作为 UTF8 字符串解码，默用 ASCII 方式解码。这表示字段值，无论来自终端或者来自配置文件，必须是有效的 UTF8 字符串。
+
+-nameopt option::
+决定如何显示主体名和签发机构名。`option` 参数可以是单个选项，或者用逗号分隔的多个选项。也可以多次设置 **-nameopt** 来设置多个选项。参见文档 link:https://www.openssl.org/docs/man1.1.1/man1/x509.html[x509(1)]。
+
+-reqopt::
+自定义使用 `-text` 时的输出格式。`option` 参数可以是单个选项，或者用逗号分隔的多个选项。 +
+参见文档 link:https://www.openssl.org/docs/man1.1.1/man1/x509.html[x509(1)] 中 **-certopt** 的描述。
+
+-newhdr::
+在输出的 PEM 格式的请求文件的首尾行中加入 `NEW` 这个单词。部分软件（Netscape 证书服务器）和一些 CA 需要它。
+
+-batch::
+非交互模式。
+
+-verbose::
+打印正在被执行的操作的细节。
+
+-engine id::
+指定一个（以唯一的 `id` 字符串确定的）引擎，让 `rsa` 尝试获得指定引擎的可用参考，若需要也会初始化它。该引擎会设置为所有可用算法的默认引擎。
+
+-keygen_engine id::
+指定一个（以唯一的 `id` 字符串确定的）引擎，它将用于密钥的生成操作。
+
+== 配置文件选项
+
+配置选项通过配置文件的 **req** 节指定。若在全部的配置文件中，特定节（比如 `req`）中不包含特定的值，则会搜索初始的未命名节或者 **default** 节。
+
+可用的选项在下方说明。
+
+input_password output_password::
+输入私钥文件的密码（若存在），以及输出密钥文件的密码（若要创建）。命令行选项 `passin` `passout` 覆盖配置文件的值。
+
+default_bits::
+指定密钥的默认位（bit）长度。 +
+该选项与 `-new` 选项连用，来生成一个新的密钥。可以在 `-newkey` 选项明确指定密钥的长度来覆盖该选项。最小可用值位 512 bits。若不指定则使用 2048 bits。
+
+default_keyfile::
+写入时，默认的私钥文件名。若不指定则写入标准输出。它可以由 `-keyout` 选项覆盖。
+
+oid_file::
+指定一个文件，包含额外的**对象标识符**（OBJECT IDENTIFIERS）。文件中的每行应该包含数字形式的对象标识符，一个白空格，接着是短名，一个白空格，最后是长名。
+
+oid_section::
+在配置文件中指定一个额外的节，该节用于包含额外的对象标识符。每行应该包含对象标识符的短名，后随一个等号 `=`，以及它的数字形式。使用该选项时，长名和短名是等价的。
+
+RANDFILE::
+在启动时，指定的文件会载入随机数生成器，在退出时，将向其中写入 256 字节的数据。它用于私钥的生成。
+
+encrypt_key::
+该值设置为 `no` 时，生成的私钥**不会**被加密。它等价于 `-nodes` 命令行参数。出于兼容性考虑，`encrypt_rsa_key` 为等价选项。
+
+default_md::
+该选项指定了要使用的摘要算法。任何被 OpenSSL **dgst** 命令接受的摘要算法都可以使用。该选项可以被命令行覆盖。特定的签名算法（比如 Ed25519 和 Ed448）将忽略任何已经设置的摘要算法。
+
+string_mask::
+该选项会为特定的字段屏蔽特定的字符串类型。大多数用户无需修改该选项。 +
+（略）
+
+req_extensions::
+指定了配置文件中的一个节，该节包含了要加入证书请求的扩展列表。可以用命令行参数 `-reqexts` 进行切换。参见
+link:https://www.openssl.org/docs/man1.1.1/man5/x509v3_config.html[x509_v3_config(5)] 手册了解扩展节的格式详情。
+
+x509_extensions::
+指定了配置文件中的一个节，该节包含了使用 `-x509` 命令行参数时，要加入生成出的证书的扩展列表。可以通过 `-extensions` 命令行切换。
+
+prompt::
+若设置为 `no`，则关闭证书字段的提示，而直接使用配置文件的值。它同样会修改 **distinguished_name** 节和 **attributes** 节所期望的格式。
+
+utf8::
+若设置为 `yes`，则字段的值将作为 UTF8 字符串解码，默用 ASCII 方式解码。这表示字段值，无论来自终端或者来自配置文件，必须是有效的 UTF8 字符串。
+
+attributes::
+指定一个节，该节包含了任何被要求的属性：其格式与 **distinguished_name** 相同。典型情况会包含 challengePassword 或者 unstructuredName 类型。它们当前被 OpenSSL 的签名请求工具忽略，但某些 CA 可能会要求提供。
+
+distinguished_name::
+指定一个段，包含了生成证书或证书请求时，要提示的识别名字段。格式在下节说明。
+
+== 识别名和属性段格式
+
+识别名和属性段有两种独立的格式。若 **prompt** 选项设置为 `no` 时，该段仅由字段和值组成：举例来说，
+
+[source, text]
+----
+CN=My Name
+OU=My Organization
+emailAddress=someone@somewhere.org
+----
+
+它允许外部程序（比如 GUI）生成一个具有全部字段和值的模板文件，然后将这个文件传递至 `req` 命令。这些配置文件的案例可参阅**案例**节。 +
+若 **prompt** 选项未出现或者设设置为 `no`，那么该文件包含字段提示信息。它由下面的形式组成：
+
+[source, text]
+----
+fieldName="prompt"
+fieldName_default="default field value"
+fieldName_min= 2
+fieldName_max= 4
+----
+
+“fieldName” 为要使用的字段名，举例来说 commonName（或者 CN）。字符串 “prompt” 用于请求用户输入相关值。若用户未输入任何值，则使用默认值，若依旧未设定默认值，则该字段被忽略。即使设置了默认值，用户也可以输入一个点号 `.` 来忽略该字段。 +
+输入的字符的个数必须介于 fieldName_min 和 fieldName_max 之间：可能还要符合其他的要求（比如 countryName 必须是两字符长，且必须是 PrintableString）。 +
+一些字段（比如 organizationName）可以在 DN 中多次使用。这会带来一些问题，因为配置文件不会二次辨识相同的名称。要避免这个文件，若 fieldName 包含了一些字符，后跟随一个点号 `.`，则点号和其前面的字符会被忽略。举例来说，第二个 organizationName 可以被称为 `1.organizationName`。 +
+实际允许的字段名未任何对象标识符的长名或短名。通常它们是预先编译入 OpenSSL 的，包含了常用的值，比如 `commonName`，`countryName`，`localityName`，`organizationName`，`organizationalUnitName`，`stateOrProvinceName`。额外也会包含 `emailAddress`，`name`，`surname`，`givenName`，`initials`，`dnQualifier`。 +
+额外的对象标识符可以用配置文件中的 **oid_file** 和 **oid_section** 选项定义。额外的字段均被视作 DirectoryString。
+
+== 案例
+
+检查并验证证书请求：
+
+[source, bash]
+----
+openssl req -in req.pem -text -verify -noout
+----
+
+创建一个私钥，并从其中生成一个证书请求：
+
+[source, bash]
+----
+openssl genrsa -out key.pem 2048
+openssl req -new -key key.pem -out req.pem
+----
+
+相同结果，仅用 `req`：
+
+[source, bash]
+----
+openssl req -newkey rsa:2048 -keyout key.pem -out req.pem
+----
+
+生成一个自签名根证书：
+
+[source, bash]
+----
+openssl req -x509 -newkey rsa:2048 -keyout key.pem -out req.pem
+----
+
+通过 **oid_file** 选项指向的文件：
+
+[source, text]
+----
+1.2.3.4        shortName       A longer Name
+1.2.3.6        otherName       Other longer Name
+----
+
+通过 **oid_section** 指向的段，其中使用了变量扩展：
+
+[source, text]
+----
+testoid1=1.2.3.5
+testoid2=${testoid1}.6
+----
+
+用于提示字段值的配置文件：
+
+[source, text]
+----
+[ req ]
+default_bits           = 2048
+default_keyfile        = privkey.pem
+distinguished_name     = req_distinguished_name
+attributes             = req_attributes
+req_extensions         = v3_ca
+
+dirstring_type = nobmp
+
+[ req_distinguished_name ]
+countryName                    = Country Name (2 letter code)
+countryName_default            = AU
+countryName_min                = 2
+countryName_max                = 2
+
+localityName                   = Locality Name (eg, city)
+
+organizationalUnitName         = Organizational Unit Name (eg, section)
+
+commonName                     = Common Name (eg, YOUR name)
+commonName_max                 = 64
+
+emailAddress                   = Email Address
+emailAddress_max               = 40
+
+[ req_attributes ]
+challengePassword              = A challenge password
+challengePassword_min          = 4
+challengePassword_max          = 20
+
+[ v3_ca ]
+
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid:always,issuer:always
+basicConstraints = critical, CA:true
+----
+
+包含全体字段值的配置文件：
+
+[source, text]
+----
+RANDFILE               = $ENV::HOME/.rnd
+
+[ req ]
+default_bits           = 2048
+default_keyfile        = keyfile.pem
+distinguished_name     = req_distinguished_name
+attributes             = req_attributes
+prompt                 = no
+output_password        = mypass
+
+[ req_distinguished_name ]
+C                      = GB
+ST                     = Test State or Province
+L                      = Test Locality
+O                      = Organization Name
+OU                     = Organizational Unit Name
+CN                     = Common Name
+emailAddress           = test@email.address
+
+[ req_attributes ]
+challengePassword              = A challenge password
+----
+
+用命令行给出最常用的属性（主要属性与扩展属性）：
+
+[source, bash]
+----
+openssl req -new -subj "/C=GB/CN=foo" \
+                 -addext "subjectAltName = DNS:foo.co.uk" \
+                 -addext "certificatePolicies = 1.2.3.4" \
+                 -newkey rsa:2048 -keyout key.pem -out req.pem
+----
+
+== 备注
+
+**PEM** 格式的头行和尾行通常为：
+
+[soource, text]
+----
+-----BEGIN CERTIFICATE REQUEST-----
+-----END CERTIFICATE REQUEST-----
+----
+
+有些软件（某些版本的 Netscape 证书服务器）转而需要：
+
+[soource, text]
+----
+-----BEGIN NEW CERTIFICATE REQUEST-----
+-----END NEW CERTIFICATE REQUEST-----
+----
+
+它可以通过 `-newhdr` 参数取得，也同样（被 OpenSSL）兼容。两种格式均可以被无感地接受。 +
+由 MSIE 的 **Xenroll** 生成的证书请求已经附加了扩展。它包含了 **keyUsage** 扩展，该扩展用来定义密钥的类型（仅签名或通常用途），以及任何 extendedKeyUsage 扩展的脚本生成的额外的 OIDs。
+
+== 诊断
+
+下方的信息常被人提及：
+
+[source, text]
+----
+Using configuration from /some/path/openssl.cnf
+Unable to load config info
+----
+
+其后一般会跟随下面的内容：
+
+[source, text]
+----
+unable to find 'distinguished_name' in config
+problems making Certificate Request
+----
+
+第一个错误信息是线索：它不能找到配置文件！特定的操作（比如检查一个证书请求）并不需要一个配置文件，所以它非必须。但生成证书或者请求则必须要一个配置文件。这可以被认为是一个 bug。 +
+另一个迷惑的信息是：
+
+[source, text]
+----
+Attributes:
+    a0:00
+----
+
+当没有设置任何属性，而请求包含了正确的空 **SET OF** 结构时（DER 编码为 0xa0 0x00）出现。若看见：
+
+[source, text]
+----
+Attributes:
+----
+
+则缺少 **SET OF**，从技术上来说，编码就是无效的（但可接受）。参见命令行选项 `-ans1` `-kludge` 了解更多信息。
+
+== BUG
+
+参见 link:https://www.openssl.org/docs/man1.1.1/man1/req.html[]
+
+== 参见
+
+参见 link:https://www.openssl.org/docs/man1.1.1/man1/req.html[]
+
+== 版权
+
+参见 link:https://www.openssl.org/docs/man1.1.1/man1/req.html[]
