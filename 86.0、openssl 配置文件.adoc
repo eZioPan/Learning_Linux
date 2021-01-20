@@ -344,7 +344,7 @@ OPENSSL_CONF=example.cnf openssl asn1parse -genstr OID;1.2.3.4.1
 OPENSSL_CONF::
   配置文件的路径。在 set-user-ID 和 set-group-ID 程序中忽略。
 
-OPENSSL_EBGUBES::
+OPENSSL_ENGINES::
   引擎目录的路径。
 
 == BUG

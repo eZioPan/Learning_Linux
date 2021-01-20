@@ -130,9 +130,135 @@ openssl-x509, x509 - 证书显示和签发工具
 参见 **verify** 工具的描述了解可信设置的含义的更多信息。 +
 未来版本的 OpenSSL 可以识别任何证书上的可信设置：并非仅有根 CA。
 
+-trustout::
+让 `x509` 输出可信证书。通常证书和可信证书均可以作为输入，但默认情况下，仅输出通常证书，任何可信设置均会被移除。指定了 `-trustout` 选项之后，将会输出可信证书。若修改了任何可信设置，一个可信证书将被自动输出。
+
+-setalias arg::
+设置证书的别名。它允许用一个昵称指代证书，比如 “Steve's Certificate”。
+
+-alias::
+若有，则输出别名。
+
+-clrtrust::
+移除证书中全部的允许或可信用途。
+
+-clrreject::
+移除证书中全部的禁止或回绝用途。
+
+-addtrust arg::
+添加一个可信的证书用途。任何对象名均可被使用，但当前仅启用了 `clientAuth`（SSL 客户端用途），`serverAuth`（SSL 服务器用途），`emailProtection`（S/MIME 邮件），`anyExtendedKeyUsage`。就 OpenSSL 1.1.0 来说，最后一个选项在设置在拒绝字段时，阻止全部的用途；设置在可信字段时，启用全部的用途。其它 OpenSSL 应用可能会定义额外的用途。
+
+-addreject arg::
+添加一个禁止用途。接受与 `-addtrust` 选项相同的值。
+
+-purpose::
+该选项对认证扩展执行测试，并输出结果。了解更完整的信息，参见 **证书扩展** 节。
+
 === 签发选项
 
-=== 命名选项
+`x509` 工具可以被用于签署证书以及请求：因此它就像是一个“迷你 CA”。
+
+-signkey arg::
+该选项使用提供的私钥或引擎自签输入文件。私钥的格式通过 `-keyform` 选项指定。 +
+若输入文件为证书，则将签发者名设置为主体名（也即自签名），将公钥设置为提供的值，并修改起止日期。启用日期为当前时间，结束日期由 `-days` 选项决定。除非使用 `-clrext` 选项，否则保留任何证书扩展；举例来说，这会包含任何已经存在的密钥标识符扩展。 +
+若输入文件为证书请求，则使用提供的私钥，以及请求中的主体名，创建一个自签名证书。
+
+-sigopt nm:v::
+在签名或验证操作时传递给签名算法的选项。这些选项的名称和值是算法特定的。
+
+-passin arg::
+密钥密码源。关于 **arg** 选项的更多信息，参阅 link:https://www.openssl.org/docs/man1.1.1/man1/openssl.html[openssl(1)] 的 **PASS PHRASE ARGUMENTS** 节。
+
+-clrext::
+从证书中删除任何扩展。该选项用于从一个证书中创建另一个证书（比如与 `-signkey` 或 `-CA` 选项连用时）。通常情况下，会保留全部扩展。
+
+-keyform PEM|DER|ENGINE::
+指定 `-signkey` 选项输入的私钥文件的格式（DER 或 PEM）。
+
+-days arg::
+指定证书有效的天数。默认值为 30 天。不可以与 `-preserve_dates` 选项连用。
+
+-x509toreq::
+将证书转换为证书请求。使用 `-signkey` 选项传递私钥。
+
+-req::
+默认情况下，期望的输入文件为证书。使用该选项后，期望的输入文件为证书请求。
+
+-set_serial n::
+指定要使用的序列号。该选项可以与 `-signkey` 或者 `-CA` 选项连用。若与 `-CA` 选项连用，则（用 `-CAserial` 或 `-CAcreateserial` 选项指定的）序列号文件不会被使用。 +
+序列号可以用十进制或（前缀 `0x` 的）十六进制指定。
+
+-CA filename::
+指定签名用的 CA 证书。当指定该选项时， `x509` 的行为类似 “迷你 CA”。输入文件由该选项指定的 CA 签名：也就是说，证书的签发者名设置为 CA 的主体名，并使用 CA 的私钥进行数字签名。 +
+该选项通常与 `-req` 选项连用。不与 `-req` 连用时，输入的文件为一个证书，且该证书必须为自签名的。
+
+-CAkey filename::
+设置用于证书签名的 CA 私钥。若不指定该选项在，则假设 CA 私钥包含在 CA 证书文件中。
+
+-CAserial filename::
+设置要使用的 CA 序列号文件。 +
+当使用 `-CA` 选项签名一个证书时，会使用一个文件中指定的一个序列号。该文件由一行组成，该行为偶数位数的十六进制值，其值为要使用的序列号。每次使用后，序列号会递增，并再次写入文件中。 +
+默认文件名由 CA 证书的基文件名（base name）以及后缀 `.srl` 组成。举例来说，若 CA 证书的文件名为 “mycacert.pem”，那么它希望找到的序列号文件名为 “mycacert.srl”。
+
+-CAcreateserial::
+使用了该选项后，若 CA 序列号文件不存在，就创建它：它会包含序列号“02”，且被签名的证书将具有序列号 1。若指定了 `-CA` 选项，且序列号文件不存在，则生成一个随机值；其为推荐实践方法。
+
+-extfile name::
+文件包含了要使用的证书扩展。若不指定那么不向证书中添加扩展。
+
+-extensions section::
+添加证书扩展的来源段。若该选项不存在，则扩展要么存在于不具名（默认）段，或者默认段应该包含一个称为 “extensions” 的变量，其指向要使用的段。参见
+link:https://www.openssl.org/docs/man1.1.1/man5/x509v3_config.html[x509_v3_config(5)] 手册了解扩展节的格式详情。
+
+-force_pubkey key::
+当创建证书时，将它的公钥设置为 **key**，而非证书或证书请求中包含的密钥。在创建证书，且算法无法正常签名请求（比如 DH）时，非常有用。 +
+**key** 的格式可以由 `-keyform` 选项指定。
+
+=== 名称选项
+
+`nameopt` 命令行参数决定了主体名和签发者名如何显示。若不指定 **nameopt** 则使用默认的“单行（oneline）”格式，其与前序版本的 OpenSSL 兼容。下方将详细解释每个选项，全部的选项都可以在前缀连字符 `-` 将该选项关闭。通常情况下，仅有前四个参数会被使用。
+
+compat::
+
+RFC2253::
+
+oneline::
+
+multiline::
+
+esc_2253::
+
+esc_2254::
+
+esc_ctrl::
+
+esc_msb::
+
+use_quote::
+
+utf8::
+
+ignore_type::
+
+show_type::
+
+eump_der::
+
+dump_nostr::
+
+dump_all::
+
+dump_unknown::
+
+sep_comma_plus, sep_comma_plus_space, sep_semi_plus_space, sep_multiline::
+
+dn_rev::
+
+nofname, sname, lname, oid::
+
+align::
+
+space_eq::
 
 === 文本选项
 
@@ -140,7 +266,7 @@ openssl-x509, x509 - 证书显示和签发工具
 
 == 备注
 
-== 认证扩展
+== 证书扩展
 
 == BUGS
 
