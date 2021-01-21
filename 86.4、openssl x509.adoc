@@ -219,46 +219,67 @@ link:https://www.openssl.org/docs/man1.1.1/man5/x509v3_config.html[x509_v3_confi
 `nameopt` 命令行参数决定了主体名和签发者名如何显示。若不指定 **nameopt** 则使用默认的“单行（oneline）”格式，其与前序版本的 OpenSSL 兼容。下方将详细解释每个选项，全部的选项都可以在前缀连字符 `-` 将该选项关闭。通常情况下，仅有前四个参数会被使用。
 
 compat::
+使用旧格式。
 
 RFC2253::
+以兼容 RFC2253 的格式显示，等价于 `esc_2253, esc_ctrl, esc_msb, utf8, dump_nostr, dump_unknown, dump_der, sep_comma_plus, dn_rev, sname`。
 
 oneline::
+一行输出，比 RFC2253 更加可读。等价于 `esc_2253, esc_ctrl, esc_msb, utf8, dump_nostr, dump_der, use_quote, sep_comma_plus_space, space_eq, sname`。若不指定名称选项，则该值为默认值。
 
 multiline::
+一个多行格式。等价于 `esc_ctrl, esc_msb, sep_multiline, space_eq, lname, align`
 
 esc_2253::
+在字段中转义 RFC2253 中定义的特殊字符，也就是 `,` `+` `"` `<` `>` `;`。除此之外，字符串头部的 `#`，以及字符串头尾的一个空格都会被转义。
 
 esc_2254::
+在字段中转义 RFC2254 中定义的特殊字符。也就是 `NUL` 字符和 `(` `)` `*`。
 
 esc_ctrl::
+转义控制字符。也就是 ASCII 值小于 0x20（空格）和删除（0x7f）字符。它们转义时使用 RFC2253 的 \XX 标注法（XX 为表示字符值的两位十六进制数字）。
 
 esc_msb::
+转义设置了 MSB 的字符，也就是 ASCII 值大于 127 的字符。
 
 use_quote::
+将整个字符串用引号 `"` 包裹来转义一些字符，而非使用反斜线 `\` 转义字符。
 
 utf8::
+首先将字符串转换为 UTF8 格式。该行为由 RFC2253 要求。如果你的终端兼容 UTF8，那么设置为该值（且**不**设置 `esc_msb`）可能会正确显示多字节（国际）字符。若该选项未出现，那么超过 0xff 的 16 位多字节字符将表示为 \UXXXX，而 32 位的多字节字符将表示为 \WXXXXXXXX。同样的，若不指定该值，那么任何 UTF8String 都会首先转换为它们的字符形式。
 
 ignore_type::
+该选项不会尝试解析多字节字符。也就是说，这些八进制内容会仅仅以一个八进制表示一个字符的方式被 dump 下来。在诊断时很好用，但输出时就显得很奇怪了。
 
 show_type::
+显示 ASN1 字符串的类型。类型前缀在字段内容前。比如说“BMPSTRING: Hello World”。
 
-eump_der::
+dump_der::
+指定该选项时，任何需要 hexdump 的字段，均会使用 DER 编码，再 dump。否则就仅显示为八进制值。两者均使用 RFC2253 的 #XXXX... 格式。
 
 dump_nostr::
+dump 非字符字符串类型（比如 OCTET STRING），若不指定该选项，则非字符串类型将显示为每个八进制值表示一个单独的字符。
 
 dump_all::
+dump 全体字段。与 **dump_der** 连用时，可明确结构体使用 DER 编码。
 
 dump_unknown::
+dump 任何 OpenSSL 无法识别字段的 OID 的字段。
 
 sep_comma_plus, sep_comma_plus_space, sep_semi_plus_space, sep_multiline::
+该选项决定字段的分隔符。首个字符用在 RDN 之间使用，第二个字符用在多个 AVA 之间（多重 AVA 非常少见，且不建议这样使用）。该选项中以“space”结尾的选项在分隔符后追加一个空格，让输出更可读。`sep_multiline` 在 RDN 之间使用换行符作为分隔，在 AVA 之间使用加号 `+` 作为分隔符。同时使用四个空格缩进字段。若不指定字段分隔符，则默认使用 `sep_comma_plus_space`。
 
 dn_rev::
+反转 DN 字段的顺序。如 RFC2253 所要求的。它有一个副作用，会同时会反转 AVA 字段。
 
 nofname, sname, lname, oid::
+改变字段名的显示选项。`nofname` 完全不显示字段。`sname` 使用“短名”格式（用 CN 表示 commonName）。`lname` 使用长格式。`oid` 以数字形式显示 OID，对于诊断很有用。
 
 align::
+对其字段值，让输出更可读。仅与 `sep_multiline` 连用时有效。
 
 space_eq::
+在字段名和字段值之间的等号 `=` 两侧添加空格。
 
 === 文本选项
 
