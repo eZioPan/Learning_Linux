@@ -282,6 +282,58 @@ space_eq::
 在字段名和字段值之间的等号 `=` 两侧添加空格。
 
 === 文本选项
+除了名称的输出格式，也可以在使用了 `text` 选项后，通过 `certopt` 选项自定义打印出的实际字段。默认行为为打印所有字段。
+
+compatible::
+使用旧个hi。等价于不指定任何输出选项。
+
+no_header::
+不打印头信息：也就是包含了 “Certificate” 和 “Data” 的行。
+
+no_version::
+不打印版本号。
+
+no_serial::
+不打印序列号。
+
+no_signame::
+不打印所使用的签名算法。
+
+no_validity::
+不打印有效期，对应 **noBefore** 和 **noAfter** 字段。
+
+no_subject::
+不打印主体名。
+
+no_issuer::
+不打印签发者名。
+
+no_pubkey::
+不打印公钥。
+
+no_sigdump::
+不给出十六进制版本的证书签名。
+
+no_aux::
+不打印证书可信信息。
+
+no_extensions::
+不打印任何 X509V3 扩展。
+
+ext_default::
+保持默认的扩展行为：尝试打印不被支持的证书扩展。
+
+ext_error::
+为不被支持的证书扩展打印一个错误。
+
+ext_parse::
+ASN1 解析不被支持的扩展。
+
+ext_dump::
+用十六进制 dump 不被支持的扩展。
+
+ca_default::
+被 **ca** 工具使用的值，等价于 `no_issuer, no_pubkey, no_header, no_version`。
 
 == 案例
 
