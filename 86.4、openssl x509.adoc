@@ -337,14 +337,179 @@ ca_default::
 
 == 案例
 
+注意：在下面的案例中，`\` 表示全部输入应该在同一行。
+
+显示证书的内容：
+
+[source, sh]
+----
+openssl x509 -in cert.pem -noout -text
+----
+
+显示证书的“Subject Alternative Name”扩展：
+
+[source, sh]
+----
+openssl x509 -in cert.pem -noout -ext "subjectAltName"
+----
+
+显示证书的更多扩展：
+
+[source, sh]
+----
+openssl x509 -in cert.pem -noout -ext subjectAltName,nsCertType
+----
+
+显示证书的序列号：
+
+[source, sh]
+----
+openssl x509 -in cert.pem -noout -serial
+----
+
+显示证书的主体名：
+
+[source, sh]
+----
+openssl x509 -in cert.pem -noout -subject
+----
+
+显示以 RFC2253 形式显示证书的主体名：
+
+[source, sh]
+----
+openssl x509 -in cert.pem -noout -subject -nameopt RFC2253
+----
+
+在支持 UTF8 的终端里以单行的形式显示证书的主体名：
+
+[source, sh]
+----
+openssl x509 -in cert.pem -noout -subject -nameopt oneline,-esc_msb
+----
+
+显示证书的 SHA1 指纹：
+
+[source, sh]
+----
+openssl x509 -sha1 -in cert.pem -noout -fingerprint
+----
+
+将证书从 PEM 转换为 DER 格式：
+
+[source, sh]
+----
+openssl x509 -in cert.pem -inform PEM -out cert.der -outform DER
+----
+
+将证书转换为证书请求：
+
+[source, sh]
+----
+openssl x509 -x509toreq -in cert.pem -out req.pem -signkey key.pem
+----
+
+利用 CA 的扩展将证书请求转换为自签名证书：
+
+[source, sh]
+----
+openssl x509 -req -in careq.pem -extfile openssl.cnf -extensions v3_ca \
+        -signkey key.pem -out cacert.pem
+----
+
+将一个证书设置为 SSL client 可信，并修改别名为“Steve's Class 1 CA”：
+
+[source, sh]
+----
+openssl x509 -in cert.pem -addtrust clientAuth \
+        -setalias "Steve's Class 1 CA" -out trust.pem
+----
+
 == 备注
+
+PEM 格式所使用的首尾行：
+
+[source, text]
+----
+-----BEGIN CERTIFICATE-----
+-----END CERTIFICATE-----
+----
+
+（该命令）也可处理包含下述行的文件：
+
+[source, text]
+----
+-----BEGIN X509 CERTIFICATE-----
+-----END X509 CERTIFICATE-----
+----
+
+可信证书具有下面的行
+
+[source, text]
+----
+-----BEGIN TRUSTED CERTIFICATE-----
+-----END TRUSTED CERTIFICATE-----
+----
+
+对于名称的转至 UTF8 格式的转换假设 T61Strings 使用了 ISO8859-1 字符集。这并不正确，但 Netscape 和 MSIE 是这么使用的，也有很多证书这么用。所以虽然这并不正确，但它更有可能正确显示大多数证书。 +
+`-email` 选项会搜索主体名以及主体替代名扩展。它仅展示不同的邮件地址：它不会多次打印相同的地址。
 
 == 证书扩展
 
+`-purpose` 选项检查检查证书扩展，并决定证书能用在什么方面。实际执行检查的过程非常的复杂，并充满了 hack 和 workaround，来处理损坏的证书和软件。 +
+相同的代码也使用在了检查一系列非可信证书上，所以该节可以用于检查一条证书链是否被拒绝。 +
+`basicConstraints` 扩展的 CA 标旗用于决定一个证书是否可以作为 CA。若 CA 标旗为真，则它是一个 CA，否则它不是 CA。**全体** CA 都应该具有值为真的 CA 标旗。 +
+若缺少 basicConstraints 扩展，那么证书被认为是“可能为 CA”，会依照证书的用途来检查其它的扩展。在这种情况下，会给出一个警告，因为该证书的确不应该作为 CA 使用：但是它依旧可以作为 CA 来使用，以绕开一些残缺的软件。 +
+若该证书为 V1 证书（也就是不含扩展），且它是自签证书，那么它也会被当作 CA 使用，但依旧会给出一个警告：该行为作为 Verisign 根证书所产生的问题的绕行方法，因为这个根证书是 V1 自签证书。 +
+若出现了 keyUsage 扩展，那么对于证书的用途会附加额外的限制。若出现了 keyUsage 那么**必须**为 CA 证书设置 keyCertSign 位。 +
+扩展密钥使用扩展为证书的用法添加了额外的限制。若出现了该扩展（无论关键（critical）与否）那么密钥仅可被用于指定的目的。 +
+每个测试的完全描述在下方给出。上面描述的有关于 basicConstraints 和 keyUsage 以及 V1 证书的相关内容适用于**全部** CA 证书。
+
+SSL Client::
+扩展密钥用法扩展必须不存在，或者包含 “web client authentication” OID。keyUsage 必须不存在，或必须设置 digitalSignature 位。Netscape 证书类型必须不存在，或者必须设置 SSL client 位。
+
+SSL Client CA::
+扩展密钥用法扩展必须不存在，或者包含 “web client authentication” OID。Netscape 证书类型必须不存在，或者必须设置 SSL CA 位：当 basicConstraints 不存在时的绕行方案。
+
+SSL Server::
+扩展密钥用法扩展必须不存在，或者包含 “web server authentication” OID 或者/以及 SGC 中的一个 OID。keyUsage 必须不存在，或者必须设置 digitalSignature 位或 keyEncipherment 位这两个位中的一个或全部。Netscape 证书类型必须不存在，或者设置 SSL server 位。
+
+SSL Server CA::
+扩展密钥用法扩展必须不存在，或者包含 “web server authentication” OID 或者/以及 SGC 中的一个 OID。Netscape 证书类型必须不存在，或者设置 SSL CA 位：当 basicConstraints 不存在时的绕行方案。
+
+Netscape SSL Server::
+要使 Netscape SSL 客户端连接至 SSL 服务器，在设置了 keyUsage 扩展的情况下，SSL 服务器必须设置了 keyEncipherment 位。但这并不总是有效，因为有些加密套件将密钥用于数字签名。其他情况下，它与普通 SSL 服务器类似。
+
+Common S/MIME Client Tests::
+扩展密钥用法扩展必须不存在，或者包含 “email protection” OID。Netscape 证书类型必须不存在，或者设置了 S/MIME 位。若 Netscape 证书类型未设置 S/MIME 位，那么 SSL client 位也可以作为替代品接受，但是会提示警告：这是由于 Verisign 证书不会设置 S/MIME 位。
+
+S/MIME Signing::
+相对于 common S.MIME client tests，在设置了 keyUsage 扩展后，还追加了对 digitalSignature 位或 nonRepudiation 位的检测，两者必须设置一个。
+
+S/MIME Encryption::
+相对于 common S.MIME client tests，在设置了 keyUsage 扩展后，还追加了对 keyEncipherment 位的检测，该位须设置。
+
+S/MIME CA::
+扩展密钥用法扩展必须不存在，或这包含了 “email protection” OID。Netscape 证书类型比如不存在，或者设置了 S/MIME CA 位：当 basicConstraints 不存在时的绕行方案。
+
+CRL Signing::
+keyUsage 扩展必须不存在，或者必须设置了 CRL signing 位。
+
+CRL Signing CA::
+应用通常的 CA 测试。且必须出现 basicConstraints 扩展。
+
 == BUGS
+
+参见 link:https://www.openssl.org/docs/man1.1.1/man1/x509.html[]
 
 == 参见
 
+参见 link:https://www.openssl.org/docs/man1.1.1/man1/x509.html[]
+
 == 历史
 
+参见 link:https://www.openssl.org/docs/man1.1.1/man1/x509.html[]
+
 == 版权
+
+参见 link:https://www.openssl.org/docs/man1.1.1/man1/x509.html[]

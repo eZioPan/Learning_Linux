@@ -325,7 +325,7 @@ newoid2 = New OID 2 long name, 1.2.3.4.2
 
 举例来说，若上述第二个案例保存为 “exanple.cnf”，那么命令行：
 
-[source, bash]
+[source, sh]
 ----
 OPENSSL_CONF=example.cnf openssl asn1parse -genstr OID;1.2.3.4.1
 ----

@@ -229,14 +229,14 @@ fieldName_max= 4
 
 检查并验证证书请求：
 
-[source, bash]
+[source, sh]
 ----
 openssl req -in req.pem -text -verify -noout
 ----
 
 创建一个私钥，并从其中生成一个证书请求：
 
-[source, bash]
+[source, sh]
 ----
 openssl genrsa -out key.pem 2048
 openssl req -new -key key.pem -out req.pem
@@ -244,14 +244,14 @@ openssl req -new -key key.pem -out req.pem
 
 相同结果，仅用 `req`：
 
-[source, bash]
+[source, sh]
 ----
 openssl req -newkey rsa:2048 -keyout key.pem -out req.pem
 ----
 
 生成一个自签名根证书：
 
-[source, bash]
+[source, sh]
 ----
 openssl req -x509 -newkey rsa:2048 -keyout key.pem -out req.pem
 ----
@@ -342,7 +342,7 @@ challengePassword              = A challenge password
 
 用命令行给出最常用的属性（主要属性与扩展属性）：
 
-[source, bash]
+[source, sh]
 ----
 openssl req -new -subj "/C=GB/CN=foo" \
                  -addext "subjectAltName = DNS:foo.co.uk" \
