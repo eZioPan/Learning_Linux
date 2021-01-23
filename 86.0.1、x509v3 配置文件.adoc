@@ -1,0 +1,198 @@
+= x509v3_config
+
+== 名称
+
+x509v3_config - X509 V3 证书扩展配置格式
+
+== 描述
+
+一些 OpenSSL 工具可以为证书或证书请求添加扩展。扩展段的每一行都具有如下的形式：
+
+[source, text]
+----
+extension_name=[critical,] extension_options
+----
+
+若出现了 `critical` 那么扩展为关键的（critical）。 +
+**extension_options** 的格式依照 **extension_name** 的内容而定。 +
+有四种主要的扩展：__字符串__扩展，__多值__扩展，__原始__扩展，__任意__扩展。 +
+字符串扩展就是简单地具有值本身，或者或者值的方法。 +
+举例：
+
+[source,text]
+----
+nsComment="This is a Comment"
+----
+
+多值扩展具有一个短形式和一个长形式。短形式为一个名称和值的列表：
+
+[source, text]
+----
+basicConstraints=critical,CA:true,pathlen:1
+----
+
+长形式允许在一个单独的段中放置值：
+
+[source, text]
+----
+basicConstraints=critical,@bs_section
+
+[bs_section]
+
+CA=true
+pathlen=1
+----
+
+两种形式等价。 +
+原始扩展的语法由扩展的代码管理：比如说，它可以包含一个多段的数据。正确的语法由扩展代码定义：举例来说，参见证书策略扩展。 +
+若一个扩展类型不被支持，那么必须使用 __任意__扩展语法，参见 xref:_任意扩展[任意扩展] 节了解更多详情。
+
+== 标准扩展
+
+下面的小节详细的描述了每个支持的扩展。
+
+=== 基本限制（Basic Constraints）。
+
+该扩展为多值扩展，它指出了一个证书是否为 CA 证书。首个（必要的）名称为 `CA`，其后跟随 `TRUE` 或 `FALSE`。若 `CA` 为 `TRUE`，那么在其后可以包含一个 `pathlen` 选项，其后跟随一个非负值。 +
+
+[source, text]
+----
+basicConstraints=CA:TRUE
+
+basicConstraints=CA:FALSE
+
+basicConstraints=critical, CA:TRUE, pathlen:0
+----
+
+一个 CA 证书**必须**包含 `basicConstraints` 值，且 `CA` 字段必须设置为 `TRUE`。一个终点用户证书（end user certificate）必须将 `CA` 设置为 `FALSE`，或者完全排除该扩展。有些软件可能要求终点实体证书（end entity certificate）必须包含 `CA` 设置为 `FALSE` 的 `basicConstraints`。 +
+pathlen 参数指出该证书所在证书链中，其下游还能出现的 CA 的最大数量。所以如果你将一个 CA 的 `pathlen` 设置为 0，那么它仅可以被用于签发终点用户证书，而非其它 CA。
+
+=== 密钥用途（Key Usage）。
+
+密钥用途是一个多值扩展，包含由允许密钥用途的名称所组成的一个列表。 +
+支持的名称有：`digitalSignature`、`nonRepudiation`、`keyEncipherment`、`dataEncipherment`、`keyAgreement`、`keyCertSign`、`cRLSign`、`encipherOnly` `decipherOnly`。 +
+举例： +
+
+[source, text]
+----
+keyUsage=digitalSignature, nonRepudiation
+keyUsage=critical, keyCertSign
+----
+
+=== 扩展密钥用途（Extended Key Usage）。
+
+该扩展由一系列用法的列表组成，它指出了证书的公钥可使用的意图。 +
+值可以是对象短名，或者是点分隔的数值形式的 OID。虽然可以使用任意 OID，但仅有特定的值有意义。实际上来说，下面的 PKIX、NS、MS 值才是有意义的：
+
+|===
+| 值 | 含义
+| serverAuth
+| clientAuth
+| codeSigning
+| emailProtection
+| timeStamping
+| OSCPSigning
+| ipsecIKE
+| msCodeInd
+| msCodeCom
+| msCTLsign
+| msEFS
+
+| SSL/TLS 网络服务器验证
+| SSL/TLS 网络客户端验证
+| 代码签名
+| 电子邮件保护（S/MIME）
+| 可信时间戳
+| OCSP 签名
+| ipsec 互联网密钥交换
+| 微软个人代码签名（authenticode）
+| 微软商业代码签名（authenticode）
+| 微软可信列表签名
+| 微软加密文件系统
+|===
+
+举例：
+
+[source, text]
+----
+extendedKeyUsage=critical, codeSigning, 1.2.3.4
+extendedkeyUsage=serverAuth, clientAuth
+----
+
+=== 主体密钥标识符（Subject Key Identifier）。
+
+字符串扩展，可接受两种可能的值。要么是字符 `hash`，它会自动依照 RFC3280 中的指导；或者是一个十六进制字符串，它给出要包含的扩展值。强烈不建议使用十六进制字符串。 +
+举例：
+
+[source, text]
+----
+subjectKeyIdentifier=hash
+----
+
+=== 授权密钥标识符（Authority Key Identifier）。
+
+授权密钥标识符扩展允许两种选项。`keyid` 和 `issuer`：两者均可以接受可选值 `always`。 +
+若出现了 `keyid` 选项，那么将尝试从父级证书中复制主体密钥标识符。若值设置为 `always`，那么当选项失败时，返回错误。 +
+`issuer` 选项从签发者证书中拷贝签发者和序列号。当指定了 `always` 后，总是执行该操作；否则仅在 `keyid` 选项不存在或执行失败后被执行。 +
+举例：
+
+[source, text]
+----
+authorityKeyIdentifier=keyid, issuer
+----
+
+=== 主体替代名（Subject Alternative Name）。
+
+主体替代名扩展允许配置文件中包含多个字面值。它们包含 `email`（电子邮件地址）、`URI`统一资源定位符、`DNS`（DNS 域名）、`RID`（一个已注册的ID：OBJECT IDENTIFIER）、`IP`（IP 地址）、`dirName`（可辨识名）、`otherName`。 +
+`email` 选项包含一个特殊的 `copy` 值。它将会自动包含扩展中包含在证书主体名中的电子邮件地址。 +
+用于 `IP` 选项的 IP 地址可以是 IPv4 格式也可以是 IPv6 格式。 +
+`dirName` 的值应该指向一个段，该段中包含了用一组名称值对组成的可辨识名。可以在名称前添加一个加号 `+` 来构成多值 AVA。 +
+`otherName` 可以包含具有 OID 的任意数据：值应该为 OID，一个分号 `;`，以及其内容，它的格式应该为标准 link:https://www.openssl.org/docs/man1.1.1/man3/ASN1_generate_nconf.html[ASN1_generate_nconf(3)] 格式。 +
+举例：
+
+[source, text]
+----
+subjectAltName=email:copy,email:my@other.address,URI:http://my.url.here/
+subjectAltName=IP:192.168.7.1
+subjectAltName=IP:13::17
+subjectAltName=email:my@other.address,RID:1.2.3.4
+ ubjectAltName=otherName:1.2.3.4;UTF8:some other identifier
+
+subjectAltName=dirName:dir_sect
+
+[dir_sect]
+C=UK
+O=My Organization
+OU=My Unit
+CN=My Name
+----
+
+=== 签发者替代名（Issuer Alternative Name）。
+
+=== 授权信息访问（Authority Info Access）。
+
+=== 吊销证书列表分发点（CRL distribution points）。
+
+=== 签发分发点（Issuing Distribution Point）。
+
+=== 证书策略（Certificate Policies）。
+
+=== 继承任何策略（Inhibit Any Policy）。
+
+=== 名称约束（Name Constraints）。
+
+=== 在线证书状态协议不检查（OCSP No Check）。
+
+=== 传输层安全性协议特性（TLS Feature）（也即必须装订（Must Staple））。
+
+== 弃用扩展
+
+== 任意扩展
+
+== 警告
+
+== 备注
+
+== 参见
+
+== 版权
