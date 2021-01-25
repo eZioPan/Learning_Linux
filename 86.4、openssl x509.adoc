@@ -429,7 +429,7 @@ openssl x509 -in cert.pem -addtrust clientAuth \
 
 PEM 格式所使用的首尾行：
 
-[source, text]
+[source, openssl_conf]
 ----
 -----BEGIN CERTIFICATE-----
 -----END CERTIFICATE-----
@@ -437,7 +437,7 @@ PEM 格式所使用的首尾行：
 
 （该命令）也可处理包含下述行的文件：
 
-[source, text]
+[source, openssl_conf]
 ----
 -----BEGIN X509 CERTIFICATE-----
 -----END X509 CERTIFICATE-----
@@ -445,7 +445,7 @@ PEM 格式所使用的首尾行：
 
 可信证书具有下面的行
 
-[source, text]
+[source, openssl_conf]
 ----
 -----BEGIN TRUSTED CERTIFICATE-----
 -----END TRUSTED CERTIFICATE-----

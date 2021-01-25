@@ -93,8 +93,13 @@ openssl-req, req - PKCS#10 证书请求以及证书生成工具
 为新的请求设置主体名，或者在处理请求时取代主体名。arg 必须以 `/type0=value0/type1=value1/type2=...` 的格式指定，关键字字符可以使用反斜线 `\` 来转义，白空格会被保留。允许使用空值，但对应的类型将不会被包含在请求中。
 
 -multivalue-rdn::
-该选项导致 **-subj** 参数以支持完整多值 RDN 的方式被解析。举例： +
-`/DC=org/DC=OpenSSL/DC=users/UID=123456+CN=John Doe` +
+该选项导致 **-subj** 参数以支持完整多值 RDN 的方式被解析。举例：
++
+[source, openssl_conf]
+----
+/DC=org/DC=OpenSSL/DC=users/UID=123456+CN=John Doe
+----
++
 若不使用 **-multi-rdn**，那么 UID 的值为 `123456+CN=John Doe`。
 
 -x509::
@@ -201,7 +206,7 @@ distinguished_name::
 
 识别名和属性段有两种独立的格式。若 **prompt** 选项设置为 `no` 时，该段仅由字段和值组成：举例来说，
 
-[source, text]
+[source, openssl_conf]
 ----
 CN=My Name
 OU=My Organization
@@ -211,7 +216,7 @@ emailAddress=someone@somewhere.org
 它允许外部程序（比如 GUI）生成一个具有全部字段和值的模板文件，然后将这个文件传递至 `req` 命令。这些配置文件的案例可参阅**案例**节。 +
 若 **prompt** 选项未出现或者设设置为 `no`，那么该文件包含字段提示信息。它由下面的形式组成：
 
-[source, text]
+[source, openssl_conf]
 ----
 fieldName="prompt"
 fieldName_default="default field value"
@@ -258,7 +263,7 @@ openssl req -x509 -newkey rsa:2048 -keyout key.pem -out req.pem
 
 通过 **oid_file** 选项指向的文件：
 
-[source, text]
+[source, openssl_conf]
 ----
 1.2.3.4        shortName       A longer Name
 1.2.3.6        otherName       Other longer Name
@@ -266,7 +271,7 @@ openssl req -x509 -newkey rsa:2048 -keyout key.pem -out req.pem
 
 通过 **oid_section** 指向的段，其中使用了变量扩展：
 
-[source, text]
+[source, openssl_conf]
 ----
 testoid1=1.2.3.5
 testoid2=${testoid1}.6
@@ -274,7 +279,7 @@ testoid2=${testoid1}.6
 
 用于提示字段值的配置文件：
 
-[source, text]
+[source, openssl_conf]
 ----
 [ req ]
 default_bits           = 2048
@@ -315,7 +320,7 @@ basicConstraints = critical, CA:true
 
 包含全体字段值的配置文件：
 
-[source, text]
+[source, openssl_conf]
 ----
 RANDFILE               = $ENV::HOME/.rnd
 
@@ -375,7 +380,7 @@ openssl req -new -subj "/C=GB/CN=foo" \
 
 下方的信息常被人提及：
 
-[source, text]
+[source, openssl_conf]
 ----
 Using configuration from /some/path/openssl.cnf
 Unable to load config info
@@ -383,7 +388,7 @@ Unable to load config info
 
 其后一般会跟随下面的内容：
 
-[source, text]
+[source, openssl_conf]
 ----
 unable to find 'distinguished_name' in config
 problems making Certificate Request
@@ -392,7 +397,7 @@ problems making Certificate Request
 第一个错误信息是线索：它不能找到配置文件！特定的操作（比如检查一个证书请求）并不需要一个配置文件，所以它非必须。但生成证书或者请求则必须要一个配置文件。这可以被认为是一个 bug。 +
 另一个迷惑的信息是：
 
-[source, text]
+[source, openssl_conf]
 ----
 Attributes:
     a0:00
@@ -400,7 +405,7 @@ Attributes:
 
 当没有设置任何属性，而请求包含了正确的空 **SET OF** 结构时（DER 编码为 0xa0 0x00）出现。若看见：
 
-[source, text]
+[source, openssl_conf]
 ----
 Attributes:
 ----
