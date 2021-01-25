@@ -366,10 +366,29 @@ noCheck = ignored
 
 [source, openssl_text]
 ----
-tlsfeature = stataus_request
+tlsfeature = status_request
 ----
 
 == 弃用扩展
+
+下面的扩展为非标准、Netscape 特定，且大概率废弃的。在新应用中使用它们是不被鼓励的。
+
+=== Netscape 字符串扩展（Netscape String extensions）。
+
+Netscape 注释（nsComment）是一个字符串扩展，包含了一个注释，该注释会在一些浏览器浏览证书时被显示出来。 +
+举例：
+
+[source, openssl_conf]
+----
+nsComment = "Some Random Comment"
+----
+
+该种类下，还有被支持的其他扩展为：`nsBaseUrl`、`nsRevocationUrl`、`nsCaRevocationUrl`、`nsRenewalUrl`、`nsCaPolicyUrl`，`nsSslServerName`。
+
+=== Netscape 证书类型（Netscape Certificate Type）
+
+该扩展为多值扩展，包含了被包含的标旗所组成的列表。它曾被用于指明证书的用途。目前取而代之的是 `basicConstraints`、`keyUsage` 和扩展密钥用法扩展。 +
+nsCertType 可接受的值为：`client`、`server`、`email`、`objsign`、`reserved`、`sslCA`、`emailCA`、`objCA`。
 
 == 任意扩展
 
