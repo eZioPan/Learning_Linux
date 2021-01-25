@@ -270,7 +270,7 @@ certificatePolicies= 1.2.4.5, 1.1.3.4
 ----
 
 若你希望包含修饰词（qualifier），那么策略 OID 和修饰词必须在一个单独的段中指定：使用 @section 语法，而非 OID 值的字面值。 +
-所指向的段必须包括用 `policyIdentifier` 定义的策略 OID，cPSuri 修饰词可以通过下方的语法包含进来： 
+所指向的段必须包括用 `policyIdentifier` 定义的策略 OID，cPSuri 修饰词可以通过下方的语法包含进来：
 
 [source, openssl_conf]
 ----
@@ -392,10 +392,88 @@ nsCertType 可接受的值为：`client`、`server`、`email`、`objsign`、`res
 
 == 任意扩展
 
+若一个扩展不被 OpenSSL 代码支持，那么它必须以任意扩展格式编码。也可以对支持的扩展使用任意编码格式。对于给定的扩展类型，必须十分小心地检查，以保证数据被正确格式化了。 +
+有两种方法编码任意扩展。 +
+第一种方法是使用单词 `ASN1` 后面跟随扩展内容，其语法与 link:https://www.openssl.org/docs/man1.1.1/man3/ASN1_generate_nconf.html[ASN1_generate_nconf(3)] 相同。举例来说：
+
+[source, openssl_conf]
+----
+1.2.3.4=critical,ASN1:UTF8String:Some random data
+
+1.2.3.4=ASN1:SEQUENCE:seq_sect
+
+[seq_sect]
+
+field1 = UTF8:field1
+field2 = UTF8:field2
+----
+
+也可以使用单词 `DER` 在任何扩展中包括 raw 编码的数据。
+
+[source, openssl_conf]
+----
+1.2.3.4=critical,DER:01:02:03:04
+1.2.3.4=DER:01020304
+----
+
+DER 后跟随的值是六进制 dump 的 DER 编码的扩展。任何扩展可以用这种格式来覆盖默认的行为。举例来说：
+
+[source, openssl_conf]
+----
+basicConstraints=critical,DER:00:01:02:03
+----
+
 == 警告
+
+不保证一个特定的实现会处理给定的扩展。因此有些时候证书会被用于禁止使用的情况，仅仅是因为特定的应用无法辨别或不重视相关扩展的值。 +
+DER 和 ASN1 选项应该谨慎使用。若不小心会创建完全无效的扩展。
 
 == 备注
 
+若一个扩展为多值扩展，且一个字段值必须包含一个逗号，则必须使用长格式，否则逗号会被误认为是字段分隔符。举例来说：
+
+[source, openssl_conf]
+----
+subjectAltName=URL:ldap://somehost.com/CN=foo,OU=bar
+----
+
+会产生错误，但等价形式：
+
+[source, openssl_conf]
+----
+subjectAltName=@subject_alt_section
+
+[subject_alt_section]
+subjectAltName=URI:ldap://somehost.com/CN=foo,OU=bar
+----
+
+是有效的。 +
+介于 OpenSSL **conf** 库的行为，相同的字段名在同一个段中仅能出现一次。这意味者：
+
+[source, openssl_conf]
+----
+subjectAltName=@alt_section
+
+[alt_section]
+
+email=steve@here
+email=steve@there
+----
+
+仅会获得最后的值。可以用下面的形式绕行：
+
+[source, openssl_conf]
+----
+[alt_section]
+
+email.1=steve@here
+email.2=steve@there
+----
+
 == 参见
 
+参见 link:https://www.openssl.org/docs/man1.1.1/man5/x509v3_config.html[]
+
 == 版权
+
+参见 link:https://www.openssl.org/docs/man1.1.1/man5/x509v3_config.html[]
