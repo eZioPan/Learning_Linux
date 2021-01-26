@@ -8,7 +8,7 @@ x509v3_config - X509 V3 证书扩展配置格式
 
 一些 OpenSSL 工具可以为证书或证书请求添加扩展。扩展段的每一行都具有如下的形式：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 extension_name=[critical,] extension_options
 ----
@@ -26,14 +26,14 @@ nsComment="This is a Comment"
 
 多值扩展具有一个短形式和一个长形式。短形式为一个名称和值的列表：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 basicConstraints=critical,CA:true,pathlen:1
 ----
 
 长形式允许在一个单独的段中放置值：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 basicConstraints=critical,@bs_section
 
@@ -51,11 +51,11 @@ pathlen=1
 
 下面的小节详细的描述了每个支持的扩展。
 
-=== 基本限制（Basic Constraints）。
+=== 基本约束（Basic Constraints）。
 
 该扩展为多值扩展，它指出了一个证书是否为 CA 证书。首个（必要的）名称为 `CA`，其后跟随 `TRUE` 或 `FALSE`。若 `CA` 为 `TRUE`，那么在其后可以包含一个 `pathlen` 选项，其后跟随一个非负值。 +
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 basicConstraints=CA:TRUE
 
@@ -73,7 +73,7 @@ pathlen 参数指出该证书所在证书链中，其下游还能出现的 CA �
 支持的名称有：`digitalSignature`、`nonRepudiation`、`keyEncipherment`、`dataEncipherment`、`keyAgreement`、`keyCertSign`、`cRLSign`、`encipherOnly` `decipherOnly`。 +
 举例： +
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 keyUsage=digitalSignature, nonRepudiation
 keyUsage=critical, keyCertSign
@@ -125,7 +125,7 @@ keyUsage=critical, keyCertSign
 
 举例：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 extendedKeyUsage=critical, codeSigning, 1.2.3.4
 extendedkeyUsage=serverAuth, clientAuth
@@ -136,7 +136,7 @@ extendedkeyUsage=serverAuth, clientAuth
 字符串扩展，可接受两种可能的值。要么是字符 `hash`，它会自动依照 RFC3280 中的指导；或者是一个十六进制字符串，它给出要包含的扩展值。强烈不建议使用十六进制字符串。 +
 举例：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 subjectKeyIdentifier=hash
 ----
@@ -148,7 +148,7 @@ subjectKeyIdentifier=hash
 `issuer` 选项从签发者证书中拷贝签发者和序列号。当指定了 `always` 后，总是执行该操作；否则仅在 `keyid` 选项不存在或执行失败后被执行。 +
 举例：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 authorityKeyIdentifier=keyid, issuer
 ----
@@ -162,7 +162,7 @@ authorityKeyIdentifier=keyid, issuer
 `otherName` 可以包含具有 OID 的任意数据：值应该为 OID，一个分号 `;`，以及其内容，它的格式应该为标准 link:https://www.openssl.org/docs/man1.1.1/man3/ASN1_generate_nconf.html[ASN1_generate_nconf(3)] 格式。 +
 举例：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 subjectAltName=email:copy,email:my@other.address,URI:http://my.url.here/
 subjectAltName=IP:192.168.7.1
@@ -184,7 +184,7 @@ CN=My Name
 签发者替代名选项支持全部主体替代名选项的字面选项。它**不**支持 `email:copy` 选项，因为这么做没有意义。但该选项支持 `issuer:copy` 选项，该选项会从签发者证书中拷贝全部可能存在的主体替代名。 +
 举例：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 issuerAltName = issuer:copy
 ----
@@ -194,7 +194,7 @@ issuerAltName = issuer:copy
 授权信息访问扩展给出了如何获取与 CA 相关的特定信息的细节。它的语法为 **accessOID;location**，其中的 location 的语法和主体替代名的一样（但不支持 `email:copy`）。**acessOID** 可以是任何有效的 OID，但仅有特定的值是有意义的，比如说 `OCSP` 和 `caIssuers`。 +
 举例：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 authorityInfoAccess = OCSP;URI:http://ocsp.my.host/
 authorityInfoAccess = caIssuers;URI:http://my.ca/ca.html
@@ -211,7 +211,7 @@ authorityInfoAccess = caIssuers;URI:http://my.ca/ca.html
 若名称为 `reason`，那么值应该为用逗号分隔的原因。有效的原因为：`keyCompromise`、`CACompromise`、`affiliationChanged`、`superseded`、`cessationOfOperation`、`certificateHold`、`privilegeWithdrawn`、`AACompromise`。 +
 简单案例：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 crlDistributionPoints=URI:http://myhost.com/myca.crl
 crlDistributionPoints=URI:http://my.com/my.crl,URI:http://oth.com/my.crl
@@ -219,7 +219,7 @@ crlDistributionPoints=URI:http://my.com/my.crl,URI:http://oth.com/my.crl
 
 完整分发点案例：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 crlDistributionPoints=crldp1_section
 
@@ -243,7 +243,7 @@ CN=Some Name
 也接受 `onlyuser`、`onlyCA`、`onlyAA`、`indirectCRL`，它们的值应为布尔值（`TRUE` 或 `FALSE`）来指出对应字段的值。 +
 举例：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 issuingDistributionPoint=critical, @idp_section
 
@@ -264,7 +264,7 @@ CN=Some Name
 该扩展为原始扩展。该扩展的全部字段可以使用恰当的语法设置。 +
 如果你遵循 PKIX 推荐，且仅是哟ing一个 OID，那么只要包括那个 OID 的值就可以了。多个 OID 之间可以用逗号分隔，比如：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 certificatePolicies= 1.2.4.5, 1.1.3.4
 ----
@@ -272,14 +272,14 @@ certificatePolicies= 1.2.4.5, 1.1.3.4
 若你希望包含修饰词（qualifier），那么策略 OID 和修饰词必须在一个单独的段中指定：使用 @section 语法，而非 OID 值的字面值。 +
 所指向的段必须包括用 `policyIdentifier` 定义的策略 OID，cPSuri 修饰词可以通过下方的语法包含进来：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 CPS.nnn=value
 ----
 
 userNotice 修饰词可以使用下方的语法：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 userNotice.nnn=@notice
 ----
@@ -287,7 +287,7 @@ userNotice.nnn=@notice
 userNotice 修饰词的值定义在相关段中。该段可以包含 `explicityText`、`organization`、`noticeNumbers` 选项。`explicityText` 和 `organization` 为文本字符串，`noticeNumbers` 为逗号分隔的数字所组成的列表。`organization` 和 `noticeNumbers` **两者**（若存在，则）为必包含选项。若你在 IE5 中使用了 `userNotice` 选项，那么必须在顶层指定 `ia5org` 选项来修改编码：否则它将不能被正确解析。 +
 举例：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 certificatePolicies=ia5org,1.2.3.4,1.5.6.7.8,@polsect
 
@@ -308,7 +308,7 @@ noticeNumbers=1,2,3,4
 `ia5org` 选项改变了 `organization` 字段的类型。在 RFC2459 中它仅可以为 DisplayText 类型。在 RFC3280 中，同样也允许 IA5String。一些软件（比如部分版本的 MSIE）可能会要求 ia5org。 +
 ASN1 类型的 `explicityText` 可以这样组成：`UTF8` 或 `BMP` 或 `VISIBLE`，一个冒号，一个字符串。举例：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 [notice]
 explicityText="UTF8:Explicity Text Here"
@@ -319,7 +319,7 @@ explicityText="UTF8:Explicity Text Here"
 该扩展为多值扩展，由 `requireExplicityPolicy` 或 `inhibitPolicyMapping`，以及一个非负整数值组成。至少要出现一个组分。 +
 举例：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 policyConstraints = requireExplicitPolicy:3
 ----
@@ -329,7 +329,7 @@ policyConstraints = requireExplicitPolicy:3
 该扩展为字符串扩展，其值必须为非负整数。 +
 举例：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 inihitANyPolicy = 2
 ----
@@ -339,7 +339,7 @@ inihitANyPolicy = 2
 名称约束扩展是一个多值扩展。名称应该应该以单词 `permitted` 或者 `excluded` 开头，后跟随一个分号 `;`。余下的名称和值遵循 `subjectAltName` 的语法，除了不支持 `email:copy`，且 `IP` 的形式应该由 IP 地址和子网掩码以及中间的斜线 `/` 分开。 +
 举例：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 nameConstraints=permitted;IP:192.168.0.0/255.255.0.0
 
@@ -353,7 +353,7 @@ nameConstraints=excluded;email:.com
 OCSP No Check 扩展时字符串扩展，但它的值被忽略。 +
 举例：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 noCheck = ignored
 ----
@@ -378,7 +378,7 @@ tlsfeature = status_request
 Netscape 注释（nsComment）是一个字符串扩展，包含了一个注释，该注释会在一些浏览器浏览证书时被显示出来。 +
 举例：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 nsComment = "Some Random Comment"
 ----
@@ -396,7 +396,7 @@ nsCertType 可接受的值为：`client`、`server`、`email`、`objsign`、`res
 有两种方法编码任意扩展。 +
 第一种方法是使用单词 `ASN1` 后面跟随扩展内容，其语法与 link:https://www.openssl.org/docs/man1.1.1/man3/ASN1_generate_nconf.html[ASN1_generate_nconf(3)] 相同。举例来说：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 1.2.3.4=critical,ASN1:UTF8String:Some random data
 
@@ -410,7 +410,7 @@ field2 = UTF8:field2
 
 也可以使用单词 `DER` 在任何扩展中包括 raw 编码的数据。
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 1.2.3.4=critical,DER:01:02:03:04
 1.2.3.4=DER:01020304
@@ -418,7 +418,7 @@ field2 = UTF8:field2
 
 DER 后跟随的值是六进制 dump 的 DER 编码的扩展。任何扩展可以用这种格式来覆盖默认的行为。举例来说：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 basicConstraints=critical,DER:00:01:02:03
 ----
@@ -432,14 +432,14 @@ DER 和 ASN1 选项应该谨慎使用。若不小心会创建完全无效的扩�
 
 若一个扩展为多值扩展，且一个字段值必须包含一个逗号，则必须使用长格式，否则逗号会被误认为是字段分隔符。举例来说：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 subjectAltName=URL:ldap://somehost.com/CN=foo,OU=bar
 ----
 
 会产生错误，但等价形式：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 subjectAltName=@subject_alt_section
 
@@ -450,7 +450,7 @@ subjectAltName=URI:ldap://somehost.com/CN=foo,OU=bar
 是有效的。 +
 介于 OpenSSL **conf** 库的行为，相同的字段名在同一个段中仅能出现一次。这意味者：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 subjectAltName=@alt_section
 
@@ -462,7 +462,7 @@ email=steve@there
 
 仅会获得最后的值。可以用下面的形式绕行：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 [alt_section]
 

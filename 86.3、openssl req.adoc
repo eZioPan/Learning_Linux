@@ -95,7 +95,7 @@ openssl-req, req - PKCS#10 证书请求以及证书生成工具
 -multivalue-rdn::
 该选项导致 **-subj** 参数以支持完整多值 RDN 的方式被解析。举例：
 +
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 /DC=org/DC=OpenSSL/DC=users/UID=123456+CN=John Doe
 ----
@@ -127,11 +127,11 @@ openssl-req, req - PKCS#10 证书请求以及证书生成工具
 字段的值将作为 UTF8 字符串解码，默用 ASCII 方式解码。这表示字段值，无论来自终端或者来自配置文件，必须是有效的 UTF8 字符串。
 
 -nameopt option::
-决定如何显示主体名和签发者名。`option` 参数可以是单个选项，或者用逗号分隔的多个选项。也可以多次设置 **-nameopt** 来设置多个选项。参见文档 link:https://www.openssl.org/docs/man1.1.1/man1/x509.html[x509(1)]。
+决定如何显示主体名和签发者名。`option` 参数可以是单个选项，或者用逗号分隔的多个选项。也可以多次设置 **-nameopt** 来设置多个选项。参见文档 xref:86.4、openssl x509.adoc[x509(1)]。
 
 -reqopt::
 自定义使用 `-text` 时的输出格式。`option` 参数可以是单个选项，或者用逗号分隔的多个选项。 +
-参见文档 link:https://www.openssl.org/docs/man1.1.1/man1/x509.html[x509(1)] 中 **-certopt** 的描述。
+参见文档 xref:86.4、openssl x509.adoc[x509(1)] 中 **-certopt** 的描述。
 
 -newhdr::
 在输出的 PEM 格式的请求文件的首尾行中加入 `NEW` 这个单词。部分软件（Netscape 证书服务器）和一些 CA 需要它。
@@ -185,7 +185,7 @@ string_mask::
 
 req_extensions::
 指定了配置文件中的一个节，该节包含了要加入证书请求的扩展列表。可以用命令行参数 `-reqexts` 进行切换。参见
-link:https://www.openssl.org/docs/man1.1.1/man5/x509v3_config.html[x509_v3_config(5)] 手册了解扩展节的格式详情。
+xref:86.0.1、x509v3 配置文件.adoc[x509v3_config(5)] 手册了解扩展节的格式详情。
 
 x509_extensions::
 指定了配置文件中的一个节，该节包含了使用 `-x509` 命令行参数时，要加入生成出的证书的扩展列表。可以通过 `-extensions` 命令行切换。
@@ -206,7 +206,7 @@ distinguished_name::
 
 识别名和属性段有两种独立的格式。若 **prompt** 选项设置为 `no` 时，该段仅由字段和值组成：举例来说，
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 CN=My Name
 OU=My Organization
@@ -216,7 +216,7 @@ emailAddress=someone@somewhere.org
 它允许外部程序（比如 GUI）生成一个具有全部字段和值的模板文件，然后将这个文件传递至 `req` 命令。这些配置文件的案例可参阅**案例**节。 +
 若 **prompt** 选项未出现或者设设置为 `no`，那么该文件包含字段提示信息。它由下面的形式组成：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 fieldName="prompt"
 fieldName_default="default field value"
@@ -263,7 +263,7 @@ openssl req -x509 -newkey rsa:2048 -keyout key.pem -out req.pem
 
 通过 **oid_file** 选项指向的文件：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 1.2.3.4        shortName       A longer Name
 1.2.3.6        otherName       Other longer Name
@@ -271,7 +271,7 @@ openssl req -x509 -newkey rsa:2048 -keyout key.pem -out req.pem
 
 通过 **oid_section** 指向的段，其中使用了变量扩展：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 testoid1=1.2.3.5
 testoid2=${testoid1}.6
@@ -279,7 +279,7 @@ testoid2=${testoid1}.6
 
 用于提示字段值的配置文件：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 [ req ]
 default_bits           = 2048
@@ -320,7 +320,7 @@ basicConstraints = critical, CA:true
 
 包含全体字段值的配置文件：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 RANDFILE               = $ENV::HOME/.rnd
 
@@ -380,7 +380,7 @@ openssl req -new -subj "/C=GB/CN=foo" \
 
 下方的信息常被人提及：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 Using configuration from /some/path/openssl.cnf
 Unable to load config info
@@ -388,7 +388,7 @@ Unable to load config info
 
 其后一般会跟随下面的内容：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 unable to find 'distinguished_name' in config
 problems making Certificate Request
@@ -397,7 +397,7 @@ problems making Certificate Request
 第一个错误信息是线索：它不能找到配置文件！特定的操作（比如检查一个证书请求）并不需要一个配置文件，所以它非必须。但生成证书或者请求则必须要一个配置文件。这可以被认为是一个 bug。 +
 另一个迷惑的信息是：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 Attributes:
     a0:00
@@ -405,7 +405,7 @@ Attributes:
 
 当没有设置任何属性，而请求包含了正确的空 **SET OF** 结构时（DER 编码为 0xa0 0x00）出现。若看见：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 Attributes:
 ----

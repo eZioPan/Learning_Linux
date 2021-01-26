@@ -42,7 +42,7 @@ OpenSSL CONF 库可被用于读取配置文件。该库可用于 OpenSSL 主（m
 
 配置段应该有一系列包含特定模块配置信息的键值对。**__键__**表示__配置模块__的名称。而**__值_**的含义则是模块特定的：举例来说，它可以表示一个在下方定义的、包含了配置模块特定信息的配置段：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 # 这段配置必须出现在默认段中
 openssl_conf = openssl_init
@@ -67,7 +67,7 @@ engines = engine_section
 
 该模块具有名称 `oid_section`。该变量的值指向一个包含 OID 键值对的段：键名为 OID 长名或短名，值为数值格式的 OID。虽然有些 `openssl` 工具的子命令已有它们自己的 ASN1 OBJECT 段，但并非每个都有。使用了 ASN1 OBJECT 配置模块后，所有的 `openssl` 工具的子命令和合规的应用都可以看见这些新的ui想。举例：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 [new_oids]
 
@@ -77,7 +77,7 @@ seome_other_oid = 1.2.3.5
 
 也可以将值设置为长名称后跟随一个逗号，和一个数字形式的 OID。例如：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 shortName = some object long name, 1.2.3.4
 ----
@@ -92,7 +92,7 @@ shortName = some object long name, 1.2.3.4
 
 举例：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 [engine_section]
 
@@ -110,7 +110,7 @@ bar = bar_section
 
 `engine_id` 命令用于指定 ENGINE 的名称。若要使用该命令，则该命令必须首先出现。举例：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 [engine_section]
 # 一般来说因该由名为 “foo” 的 ENGINE 来处理
@@ -131,7 +131,7 @@ engine_id = foo
 
 举例：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 [engine_section]
 
@@ -167,7 +167,7 @@ SSL 配置段的每一行包含配置的名称，和包含它的段。
 
 举例：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 ssl_conf = ssl_sect
 
@@ -186,7 +186,7 @@ Ciphers = ALL:!RC4
 
 使用了系统默认值的配置案例：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 ssl_conf = ssl_sect
 
@@ -206,7 +206,7 @@ MinProtocol = DTLSv1.2
 
 若相同的变量存在与相同的段，则仅使用最后一次定义，前序的定义会被忽略。在特定的情况下相同的变量会出现多次，比如对 DN 的指定。绕行的办法是，在初始的点号之前添加字符，例：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 1.OU="My first OU"
 2.OU="My Second OU"
@@ -216,7 +216,7 @@ MinProtocol = DTLSv1.2
 
 运用了上述部分特性的案例配置文件
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 # 此处为默认段
 
@@ -246,7 +246,7 @@ greeting = $section_one::message
 
 假设你向让名为 `tmpfile` 的变量指向一个临时文件名。放置它的文件夹可以通过 `TEMP` 或者 `TMP` 环境变量取得，但它们可能完全没有被设置。若你使用了该环境变量，而该环境变量没有被定义，则在尝试载入该配置文件时会报错。在使用默认段之后，两个值均会首先查找 `TEMP`，若两者均不存在则使用 `/tmp`：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 TMP=/tmp
 # 上述值在环境中不存在 TMP 时被使用
@@ -257,7 +257,7 @@ tmpfile=${ENV::TEMP}/tmp.filename
 
 进入 FIPS 模式的 OpenSSL 库配置简单案例：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 # Default appname: should match "appname" parameter (if any)
 # supplied to CONF_modules_load_file et al.
@@ -276,7 +276,7 @@ fips_mode = yes
 
 逐一设置系统使用的最低版本为 TLS 1.2 和 DTLS 1.2：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 # openssl（包括 libssl）顶层的段
 openssl_conf = default_conf_section
@@ -298,7 +298,7 @@ MinProtocol = DTLSv1.2
 
 更复杂的 OpenSSL 库配置。添加了 OID，且不进入 FIPS 模式：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 # Default appname: should match "appname" parameter (if any)
 # supplied to CONF_modules_load_file et al.

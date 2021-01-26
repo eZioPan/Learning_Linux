@@ -54,7 +54,7 @@ openssl-x509, x509 - 证书显示和签发工具
 以文本形式打印证书。输出以下详情：公钥、签名算法、签发者和主体名、序列号、任何出现的扩展属性、以及可信设置。
 
 -ext extension::
-以文本的形式打印证书扩展。扩展用逗号分隔的字符串指定，比如“subjectAltName,subjectKeyIdentifier”。参见文档 link:https://www.openssl.org/docs/man1.1.1/man5/x509v3_config.html[x509v3_config(5)] 了解扩展名。
+以文本的形式打印证书扩展。扩展用逗号分隔的字符串指定，比如“subjectAltName,subjectKeyIdentifier”。参见文档 xref:86.0.1、x509v3 配置文件.adoc[x509v3_config(5)] 了解扩展名。
 
 -certopt option::
 在使用 `-text` 时，自定义输出格式。参数可以是单个选项，或者用逗号分隔的多个选项。也可以多次使用 **-certopt** 来设置多个选项。参见 **文本选项** 节了解更多信息。
@@ -208,7 +208,7 @@ openssl-x509, x509 - 证书显示和签发工具
 
 -extensions section::
 添加证书扩展的来源段。若该选项不存在，则扩展要么存在于不具名（默认）段，或者默认段应该包含一个称为 “extensions” 的变量，其指向要使用的段。参见
-link:https://www.openssl.org/docs/man1.1.1/man5/x509v3_config.html[x509_v3_config(5)] 手册了解扩展节的格式详情。
+xref:86.0.1、x509v3 配置文件.adoc[x509v3_config(5)] 手册了解扩展节的格式详情。
 
 -force_pubkey key::
 当创建证书时，将它的公钥设置为 **key**，而非证书或证书请求中包含的密钥。在创建证书，且算法无法正常签名请求（比如 DH）时，非常有用。 +
@@ -429,7 +429,7 @@ openssl x509 -in cert.pem -addtrust clientAuth \
 
 PEM 格式所使用的首尾行：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 -----BEGIN CERTIFICATE-----
 -----END CERTIFICATE-----
@@ -437,7 +437,7 @@ PEM 格式所使用的首尾行：
 
 （该命令）也可处理包含下述行的文件：
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 -----BEGIN X509 CERTIFICATE-----
 -----END X509 CERTIFICATE-----
@@ -445,7 +445,7 @@ PEM 格式所使用的首尾行：
 
 可信证书具有下面的行
 
-[source, openssl_conf]
+[source, openssl.cnf]
 ----
 -----BEGIN TRUSTED CERTIFICATE-----
 -----END TRUSTED CERTIFICATE-----
