@@ -70,7 +70,7 @@ pathlen 参数指出该证书所在证书链中，其下游还能出现的 CA �
 === 密钥用途（Key Usage）。
 
 密钥用途是一个多值扩展，包含由允许密钥用途的名称所组成的一个列表。 +
-支持的名称有：`digitalSignature`、`nonRepudiation`、`keyEncipherment`、`dataEncipherment`、`keyAgreement`、`keyCertSign`、`cRLSign`、`encipherOnly` `decipherOnly`。 +
+支持的名称有：`digitalSignature`、`nonRepudiation`、`keyEncipherment`、`dataEncipherment`、`keyAgreement`、`keyCertSign`、`cRLSign`、`encipherOnly`、`decipherOnly`。 +
 举例： +
 
 [source, openssl.cnf]
@@ -103,7 +103,7 @@ keyUsage=critical, keyCertSign
 | timeStamping
 | 可信时间戳
 
-| OSCPSigning
+| OCSPSigning
 | OCSP 签名
 
 | ipsecIKE
@@ -128,7 +128,7 @@ keyUsage=critical, keyCertSign
 [source, openssl.cnf]
 ----
 extendedKeyUsage=critical, codeSigning, 1.2.3.4
-extendedkeyUsage=serverAuth, clientAuth
+extendedKeyUsage=serverAuth, clientAuth
 ----
 
 === 主体密钥标识符（Subject Key Identifier）。
@@ -155,7 +155,7 @@ authorityKeyIdentifier=keyid, issuer
 
 === 主体替代名（Subject Alternative Name）。
 
-主体替代名扩展允许配置文件中包含多个字面值。它们包含 `email`（电子邮件地址）、`URI`统一资源定位符、`DNS`（DNS 域名）、`RID`（一个已注册的ID：OBJECT IDENTIFIER）、`IP`（IP 地址）、`dirName`（可辨识名）、`otherName`。 +
+主体替代名扩展允许配置文件中包含多个字面值。它们包含 `email`（电子邮件地址）、`URI` 统一资源定位符、`DNS`（DNS 域名）、`RID`（一个已注册的ID：OBJECT IDENTIFIER）、`IP`（IP 地址）、`dirName`（可辨识名）、`otherName`。 +
 `email` 选项包含一个特殊的 `copy` 值。它将会自动包含扩展中包含在证书主体名中的电子邮件地址。 +
 用于 `IP` 选项的 IP 地址可以是 IPv4 格式也可以是 IPv6 格式。 +
 `dirName` 的值应该指向一个段，该段中包含了用一组名称值对组成的可辨识名。可以在名称前添加一个加号 `+` 来构成多值 AVA。 +

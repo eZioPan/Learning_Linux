@@ -101,7 +101,7 @@ openssl-x509, x509 - 证书显示和签发工具
 -email::
 若有，则输出电子邮件地址。
 
--oscp_uri::
+-ocsp_uri::
 若有，则输出在线证书状态协议响应端（OCSP responder）的地址。
 
 -startdate::
