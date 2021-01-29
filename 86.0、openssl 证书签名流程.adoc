@@ -79,7 +79,7 @@ OpenSSL::
 
 [WARNING]
 ====
-除了配置文件为明文文本文件意外，其余文件均为 PEM 编码的文件。
+除了配置文件为明文文本文件以外，其余文件均为 PEM 编码的文件。
 ====
 
 === 生成自签名根证书
@@ -124,6 +124,9 @@ commonName = my root CA                     # 常见名
 # 根证书扩展
 [v3_rootCA]
 basicConstraints = critical, CA:TRUE        # 基本约束，关键性约束，将证书设置为 CA
+subjectKeyIdentifier=hash                   # 用散列算法为主体的密钥创建标识符
+# 这里不写 authorityKeyIdentifier，因为在生成请求阶段，还不知道授权者
+# authorityKeyIdentifier = keyid, issuer
 ----
 
 . 生成证书请求
@@ -146,14 +149,17 @@ openssl req -config my_rootCA.cnf -in my_rootCA.prikey -noout -text
 . 书写证书签名配置文件 +
 与证书请求的配置文件类似，自签名证书的配置文件仅需在证书请求配置文件上稍加修改即可
 +
-.rootCA.cnf
+.my_rootCA.cnf
 [source, openssl.cnf]
 ----
 ...
-
 [req]
 ...
 x509_extensions = v3_rootCA # 指定证书要读取的扩展段
+...
+[v3_rootCA]
+...
+authorityKeyIdentifier = keyid, issuer  # 自处指定要记录下授权者/签发者的密钥标识符
 ----
 
 . 生成自签名证书
@@ -170,3 +176,83 @@ openssl req -config my_rootCA.cnf -x509 -days 365 -in my_rootCA.csr -key my_root
 ----
 openssl x509 -in my_rootCA.crt -noout -text
 ----
+
+=== 【可选】生成中间 CA 证书
+
+根 CA 的信息一般需要离线存储，以保证安全，但为其他证书签名又需要使用这些信息，所以可以用根证书签发一个中间 CA 证书，用中间 CA 证书为终点证书签名，若中间证出现问题，将中间 CA 证书加入**证书吊销列表**中，重新用根证书签发新的中间 CA 证书即可。
+
+[WARNING]
+====
+生成根证书时所执行的检查命令下方命令均可以使用，所以省略
+====
+
+. 生成中间 CA 证书的密钥
++
+[source, sh]
+----
+openssl genrsa -out my_midCA.prikey 4096
+----
+
+. 配置中间 CA 的证书请求配置文件：
++
+[source, openssl.cnf]
+.my_midCA.cnf
+----
+# 该文件的说明参见根证书请求配置文件的说明
+
+[req]
+prompt = no
+distinguished_name = midCA_dn
+req_extensions = v3_midCA
+
+[midCA_dn]
+countryName = CN
+stateOrProvinceName = Beijing
+localityName = Beijing
+organizationName = myself
+organizationalUnitName = my middle CA unit
+commonName = my middle CA
+
+[v3_midCA]
+# 注意，这里追加了 pathlen:0 这个参数，表示该证书下级能够存在的 CA 证书的的数量为 0，也就是说，该证书仅能签发终端证书
+basicConstraints = critical, CA:TRUE, pathlen:0
+subjectKeyIdentifier = hash
+----
+
+. 生成证书请求
++
+[source, sh]
+----
+openssl req -config my_midCA.cnf -new -key my_midCA.prikey -out my_midCA.csr
+----
+
+. 书写证书生成配置
++
+[WARNING]
+====
+这个文件一般由签发者负责管理和使用
+====
++
+[source, openssl.cnf]
+.my_midCA_v3_cert.cnf
+----
+[midCA_v3_cert]
+basicConstraints = critical, CA:TRUE, pathlen:0
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid, issuer
+----
+
+. 用根证书为中间证书签名
++
+[WARNING]
+====
+. 我们使用了 `-CAcreateserial `这个参数，命令会在根证书目录下放置一个 `my_rootCA.srl` 的文件，用来记录已经使用的序列号
+. 若已经存在序列号文件，那么**务必**用 `-CAserial <序列号文件>` 把序列号列表文件引入命令，记录并维护序列号
+====
++
+[source, sh]
+----
+// 由于 x509 伪命令并不知道向何处查找扩展，所以这里要指定包含扩展的文件，以及扩展的段的名称
+openssl x509 -req -days 90 -in my_midCA.csr -CA my_rootCA.crt -CAkey my_rootCA.prikey -CAcreateserial -extfile my_midCA_v3_cert.cnf -extensions midCA_v3_cert -out my_midCA.crt
+----
+
