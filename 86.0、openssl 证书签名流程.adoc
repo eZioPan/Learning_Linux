@@ -193,7 +193,7 @@ openssl x509 -in my_rootCA.crt -noout -text
 openssl genrsa -out my_midCA.prikey 4096
 ----
 
-. 配置中间 CA 的证书请求配置文件：
+. 书写中间 CA 的证书请求配置文件：
 +
 [source, openssl.cnf]
 .my_midCA.cnf
@@ -256,3 +256,90 @@ authorityKeyIdentifier = keyid, issuer
 openssl x509 -req -days 90 -in my_midCA.csr -CA my_rootCA.crt -CAkey my_rootCA.prikey -CAcreateserial -extfile my_midCA_v3_cert.cnf -extensions midCA_v3_cert -out my_midCA.crt
 ----
 
+=== 生成终点（End Point）证书
+
+终点证书作为证书链条的结尾，被实际用于验证某个网站、程序等的身份。
+
+. 生成终点证书私钥
++
+[source, sh]
+----
+openssl genrsa -out my_site.prikey 2048 # 这里使用了 2048 位的私钥，在安全和执行效率之间取得一个平衡值
+----
+
+. 书写终点证书的证书请求配置文件
++
+[source, openssl.cnf]
+.my_site.cnf
+----
+[req]
+prompt = no
+distinguished_name = site_dn
+req_extensions = v3_site
+
+[site_dn]
+countryName = CN
+stateOrProvinceName = Beijing
+localityName = Beijing
+organizationName = myself
+organizationalUnitName = my site unit
+commonName = my site
+
+[v3_site]
+basicConstraints = critical, CA:FALSE       # 用 CA:FALSE 表示该证书为终点证书，不能用于签发其他证书
+extendedKeyUsage = critical, serverAuth     # 指定 serverAuth 将证书的使用范围进一步限制为服务器身份验证
+subjectKeyIdentifier = hash
+subjectAltName=@alt_name                    # 利用主体替代名段来追加可以被该证书认证的其他名字（比如网站的 DNS 名，IP 地址等等）
+
+[alt_name]
+DNS.1 = mysite.mydomain                     # 声明该证书可以验证本站的顶层域名
+DNS.2 = *.mysite.mydomain                   # 声明该证书可以验证本站顶层域名下的子域名（不包含子域名的子域名 eg. subsub.sub.mysite.mydomain）
+IP.1 = 127.0.0.1                            # 声明该证书可以验证 IP 地址 1
+IP.2 = 127.0.0.2                            # 声明该证书可以验证 IP 地址 2
+----
+
+. 生成证书请求
++
+[source, sh]
+----
+openssl req -config my_site.cnf -new -key my_site.prikey -out my_site.csr
+----
+
+. 书写终点证书的签名配置文件
++
+[WARNING]
+====
+下面我们要使用 x509 伪命令生成终点证书， +
+x509 并非完全的 ca 工具，并不能从证书请求中提取全部的信息，这里需要手动补充一些信息 +
+使用 ca 伪命令时有其他的替代方案。
+====
++
+[source, openssl.cnf]
+.my_site_v3_cert.cnf
+----
+[site_v3_cert]
+basicConstraints = critical, CA:FALSE
+extendedKeyUsage = critical, serverAuth
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid, issuer
+subjectAltName=@alt_name
+
+[alt_name]
+DNS.1 = mysite.mydomain
+DNS.2 = *.mysite.mydomain
+IP.1 = 127.0.0.1
+IP.2 = 127.0.0.2
+----
+
+. 用中间证书签发终点证书
++
+[source, sh]
+----
+openssl x509 -req -days 90 -in my_site.csr -CA my_midCA.crt -CAkey my_midCA.prikey -CAcreateserial -extfile my_site_v3_cert.cnf -extensions site_v3_cert -out my_site.crt
+----
+
+至此，我们就获得了最终的终点证书 `my_site.crt`
+
+== 证书的使用
+
+在使用时，需要将 `my_rootCA.crt` `my_midCA.crt` 两个文件添加至计算机的 **受信任的根证书颁发机构** 中，将 `my_site.crt` 依照 web 服务程序的要求添加至站点中。即可完成网站的 https 启用。
