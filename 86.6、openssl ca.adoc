@@ -1,0 +1,155 @@
+= ca
+:x509v3_config_man5: 86.1.1、x509v3 配置文件.adoc
+
+== 名称
+openssl-ca, ca - 最小化 CA 应用样例
+
+== 描述
+
+`ca` 命令时最小化的 CA 应用。它可以被用于为各种样式的证书请求签名，以及生成证书吊销列表（CRL）。它也会维护一个文本数据库，用来记录签发的证书和它们的状态。 +
+选项会以它们的作用分类。
+
+== 选项
+
+-help::
+打印使用信息。
+
+-verbose::
+打印正在被执行的操作的细节。
+
+-config filename::
+允许指定一个替代的配置文件。额外的，了解默认值的描述，参阅 link:https://www.openssl.org/docs/man1.1.1/man1/openssl.html[openssl(1) 的 “COMMAND SUMMARY”]
+
+-name section::
+指定要使用的配置文件段（覆盖 `ca` 段的 `default_ca`）。
+
+-in filename::
+一个输入文件的文件名，其中包含了单个要被 CA 签名的证书请求。
+
+-ss_cert filename::
+单个将被 CA 自签名的证书。
+
+-spkac filename::
+将被 CA 签名的一个文件，文件中包含单个 Netscape 签名的公钥、挑战码和额外的字段值。参见 **SPKAC FORMAT** 段了解输入请求和输出格式的信息。
+
+-infiles::
+若设置则应出现在选项尾部，所有后续的每个参数均会作为包含了证书请求的文件的名称。
+
+-out filename::
+输出的证书要输出的文件。默认值为标准输出。证书的细节会一同以 PEM 格式（除非指定了 `-spkac`，此时会输出 DER 格式）打印至该文件。
+
+-outdir directory::
+输出的证书要输出的文件夹。证书将写入一个文件，该文件的文件名由十六进制的序列号以及后缀 `.pem` 组成。
+
+-cert::
+CA 证书文件。
+
+-keyfile filename::
+用于签名请求的私钥。
+
+-keyform PEM|DER::
+私钥文件中数据的格式。默认为 PEM。
+
+-sigopt nm:v::
+在签名以及验证操作中，传递给签名算法的选项。这些选项的名称和值均是算法特定的。
+
+-key password::
+用于加密私钥的密码。鉴于一些系统的命令行参数是可见的（比如在 Unix 系统上的 `ps` 工具），该选项应该小心使用。
+
+-selfsign::
+指出签发的证书的密钥（用 `-keyfile` 指定的）应与证书请求所使用的密钥相同。使用不同密钥签名的证书请求将被忽略。若指定了 `-spkac`、`-ss_cert` 或 `-gencrl`，那么忽略 `-selfsign`。 +
+使用 `-selfsign` 的一个后果就是，自签名的证书会出现在证书数据库（参见配置选项 `database`）的条目中，并且该自签名证书将与用该证书签名的其它证书共用一个序列号计数器。
+
+-passin arg::
+密钥加密密码的来源。关于 `arg` 的格式的更多信息参阅 link:https://www.openssl.org/docs/man1.1.1/man1/openssl.html[openssl(1)] 的 **PASS PHRASE ARGUMENTS** 节。
+
+-notext::
+不要将文本格式的证书输出值输出文件。
+
+-startdate date::
+允许明确地设置起始日期。日期的格式为 YYMMDDHHMMSSZ（同 ASN1 UTCTime 结构），或者为 YYYYMMDDHHMMSSZ（同 ASN1 GeneralizedTime 结构）。两种格式下，秒数 SS 和时区 Z 必须存在。
+
+-enddate date::
+允许明确地设置过期日期。日期的格式为 YYMMDDHHMMSSZ（同 ASN1 UTCTime 结构），或者为 YYYYMMDDHHMMSSZ（同 ASN1 GeneralizedTime 结构）。两种格式下，秒数 SS 和时区 Z 必须存在。
+
+-days arg::
+验证证书的天数。
+
+-md alg::
+要使用的信息摘要。任何被 OpenSSL `dgst` 命令支持的摘要算法均可被使用。对于不支持摘要的签名算法（比如 Ed15519 和 Ed448），会忽略任何信息摘要算法。该选项同样适用于 CRL。
+
+-policy arg::
+该选项定义了要使用的 CA “策略”。其为配置文件中的一个段，该段决定了那些字段应该为必须字典，或者该如何匹配 CA 证书。参见 xref:_策略格式[] 了解更多信息。
+
+-msie_hack::
+这是一个弃用的选项，让 `ca` 能于非常古旧的 IE 证书注册控制 “certenr3”。它在几乎所有地方都是用 UniversalStrings。由于老旧的控制有很多安全 BUG，强烈不建议使用它。
+
+-preserveDN::
+通常情况下，证书的 DN 顺序与相关的策略段中的字段的顺序相同。当设置了该选项后，它的顺序就与请求文件中的相同。主要是为了兼容老的 IE 注册控制，因为它仅接受证书中的 DN 与请求文件中的顺序相同的证书。在 Xenroll 中不需要。
+
+-noemailDN::
+若请求 DN 中包含 EMAIL 字段，那么证书的 DN 可以包含该字段，但是，仅将电子邮件放置在证书的 altName 扩展中是更好的策略。当设置了该选项后，EMAIL 字段会从证书主体中移除，并仅会被设置在最终会出现的扩展中。可以在配置文件中使用 `email_in_dn` 关键字来启用该行为。
+
+-batch::
+设置为批量操作模式。在该模式下不会提出任何问题，全部的证书都会被自动认证。
+
+-extensions sections::
+当签发证书时，配置文件中包含了证书扩展的段会被追加（默认为 x509_extensions，除非使用了 `-extfile` 选项）。若不存在扩展段，那么创建 V1 证书。若存在扩展段（即便它是空的），也会创建 V3 证书。参见 xref:{x509v3_config_man5}[x509v3_config(5)] 手册了解扩展节的格式详情。
+
+-extfile file::
+一个额外的配置文件，用来读取证书扩展（除非同时指定 `-extensions` 选项，否则使用默认段）。
+
+-engine id::
+指定一个（以唯一的 `id` 字符串确定的）引擎，让 `x509` 尝试获得指定引擎的可用参考，若需要也会初始化它。该引擎会设置为所有可用算法的默认引擎。
+
+-subj arg::
+取代请求给出的主体名。arg 必须格式为 _/type0=value0/type1=value1/type2=..._。关键字可以用反斜线 `\` 转义，白空格会被保留。允许空值，但对应的类型不会包含在结果证书中。
+
+-utf8::
+字段的值将作为 UTF8 字符串解码，默用 ASCII 方式解码。这表示字段值，无论来自终端或者来自配置文件，必须是有效的 UTF8 字符串。
+
+-create_serial::
+如果从配置文件中指定的文本文件中读取序列号失败了，指定该选项会创建一个新的随机序列号，作为下次使用的序列号。要获得一个随机序列号，应该使用 `-rand_serial`；该选项仅应该被用于简单的错误恢复。
+
+-rand_serial::
+生成一个大随机数作为序列号。它覆盖任何使用序列号文件的选项或配置。
+
+-multivalue-rdn::
+该选项导致 `-subj` 参数以支持完整多值 RDN 的方式被解析。举例：
++
+[source, openssl.cnf]
+----
+/DC=org/DC=OpenSSL/DC=users/UID=123456+CN=John Doe
+----
++
+若不使用 `-multi-rdn`，那么 UID 的值为 `123456+CN=John Doe`。
+
+-rand file...::
+指定单个或多个文件，包含随机数据，作为随机数生成器的种子。指定多个文件时，文件名之间用操作系统特定的分隔符加以区分。Windows 上用分号 `;`，OpenVMS 上用逗号 `,`，其它系统用 `:`。
+
+[-writerand file]::
+将随机信息输出至指定的文件中。可在 `-rand` 参数后使用。
+
+== CRL 选项
+
+== 配置文件选项
+
+== 策略格式
+
+== SPKAC 格式
+
+== 案例
+
+== 文件
+
+== 限制
+
+== BUGS
+
+== 警告
+
+== 历史
+
+== 参见
+
+== 版权

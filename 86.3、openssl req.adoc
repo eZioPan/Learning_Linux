@@ -1,4 +1,6 @@
 = req
+:x509_man1: 86.5、openssl x509.adoc
+:x509v3_config_man5: 86.1.1、x509v3 配置文件.adoc
 
 == 名称
 
@@ -127,11 +129,11 @@ openssl-req, req - PKCS#10 证书请求以及证书生成工具
 字段的值将作为 UTF8 字符串解码，默用 ASCII 方式解码。这表示字段值，无论来自终端或者来自配置文件，必须是有效的 UTF8 字符串。
 
 -nameopt option::
-决定如何显示主体名和签发者名。`option` 参数可以是单个选项，或者用逗号分隔的多个选项。也可以多次设置 **-nameopt** 来设置多个选项。参见文档 xref:86.4、openssl x509.adoc[x509(1)]。
+决定如何显示主体名和签发者名。`option` 参数可以是单个选项，或者用逗号分隔的多个选项。也可以多次设置 **-nameopt** 来设置多个选项。参见文档 xref:{x509_man1}[x509(1)]。
 
 -reqopt::
 自定义使用 `-text` 时的输出格式。`option` 参数可以是单个选项，或者用逗号分隔的多个选项。 +
-参见文档 xref:86.4、openssl x509.adoc[x509(1)] 中 **-certopt** 的描述。
+参见文档 xref:{x509_man1}[x509(1)] 中 **-certopt** 的描述。
 
 -newhdr::
 在输出的 PEM 格式的请求文件的首尾行中加入 `NEW` 这个单词。部分软件（Netscape 证书服务器）和一些 CA 需要它。
@@ -185,7 +187,7 @@ string_mask::
 
 req_extensions::
 指定了配置文件中的一个节，该节包含了要加入证书请求的扩展列表。可以用命令行参数 `-reqexts` 进行切换。参见
-xref:86.0.1、x509v3 配置文件.adoc[x509v3_config(5)] 手册了解扩展节的格式详情。
+xref:{x509v3_config_man5}[x509v3_config(5)] 手册了解扩展节的格式详情。
 
 x509_extensions::
 指定了配置文件中的一个节，该节包含了使用 `-x509` 命令行参数时，要加入生成出的证书的扩展列表。可以通过 `-extensions` 命令行切换。
