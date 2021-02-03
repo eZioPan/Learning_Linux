@@ -1,5 +1,6 @@
 = x509
-:x509v3_config_man5: 86.1.1、x509v3 配置文件.adoc
+:x509v3_config_man5: xref:86.1.1、x509v3 配置文件.adoc[x509v3_config(5)]
+:openssl_man1: link:https://www.openssl.org/docs/man1.1.1/man1/openssl.html[openssl(1)]
 
 == 名称
 
@@ -55,7 +56,7 @@ openssl-x509, x509 - 证书显示和签发工具
 以文本形式打印证书。输出以下详情：公钥、签名算法、签发者和主体名、序列号、任何出现的扩展属性、以及可信设置。
 
 -ext extension::
-以文本的形式打印证书扩展。扩展用逗号分隔的字符串指定，比如“subjectAltName,subjectKeyIdentifier”。参见文档 xref:{x509v3_config_man5}[x509v3_config(5)] 了解扩展名。
+以文本的形式打印证书扩展。扩展用逗号分隔的字符串指定，比如“subjectAltName,subjectKeyIdentifier”。参见文档 {x509v3_config_man5} 了解扩展名。
 
 -certopt option::
 在使用 `-text` 时，自定义输出格式。参数可以是单个选项，或者用逗号分隔的多个选项。也可以多次使用 **-certopt** 来设置多个选项。参见 **文本选项** 节了解更多信息。
@@ -168,7 +169,7 @@ openssl-x509, x509 - 证书显示和签发工具
 在签名或验证操作时传递给签名算法的选项。这些选项的名称和值是算法特定的。
 
 -passin arg::
-密钥密码源。关于 **arg** 选项的更多信息，参阅 link:https://www.openssl.org/docs/man1.1.1/man1/openssl.html[openssl(1)] 的 **PASS PHRASE ARGUMENTS** 节。
+密钥密码源。关于 **arg** 选项的更多信息，参阅 {openssl_man1} 的 **PASS PHRASE ARGUMENTS** 节。
 
 -clrext::
 从证书中删除任何扩展。该选项用于从一个证书中创建另一个证书（比如与 `-signkey` 或 `-CA` 选项连用时）。通常情况下，会保留全部扩展。
@@ -208,7 +209,7 @@ openssl-x509, x509 - 证书显示和签发工具
 文件包含了要使用的证书扩展。若不指定那么不向证书中添加扩展。
 
 -extensions section::
-添加证书扩展的来源段。若该选项不存在，则扩展要么存在于不具名（默认）段，或者默认段应该包含一个称为 “extensions” 的变量，其指向要使用的段。参见 xref:{x509v3_config_man5}[x509v3_config(5)] 手册了解扩展节的格式详情。
+添加证书扩展的来源段。若该选项不存在，则扩展要么存在于不具名（默认）段，或者默认段应该包含一个称为 “extensions” 的变量，其指向要使用的段。参见 {x509v3_config_man5} 手册了解扩展节的格式详情。
 
 -force_pubkey key::
 当创建证书时，将它的公钥设置为 **key**，而非证书或证书请求中包含的密钥。在创建证书，且算法无法正常签名请求（比如 DH）时，非常有用。 +
