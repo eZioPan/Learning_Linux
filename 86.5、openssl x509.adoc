@@ -223,13 +223,13 @@ compat::
 使用旧格式。
 
 RFC2253::
-以兼容 RFC2253 的格式显示，等价于 `esc_2253, esc_ctrl, esc_msb, utf8, dump_nostr, dump_unknown, dump_der, sep_comma_plus, dn_rev, sname`。
+以兼容 RFC2253 的格式显示，等价于 `esc_2253,esc_ctrl,esc_msb, utf8,dump_nostr,dump_unknown,dump_der,sep_comma_plus,dn_rev,sname`。
 
 oneline::
-一行输出，比 RFC2253 更加可读。等价于 `esc_2253, esc_ctrl, esc_msb, utf8, dump_nostr, dump_der, use_quote, sep_comma_plus_space, space_eq, sname`。若不指定名称选项，则该值为默认值。
+一行输出，比 RFC2253 更加可读。等价于 `esc_2253,esc_ctrl,esc_msb,utf8,dump_nostr,dump_der,use_quote,sep_comma_plus_space,space_eq,sname`。若不指定名称选项，则该值为默认值。
 
 multiline::
-一个多行格式。等价于 `esc_ctrl, esc_msb, sep_multiline, space_eq, lname, align`
+一个多行格式。等价于 `esc_ctrl,esc_msb,sep_multiline,space_eq,lname,align`
 
 esc_2253::
 在字段中转义 RFC2253 中定义的特殊字符，也就是 `,` `+` `"` `<` `>` `;`。除此之外，字符串头部的 `#`，以及字符串头尾的一个空格都会被转义。
@@ -334,7 +334,7 @@ ext_dump::
 用十六进制 dump 不被支持的扩展。
 
 ca_default::
-被 **ca** 工具使用的值，等价于 `no_issuer, no_pubkey, no_header, no_version`。
+被 **ca** 工具使用的值，等价于 `no_issuer,no_pubkey,no_header,no_version`。
 
 == 案例
 

@@ -1,8 +1,13 @@
 = OpenSSL 生成证书的流程
+:experimental:
+:toc:
 
 该笔记记录了利用 OpenSSL 工具集生成自签名证书、证书链的过程
 
-笔记并非使用了最简单的方式生成需要的结果，相反，使用了比较复杂的方式生成证书，主要是方便理解证书生成的过程。
+下面会记录两种生成证书的路径， +
+第一种复杂，且功能稍有些缺失，利用的工具为证书相关的，主要是用来记录证书生成的过程，方便理解。 +
+第二种简单，且有附加的功能，利用的工具为 CA 相关的，比较具有实战意义。
+
 
 == 术语简介 & 原理简介
 
@@ -73,9 +78,9 @@ PEM::
 用 base64 编码的 DER 编码的证书。
 
 OpenSSL::
-一套开源软件，可以用于生成、管理、验证、销毁证书。
+一套开源软件，可以用于生成、管理、验证、吊销证书。
 
-== 用 OpenSSL 生成证书
+== 用复杂的方法，利用 OpenSSL 生成证书
 
 [WARNING]
 ====
@@ -246,8 +251,8 @@ authorityKeyIdentifier = keyid, issuer
 +
 [WARNING]
 ====
-. 我们使用了 `-CAcreateserial `这个参数，命令会在根证书目录下放置一个 `my_rootCA.srl` 的文件，用来记录已经使用的序列号
-. 若已经存在序列号文件，那么**务必**用 `-CAserial <序列号文件>` 把序列号列表文件引入命令，记录并维护序列号
+. 我们使用了 `-CAcreateserial `这个参数，命令会在根证书目录下放置一个 `my_rootCA.srl` 的文件，用来下次将要使用的序列号
+. 若已经存在序列号文件，那么**建议**用 `-CAserial <序列号文件>` 把序列号列表文件引入命令
 ====
 +
 [source, sh]
@@ -340,6 +345,369 @@ openssl x509 -req -days 90 -in my_site.csr -CA my_midCA.crt -CAkey my_midCA.prik
 
 至此，我们就获得了最终的终点证书 `my_site.crt`
 
+== 用简单的方法，利用 OpenSSL 生成证书
+
+=== 【可选】启用 UTF8 支持
+
+. 对于默认不支持 UTF8 的 Shell/Termial 其中 UTF8 支持
+** Windows 10： +
+menu:控制面板[时钟和区域 > 更改日期、时间或数字格式 > 管理 > 更改系统区域设置\(C)... > Beta版：使用 Unicode UTF-8 提供全球语言支持(U) > 重启计算机]
+** Debian:
++
+[source, sh]
+----
+dpkg-reconfigure locales
+----
+
+. 若启用了 UTF8 支持，则所有的 OpenSSL 配置文件必须以 UTF8 的格式存储
+
+=== 创建自签名根证书
+
+. 建立根证书所需要的目录、文件
++
+[source, sh]
+----
+# 存放根证书私钥、根证书请求、根证书的目录
+mkdir rootCA_certs
+# 存放根证书请求配置文件、根证书自签名配置文件、中间证书签名配置文件的目录
+mkdir rootCA_cnf
+# 存放根 CA 数据库的目录
+mkdir rootCA_db
+# 创建一个新的根 CA 数据库文件
+touch rootCA_db/rootCA_db.txt
+----
+
+. 书写根证书请求的配置文件
++
+[source, openssl.cnf]
+.rootCA_cnf/ReqRootCA.cnf
+----
+[req]
+# 设置私钥的加密密码
+output_password = my root password
+default_bits = 4096
+default_keyfile = rootCA_certs/rootCA.prikey
+req_extensions = v3_req
+prompt = no
+# 启用 UTF8 支持
+utf8 = yes
+distinguished_name = root_dn
+
+[root_dn]
+# 由于启用了 UTF8，这里我们可以输入中文
+commonName = 我的测试根证书签发机构
+countryName = CN
+stateOrProvinceName = 北京
+localityName = 北京
+organizationName = 我自己的组织
+organizationalUnitName = 我自己的组织的证书签发单元
+# 根据 ca 伪命令配置文件的建议，不在 DN 中包含 email 地址
+
+[v3_req]
+basicConstraints = critical, CA:TRUE
+# 在这里补充邮件地址
+subjectAltName=dirName:alt_dir
+
+[alt_dir]
+emailAddress = myaddress@mydomain
+----
+
+. 生成根证书私钥和签名请求文件
++
+[source, sh]
+----
+openssl req -config rootCA_cnf/ReqRootCA.cnf -newkey rsa -out rootCA_certs/rootCA.csr
+----
+
+. 【可选】检查根证书请求文件
++
+[source, sh]
+----
+# 让 openssl 支持 UTF8 输出证书内容
+openssl req -config rootCA_cnf/ReqRootCA.cnf -in rootCA_certs/rootCA.csr -noout -text -nameopt "utf8, esc_ctrl, sep_multiline, space_eq, lname, align"
+----
+
+. 书写根证书自签名，以及根 CA 数据库的配置文件
++
+[source, openssl.cnf]
+.rootCA_cnf/SelfsignRootCA.cnf
+----
+[ca]
+default_ca = rootCA
+
+[rootCA]
+# 新证书的存储目录
+new_certs_dir = ./rootCA_certs
+# 用于签名的私钥
+private_key = rootCA_certs/rootCA.prikey
+# 默认签名函数
+default_md = sha256
+# 默认证书有效天数
+default_days = 3650
+# CA 数据库文件
+database = rootCA_db/rootCA_db.txt
+# 设置主体不唯一
+unique_subject = no
+# 该选项帮助文档中未出现，但可参见 -rand_serial 命令行参数了解
+rand_serial = yes
+# x509 扩展段
+x509_extensions = v3_x509
+# 保留证书请求中的 DN
+preserve = yes
+# 从 DN 中移除电子邮件地址
+email_in_dn = no
+# 从证书请求中拷贝该配置文件中未指定的扩展
+copy_extensions = copy
+# 策略段
+policy = cert_policy
+# 为了支持 UTF8 输出而做的修改
+name_opt = utf8, esc_ctrl, sep_multiline, space_eq, lname, align
+
+[v3_x509]
+basicConstraints = critical, CA:TRUE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment, keyAgreement, keyCertSign, cRLSign
+extendedKeyUsage = serverAuth, clientAuth ,codeSigning, emailProtection, timeStamping, OCSPSigning, msEFS
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid,issuer
+
+[cert_policy]
+countryName = supplied
+stateOrProvinceName = optional
+localityName = optional
+organizationName = optional
+organizationalUnitName = optional
+commonName = supplied
+emailAddress = optional
+----
+
+. 自签名根证书，并生成根 CA 的数据库
++
+[source, sh]
+----
+openssl ca -batch -config rootCA_cnf/SelfsignRootCA.cnf -selfsign -in rootCA_certs/rootCA.csr -notext -out rootCA_certs/rootCA.crt
+----
+
+. 【可选】检查根证书文件
++
+[source, sh]
+----
+# 让 openssl 支持 UTF8 输出证书内容
+openssl x509 -in rootCA_certs/rootCA.crt -noout -text -nameopt "utf8, esc_ctrl, sep_multiline, space_eq, lname, align"
+----
+
+=== 创建中间证书
+
+. 建立中间证书所需要的目录、文件
++
+[source, sh]
+----
+# 存放中间证书私钥、中间证书请求、中间证书的目录
+mkdir midCA_certs
+# 存放中间证书的请求配置文件、终点证书的签名配置文件的目录
+mkdir midCA_cnf
+# 存放中间 CA 数据库的目录
+mkdir midCA_db
+# 创建一个新的中间 CA 数据库文件
+touch midCA_db/midCA_db.txt
+----
+
+. 书写中间证书请求的配置文件
++
+[source, openssl.cnf]
+.midCA_cnf/ReqMidCA.cnf
+----
+[req]
+output_password = my mid password
+default_bits = 2048
+default_keyfile = midCA_certs/midCA.prikey
+req_extensions = v3_req
+prompt = no
+utf8 = yes
+distinguished_name = mid_dn
+
+[mid_dn]
+commonName = 我的测试中间证书签发机构
+countryName = CN
+stateOrProvinceName = 北京
+localityName = 北京
+organizationName = 我自己的组织
+organizationalUnitName = 我自己的组织的证书签发单元
+
+[v3_req]
+# 限制用该配置文件生成的证书请求，对应的证书，仅能用于签名终点证书
+basicConstraints = critical, CA:TRUE, pathlen:0
+subjectAltName=dirName:alt_dir
+
+[alt_dir]
+emailAddress = myaddress@mydomain
+----
+
+. 生成中间证书私钥和签名请求文件
++
+[source, sh]
+----
+openssl req -config midCA_cnf/ReqMidCA.cnf -newkey rsa -out midCA_certs/midCA.csr
+----
+
+. 书写中间证书的签名配置文件
++
+[source, openssl.cnf]
+.rootCA_cnf/SignMidCA.cnf
+----
+[ca]
+default_ca = midCA
+
+[midCA]
+new_certs_dir = ./midCA_certs
+private_key = rootCA_certs/rootCA.prikey
+# 用于签名的 CA 证书
+certificate = rootCA_certs/rootCA.crt
+default_md = sha256
+default_days = 365
+database = rootCA_db/rootCA_db.txt
+unique_subject = no
+rand_serial = yes
+x509_extensions = v3_x509
+preserve = yes
+email_in_dn = no
+copy_extensions = copy
+policy = cert_policy
+name_opt = utf8, esc_ctrl, sep_multiline, space_eq, lname, align
+
+[v3_x509]
+# 限制用该配置文件签名出的证书，仅能用于签名终点证书
+basicConstraints = critical, CA:TRUE, pathlen:0
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment, keyAgreement, keyCertSign, cRLSign
+extendedKeyUsage = serverAuth, clientAuth ,codeSigning, emailProtection, timeStamping, OCSPSigning, msEFS
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid,issuer
+
+[cert_policy]
+countryName = supplied
+stateOrProvinceName = optional
+localityName = optional
+organizationName = optional
+organizationalUnitName = optional
+commonName = supplied
+emailAddress = optional
+----
+
+. 用根 CA 签名中间证书
++
+[source, sh]
+----
+openssl ca -batch -config rootCA_cnf/SignMidCA.cnf -in midCA_certs/midCA.csr -notext -out midCA_certs/midCA.crt
+----
+
+=== 创建终点证书
+
+. 建立终点证书所需要的目录、文件
++
+[source, sh]
+----
+# 存放终点证书私钥、终点证书请求、终点证书的目录
+mkdir site_certs
+# 存放终点证书请求的配置文件
+mkdir site_cnf
+----
+
+. 书写终点证书请求的配置文件
++
+[source, openssl.cnf]
+.site_cnf/ReqSite.cnf
+----
+[req]
+output_password = my site password
+default_bits = 2048
+default_keyfile = site_certs/site.prikey
+req_extensions = v3_req
+prompt = no
+utf8 = yes
+distinguished_name = site_dn
+
+[site_dn]
+commonName = 我的测试站点证书
+countryName = CN
+stateOrProvinceName = 北京
+localityName = 北京
+organizationName = 我自己的组织
+organizationalUnitName = 我自己的组织的站点单元
+
+[v3_req]
+# 限制用该配置文件生成的证书请求，对应的证书，不能用于签名其它证书
+basicConstraints = critical, CA:FALSE
+subjectAltName=@alt_name
+
+[alt_name]
+# 在这里追加要验证的域名、IP 地址等
+DNS.1 = mysite.mydomain
+DNS.2 = *.mysite.mydomain
+IP.1 = 127.0.0.1
+IP.2 = 127.0.0.2
+dirName = alt_dir
+
+[alt_dir]
+emailAddress = myaddress@mydomain
+----
+
+. 生成终点证书私钥和签名请求文件
++
+[source, sh]
+----
+openssl req -config site_cnf/ReqSite.cnf -newkey rsa -out site_certs/site.csr
+----
+
+. 书写终点证书的签名配置文件
++
+[source, openssl.cnf]
+.midCA_cnf/SignSite.cnf
+----
+[ca]
+default_ca = site
+
+[site]
+new_certs_dir = ./site_certs
+private_key = midCA_certs/midCA.prikey
+certificate = midCA_certs/midCA.crt
+default_md = sha256
+default_days = 90
+database = midCA_db/midCA_db.txt
+unique_subject = no
+rand_serial = yes
+x509_extensions = v3_x509
+preserve = yes
+email_in_dn = no
+copy_extensions = copy
+policy = cert_policy
+name_opt = utf8, esc_ctrl, sep_multiline, space_eq, lname, align
+
+[v3_x509]
+# 限制用该配置文件签名出的证书，不能用于签名其它证书
+basicConstraints = critical, CA:FALSE
+# 移除不需要的密钥用途
+keyUsage = digitalSignature , keyEncipherment, dataEncipherment, keyAgreement
+# 限制密钥的扩展用途
+extendedKeyUsage = serverAuth, clientAuth
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid,issuer
+
+[cert_policy]
+countryName = supplied
+stateOrProvinceName = optional
+localityName = optional
+organizationName = optional
+organizationalUnitName = optional
+commonName = supplied
+emailAddress = optional
+----
+
+. 用中间 CA 签名终点证书
++
+[source, sh]
+----
+openssl ca -batch -config midCA_cnf/SignSite.cnf -in site_certs/site.csr -notext -out site_certs/site.crt
+----
+
 == 证书的使用
 
-在使用时，需要将 `my_rootCA.crt` `my_midCA.crt` 两个文件添加至计算机的 **受信任的根证书颁发机构** 中，将 `my_site.crt` 依照 web 服务程序的要求添加至站点中。即可完成网站的 https 启用。
+在使用时，需要将 `rootCA.crt` 添加至当前用户的 **受信任的根证书颁发机构** 中，`midCA.crt` 添加至当前用户的 **中间证书颁发机构**，将 `my_site.crt` 依照 web 服务程序的要求添加至站点中。即可完成网站的 https 启用。
