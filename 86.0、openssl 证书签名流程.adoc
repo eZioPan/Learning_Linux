@@ -294,7 +294,7 @@ commonName = my site
 basicConstraints = critical, CA:FALSE       # 用 CA:FALSE 表示该证书为终点证书，不能用于签发其他证书
 extendedKeyUsage = critical, serverAuth     # 指定 serverAuth 将证书的使用范围进一步限制为服务器身份验证
 subjectKeyIdentifier = hash
-subjectAltName=@alt_name                    # 利用主体替代名段来追加可以被该证书认证的其他名字（比如网站的 DNS 名，IP 地址等等）
+subjectAltName = @alt_name                  # 利用主体替代名段来追加可以被该证书认证的其他名字（比如网站的 DNS 名，IP 地址等等）
 
 [alt_name]
 DNS.1 = mysite.mydomain                     # 声明该证书可以验证本站的顶层域名
@@ -327,7 +327,7 @@ basicConstraints = critical, CA:FALSE
 extendedKeyUsage = critical, serverAuth
 subjectKeyIdentifier = hash
 authorityKeyIdentifier = keyid, issuer
-subjectAltName=@alt_name
+subjectAltName = @alt_name
 
 [alt_name]
 DNS.1 = mysite.mydomain
@@ -406,7 +406,7 @@ organizationalUnitName = 我自己的组织的证书签发单元
 [v3_req]
 basicConstraints = critical, CA:TRUE
 # 在这里补充邮件地址
-subjectAltName=dirName:alt_dir
+subjectAltName = dirName:alt_dir
 
 [alt_dir]
 emailAddress = myaddress@mydomain
@@ -465,10 +465,12 @@ name_opt = utf8, esc_ctrl, sep_multiline, space_eq, lname, align
 
 [v3_x509]
 basicConstraints = critical, CA:TRUE
-keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment, keyAgreement, keyCertSign, cRLSign
-extendedKeyUsage = serverAuth, clientAuth ,codeSigning, emailProtection, timeStamping, OCSPSigning, msEFS
-subjectKeyIdentifier=hash
-authorityKeyIdentifier=keyid,issuer
+# 该证书中的密钥可以用于数字签名、签名证书、签名吊销列表
+keyUsage = digitalSignature, keyCertSign, cRLSign
+# 该证书中的密钥也可以也可用于 OCSP 签名
+extendedKeyUsage = OCSPSigning
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid, issuer
 
 [cert_policy]
 countryName = supplied
@@ -536,7 +538,7 @@ organizationalUnitName = 我自己的组织的证书签发单元
 [v3_req]
 # 限制用该配置文件生成的证书请求，对应的证书，仅能用于签名终点证书
 basicConstraints = critical, CA:TRUE, pathlen:0
-subjectAltName=dirName:alt_dir
+subjectAltName = dirName:alt_dir
 
 [alt_dir]
 emailAddress = myaddress@mydomain
@@ -577,10 +579,10 @@ name_opt = utf8, esc_ctrl, sep_multiline, space_eq, lname, align
 [v3_x509]
 # 限制用该配置文件签名出的证书，仅能用于签名终点证书
 basicConstraints = critical, CA:TRUE, pathlen:0
-keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment, keyAgreement, keyCertSign, cRLSign
-extendedKeyUsage = serverAuth, clientAuth ,codeSigning, emailProtection, timeStamping, OCSPSigning, msEFS
-subjectKeyIdentifier=hash
-authorityKeyIdentifier=keyid,issuer
+keyUsage = digitalSignature, keyCertSign, cRLSign
+extendedKeyUsage = OCSPSigning
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid, issuer
 
 [cert_policy]
 countryName = supplied
@@ -636,7 +638,7 @@ organizationalUnitName = 我自己的组织的站点单元
 [v3_req]
 # 限制用该配置文件生成的证书请求，对应的证书，不能用于签名其它证书
 basicConstraints = critical, CA:FALSE
-subjectAltName=@alt_name
+subjectAltName = @alt_name
 
 [alt_name]
 # 在这里追加要验证的域名、IP 地址等
@@ -684,12 +686,12 @@ name_opt = utf8, esc_ctrl, sep_multiline, space_eq, lname, align
 [v3_x509]
 # 限制用该配置文件签名出的证书，不能用于签名其它证书
 basicConstraints = critical, CA:FALSE
-# 移除不需要的密钥用途
-keyUsage = digitalSignature , keyEncipherment, dataEncipherment, keyAgreement
-# 限制密钥的扩展用途
-extendedKeyUsage = serverAuth, clientAuth
-subjectKeyIdentifier=hash
-authorityKeyIdentifier=keyid,issuer
+# 该证书中的密钥用于数字签名、加密私钥、加密用户数据、
+keyUsage = digitalSignature, keyEncipherment, dataEncipherment
+# 该证书中的密钥还可以用于服务器验证
+extendedKeyUsage = serverAuth
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid, issuer
 
 [cert_policy]
 countryName = supplied
