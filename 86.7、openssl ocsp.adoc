@@ -1,0 +1,116 @@
+= ocsp
+:verify_man1: link:https://www.openssl.org/docs/man1.1.1/man1/verify.html[verify(1)]
+
+== 名称
+
+openssl-ocsp, ocsp - 在线证书状态协议工具
+
+== 描述
+
+在线证书状态协议（OCSP）让应用能判断一个证书的（吊销）状态（RFC 2560）。
+
+`ocsp` 命令执行很多常用的 OCSP 任务。它可以用于打印请求和回复，创建请求并发送请求至 RCSP 响应端，以及将自己作为一个迷你 OCSP 服务器。
+
+== 选项
+
+该命令可以作为客户端或者服务器。下方描述的选项，按照这两个模式区分开。
+
+=== OCSP 客户端选项
+
+-help::
+打印用法信息。
+
+-out filename::
+指定输出的文件名，默认为标准输出。
+
+-issuer filename::
+指定当前签发者证书。该选项可以被多次指定。在 __filename__ 中指定的证书必须为 PEM 格式。该选项 **必须** 处在任何 `-cert` 选项之前。
+
+-cert filename::
+在请求中添加证书 __filename__。签发证书从前序的 `issuer` 选项中取得，若不指定签发者证书，则生成一个错误。
+
+-serial num::
+同 `cert` 选项，但指定的是证书对应的序列号（**num**）。除非前缀了 `0x` 否则将作为十进制数解析。负整数可以通过在值前追加负号 `-` 来表示。
+
+-signer filename, -signkey filename::
+为 OCSP 请求签名，签名所使用的证书在 `singer` 选项中指定，签名所使用的私钥在 `signkey` 选项中指定。若不指定 `signkey`，那么私钥从证书文件中读取。若两个选项均不指定，则 OCSP 请求不会被签名。
+
+-sign_other filename::
+已签名请求中包含的额外证书。
+
+-nonce, -no_nonce::
+为请求追加一个 OCSP nonce 扩展，或禁用 OCSP nonce 附加。通常情况下，若一个 OCSP 请求通过 `reqin` 选项输入，则不会添加 nonce：使用 `nonce` 选项会强制添加一个 nonce。若一个 OCSP 请求（通过 `cert` 和 `serial` 选项）被创建，会自动添加一个 nonce，指定 `no_nonce` 来覆盖它。
+
+-req_text, -tesp_text, -text::
+依次用于输出文本形式的 OCSP 请求、响应或两者。
+
+-reqout file, -respout file::
+将 DER 编码的证书请求或回应写至 __file__。
+
+-reqin file, -respin file::
+从 __file__ 读取 OCSP 请求或响应。若 OCSP 请求或响应是由其它选项（比如 `serial`、`cert`、`host` 选项）生成的，那么忽略本选项。
+
+-url responder_url::
+指定响应端 URI。可以指定 HTTP 或者 HTTPS（SSL/TLS）URL。
+
+-host hostname:port, -path pathname::
+若出现了 `host` 选项，那么 OCSP 请求会发送至 __hostname__ 主机的 __port__ 端口上。`path` 指定了要使用的 HTTP 路径，或者使用默认值 `/`。它等价于指定 `-url` 并将值设置为 http:// 、主机名、端口名和路径名。
+
+-header name=value::
+为发送给响应端的 OCSP 请求追加头部变量名 __name__ 和对应的值 __value__。该选项可以重复指定。
+
+-timeout seconds::
+以秒计算的 OCSP 响应端连接超时。在 POSIX 系统上，作为 OCSP 响应端运行时，该选项同样会限制响应端等待客户端请求的时间。该时间从响应端接受请求连接开始计时，直到接受到完整的请求时结束计时。
+
+-multi process-count::
+运行指定个数的 OCSP 响应端子进程，父进程会根据需求产生子进程。子进程会检测 CA 索引文件的变动，并自动重载它。当作为响应端运行时，建议使用 `-timeout` 选项来限制每个子进程等待客户端的 OCSP 请求的时间。该选项在 POSIX 系统（也即是支持 fork() 和其他需要的 unix 系统调用的系统）上可用。
+
+-CAfile file, -CApath pathname::
+包含可信 CA 证书的文件或路径名。它们被用于检验 OCSP 响应的签名。
+
+-no-CAfile::
+不要从默认的文件位置加载可信 CA 证书。
+
+-no-CApath::
+不要从默认的目录位置加载可信 CA 证书。
+
+-attime, -check_ss_sig, -crl_check, -crl_check_all, -explicit_policy, -extended_crl, -ignore_critical, -inhibit_any, -inhibit_map, -no_alt_chains, -no_check_time, -partial_chain, -policy, -policy_check, -policy_print, -purpose, -suiteB_128, -suiteB_128_only, -suiteB_192, -trusted_first, -use_deltas, -auth_level, -verify_depth, -verify_email, -verify_hostname, -verify_ip, -verify_name, -x509_strict::
+设置不同的证书验证选项。参见 {verify_man1} 手册页了解详情。
+
+
+-verify_other file::
+当尝试定位 OCSP 响应签名证书时，要追加的包含额外证书的文件。有些响应端会从响应中隐去实际的签名者证书：该选项可以被用于在这类情况下提供需要的证书。
+
+-trust_other::
+通过 `-verify_other` 选项指定的证书应该为明确可信的，且不会对它们执行额外的检查。当完整的响应端证书链不可用，或者可信根 CA 不正确时，该选项十分有用。
+
+-VAfile file::
+包含明确可信响应端证书的文件。等价于 `-verify_other` 和 `-trust_other` 两个选项。
+
+-noverify::
+不要尝试验证 OCSP 响应签名，或者 onnce 值。该选项通常仅用作排错，因为它会禁用对于响应端证书的任何验证。
+
+-no_intern::
+当搜索签名者证书时，忽略 OCSP 响应中包含的证书证书。使用该选项时，签名者证书必须通过 `-verify_other` 或者 `-VAfile` 选项指定。
+
+-no_signature_verify::
+不要检查 OCSP 响应中的签名。由于该选项会允许 OCSP 响应上的无效签名，所以它通常仅用于测试目的。
+
+-no_cert_verify::
+完全不验证 OCSP 响应的签名者证书。由于该选项运行 OCSP 响应被任何证书签名，所以它应该仅用于测试目的。
+
+-no_chain::
+不要将响应中的证书用于附加的非可信 CA 证书。
+
+-no_explicit::
+不要明确信任根 CA，即便它被设置为 OCSP 签名可信。
+
+-no_cert_checks::
+不要对 OCPS 响应签名者证书执行任何额外的检查。也就是不要执行任何检查来了解签名者证书被授权提供必要的状态信息：于是该选项应该仅用于测试目的。
+
+-validity_period nsec, -status_age age::
+这些选项指定了以秒计算的时间范围，它们将作为 OCSP 响应可以接受的时间范围。每个证书状态响应包含一个 `notBefore` 时间和一个可选的 `notAfter` 时间。当前时间应该介于这两者之间，但这两个时间的间隔可能仅有几秒。实际上来说，由于 OCSP 响应端和客户端的钟可能并不精确同步，导致验证可能失败。要避免它，可以使用 `-validity_period` 选项来指定一个以秒计的，可接受的错误范围，默认值为 5 分钟。 +
+若 `noAfter` 时间从响应中略去，那么它意为着新状态立即有效。在这种情况下，会检查 `notBefore` 字段的年龄，来了解它不会老于 __age__ 秒。默认情况，该附加检查不会被执行。
+
+__-digest__::
+该选项设置用于检验 OCSP 请求中的证书标识的摘要算法。任何被 OpenSSL **dgst** 命令支持的摘要算法均可被使用。默认值为 SHA-1。该选项可以被多次使用，来指定要用于其后的证书标识要使用的摘要算法。
