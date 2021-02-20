@@ -1,4 +1,5 @@
 = x509v3_config
+:x509v3_config_man5: link:https://www.openssl.org/docs/man1.1.1/man5/x509v3_config.html[]
 
 == 名称
 
@@ -472,8 +473,8 @@ email.2=steve@there
 
 == 参见
 
-参见 link:https://www.openssl.org/docs/man1.1.1/man5/x509v3_config.html[]
+参见 {x509v3_config_man5}
 
 == 版权
 
-参见 link:https://www.openssl.org/docs/man1.1.1/man5/x509v3_config.html[]
+参见 {x509v3_config_man5}

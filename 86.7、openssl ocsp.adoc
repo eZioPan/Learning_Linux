@@ -1,5 +1,6 @@
 = ocsp
 :verify_man1: link:https://www.openssl.org/docs/man1.1.1/man1/verify.html[verify(1)]
+:ocsp_man1: link:https://www.openssl.org/docs/man1.1.1/man1/ocsp.html[]
 
 == 名称
 
@@ -174,3 +175,68 @@ openssl x509 -in ocspCA.pem -addtrust OCSPSigning -out trustedCA.pem
 ----
 
 或者响应端证书自身可以通过 -VAfile 被显式地可信。
+
+== 备注
+
+如上面注明的，大部分验证选项是用于测试和查错目的的。通常情况下，仅有 `-CApath` `-CAfile` 以及（若响应端为 “全局 VA”时）`-VAfile` 需要被使用。 +
+OCSP 服务器仅在测试和演示目的时有用：它不能作为正真有用的全功能 OCSP 响应端。它仅包含一个十分简单的 HTTP 请求处理，且仅能处理 POST 样式的 OCSP 请求。同时它以序列的方式处理请求，意味着它在处理完当前的请求前，不能响应新的请求。对于大量的吊销数据来说，以文本索引文件格式表示的吊销记录也是并不高效的。 +
+也可以通过调用了 `reqin` 和 `respout` 选项的 CGI 脚本将 **ocsp** 应用运行在响应端模式。
+
+== 案例
+
+创建一个 OCSP 请求，并写入一个文件：
+
+[source, sh]
+----
+openssl ocsp -issuer issuer.pem -cert c1.pem -cert c2.pem -reqout req.der
+----
+
+对位于 URL http://ocsp.myhost.com/ 上的 OCSP 响应端发送请求，保存响应至文件，以文本格式打印，并验证响应：
+
+[source, sh]
+----
+openssl ocsp -issuer issuer.pem -cert c1.pem -cert c2.pem -url http://ocsp.myhost.com/ -resp_text -respout resp.der
+----
+
+读入一个 OCSP 响应，并以文本格式打印：
+
+[source, sh]
+----
+openssl oscp -respin resp.der -text -noverify
+----
+
+在 8888 端口上建立的 OCSP 服务器，其使用了一个标准的 **ca** 配置，以及一个独立的响应端证书。全部的请求和响应均打印至一个文件。
+
+[source, sh]
+----
+openssl ocsp -index demoCA/index.txt -port 8888 -rsigner rcert.pem -CA demoCA/cacert.pem -text -out log.txt
+----
+
+同上，但在处理了一个请求后就退出：
+
+[source, sh]
+----
+openssl ocsp -index demoCA/index.txt -port 8888 -rsigner rcert.pem -CA demoCA/cacert.pem -nrequest 1
+----
+
+用一个内部生成的请求，查询状态信息：
+
+[source, sh]
+----
+openssl ocsp -index demoCA/index.txt -rsigner rcert.pem -CA demoCA/cacert.pem -issuer demoCA/cacert.pem -serial 1
+----
+
+用一个读取自文件的请求查询状态信息，并将响应写入另一个文件。
+
+[source, sh]
+----
+openssl ocsp -index demoCA/index.txt -rsigner rcert.pem -CA demoCA/cacert.pem -reqin req.der -respout resp.der
+----
+
+== 历史
+
+参见 {ocsp_man1}
+
+== 版权
+
+参见 {ocsp_man1}

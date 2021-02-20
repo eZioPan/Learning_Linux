@@ -1,6 +1,7 @@
 = req
 :x509_man1: xref:86.5、openssl x509.adoc[x509(1)]
 :x509v3_config_man5: xref:86.1.1、x509v3 配置文件.adoc[x509v3_config(5)]
+:req_man1: link:https://www.openssl.org/docs/man1.1.1/man1/req.html[]
 
 == 名称
 
@@ -415,12 +416,12 @@ Attributes:
 
 == BUG
 
-参见 link:https://www.openssl.org/docs/man1.1.1/man1/req.html[]
+参见 {req_man1}
 
 == 参见
 
-参见 link:https://www.openssl.org/docs/man1.1.1/man1/req.html[]
+参见 {req_man1}
 
 == 版权
 
-参见 link:https://www.openssl.org/docs/man1.1.1/man1/req.html[]
+参见 {req_man1}

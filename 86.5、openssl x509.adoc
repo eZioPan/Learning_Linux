@@ -1,6 +1,7 @@
 = x509
 :x509v3_config_man5: xref:86.1.1、x509v3 配置文件.adoc[x509v3_config(5)]
 :openssl_man1: link:https://www.openssl.org/docs/man1.1.1/man1/openssl.html[openssl(1)]
+:x509_man1: link:https://www.openssl.org/docs/man1.1.1/man1/x509.html[]
 
 == 名称
 
@@ -501,16 +502,16 @@ CRL Signing CA::
 
 == BUGS
 
-参见 link:https://www.openssl.org/docs/man1.1.1/man1/x509.html[]
+参见 {x509_man1}
 
 == 参见
 
-参见 link:https://www.openssl.org/docs/man1.1.1/man1/x509.html[]
+参见 {x509_man1}
 
 == 历史
 
-参见 link:https://www.openssl.org/docs/man1.1.1/man1/x509.html[]
+参见 {x509_man1}
 
 == 版权
 
-参见 link:https://www.openssl.org/docs/man1.1.1/man1/x509.html[]
+参见 {x509_man1}

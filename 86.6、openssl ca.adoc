@@ -1,6 +1,7 @@
 = ca
 :x509v3_config_man5: xref:86.1.1、x509v3 配置文件.adoc[x509v3_config(5)]
 :openssl_man1: link:https://www.openssl.org/docs/man1.1.1/man1/openssl.html[openssl(1)]
+:ca_man1: link:https://www.openssl.org/docs/man1.1.1/man1/ca.html[]
 
 == 名称
 openssl-ca, ca - 最小化 CA 应用样例
@@ -361,24 +362,24 @@ emailAddress           = optional
 
 == 限制
 
-参见 link:https://www.openssl.org/docs/man1.1.1/man1/ca.html[]
+参见 {ca_man1}
 
 == BUGS
 
-参见 link:https://www.openssl.org/docs/man1.1.1/man1/ca.html[]
+参见 {ca_man1}
 
 == 警告
 
-参见 link:https://www.openssl.org/docs/man1.1.1/man1/ca.html[]
+参见 {ca_man1}
 
 == 历史
 
-参见 link:https://www.openssl.org/docs/man1.1.1/man1/ca.html[]
+参见 {ca_man1}
 
 == 参见
 
-参见 link:https://www.openssl.org/docs/man1.1.1/man1/ca.html[]
+参见 {ca_man1}
 
 == 版权
 
-参见 link:https://www.openssl.org/docs/man1.1.1/man1/ca.html[]
+参见 {ca_man1}

@@ -1,4 +1,5 @@
 = config
+:config_man5: link:https://www.openssl.org/docs/man1.1.1/man5/config.html[]
 
 == 名称
 
@@ -349,12 +350,12 @@ OPENSSL_ENGINES::
 
 == BUG
 
-参见 link:https://www.openssl.org/docs/man1.1.1/man5/config.html[]
+参见 {config_man5}
 
 == 参见
 
-参见 link:https://www.openssl.org/docs/man1.1.1/man5/config.html[]
+参见 {config_man5}
 
 == 版权
 
-参见 link:https://www.openssl.org/docs/man1.1.1/man5/config.html[]
+参见 {config_man5}

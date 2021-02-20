@@ -1,4 +1,5 @@
 = genrsa
+:genrsa_man1: link:https://www.openssl.org/docs/man1.1.1/man1/genrsa.html[]
 
 == 名称
 
@@ -48,8 +49,8 @@ RSA 私钥生成过程基于生成两个或更多个素数的过程。当生成�
 
 == 参见
 
-参见 link:https://www.openssl.org/docs/man1.1.1/man1/genrsa.html[]
+参见 {genrsa_man1}
 
 == 版权
 
-参见 link:https://www.openssl.org/docs/man1.1.1/man1/genrsa.html[]
+参见 {genrsa_man1}

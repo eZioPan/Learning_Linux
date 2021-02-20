@@ -1,4 +1,5 @@
 = rsa
+:rsa_man1: link:https://www.openssl.org/docs/man1.1.1/man1/rsa.html[]
 
 == 名称
 
@@ -130,12 +131,12 @@ openssl rsa -in key.pem -RSAPublicKey_out -out pubkey.pem
 
 == BUG
 
-参见 link:https://www.openssl.org/docs/man1.1.1/man1/rsa.html[]
+参见 {rsa_man1}
 
 == 参见
 
-参见 link:https://www.openssl.org/docs/man1.1.1/man1/rsa.html[]
+参见 {rsa_man1}
 
 == 版权
 
-参见 link:https://www.openssl.org/docs/man1.1.1/man1/rsa.html[]
+参见 {rsa_man1}
