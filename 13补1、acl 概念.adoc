@@ -1,0 +1,177 @@
+= acl
+
+== 名称
+
+acl - Access Control Lists - 访问控制列表
+
+== 描述
+
+该文档页描述了 POSIX 访问控制列表，其用于更加自由地对文件和目录定义更加细粒的访问权限。
+
+== ACL 类型
+
+每个对象可以被理解为都具有一个与该对象对应的 ACL，该 ACL 用于自定义规范访问该对象的权限；该 ACL 被称为 访问 ACL（access ACL）。额外的，一个目录也可以设置一个关联的 ACL，用来规范在该目录中创建的对象的初始的访问 ACL；该 ACL 被称为 默认 ACL。
+
+== ACL 条目
+
+一个 ACL 包含一系列 ACL 条目。一个 ACL 条目指定了与该条目关联的的对象的访问权限，该权限时针对一个独立的用户或一组用户设置，且权限为读、写、搜索、执行的权限的组合。
+
+一个 ACL 条目包含一个条目标签类型（entry tag type）,一个额外的条目标签限定（entry tag qualifier），以及一组权限。我们用术语 quanlifier 来表示一个 ACL 条目上的条目标签限定。
+
+quanlifier 表示了一个用户或者组的标识符，对应的条目则依次分别具有 __ACL_USER__ 以及 __ACL_GROUP__ 标签类型。具有非 __ACL_USER__ 或 __ACL_GROUP__ 的标签类型的条目没有已定义的限定。
+
+定义了下面的条目标签类型：
+
+[cols="^,"]
+|===
+
+|__ACL_USER_OBJ__
+|__ACL_USER_OBJ__ 条目表示了文件所有者的访问权限
+
+|__ACL_USER__
+|__ACL_USER__ 条目表示用条目的 qualifier 指定的用于的访问权限
+
+|__ACL_GROUP_OBJ__
+|__ACL_GROUP_OBJ__ 条目表示了文件所有组的访问权限
+
+|__ACL_GROUP__
+|__ACL_GROUP__ 条目表示用条目的 qualifier 指定的组的访问权限
+
+|__ACL_MASK__
+|__ACL_MASK__ 条目限制了 __ACL_USER__ __ACL_GROUP_OBJ__ 或 __ACL_GROUP__ 三种条目类型能获得的最大的访问权限
+
+|__ACL_OTHER__
+|__ACL_OTHER__ 条目表示无法匹配 ACL 中任何其他条目的进程的权限
+
+|===
+
+当执行访问检查时， __ACL_USER_OBJ__ 和 __ACL_USER__ 条目会针对 effective user ID 进行检查。而 __ACL_GROUP_OBJ __以及 __ACL_GROUP__ 条目则针对 effective group ID 以及 supplementary group ID 进行检查。
+
+== 有效 ACL
+
+一个有效的 ACL 精准地包含一条 __ACL_USER_OBJECT__ 标签类型，一条 __ACL_GROUP_OBJ__ 标签类型，以及一条 __ACL_OTHER__ 标签类型。一个 ACL 可以包含零个或多个 __ACL_USER__ 以及 __ACL_GROUP__ 标签类型。若一个 ACL 包含了 __ACL_USER__ 或者 __ACL_GROUP__ 标签类型，则必须精确包含一个 __ACL_MASK__ 标签类型的条目。若 `ACL` 不包含 __ACL_USER__ 或 __ACL_GROUP__ 标签类型，那么 __ACL_MASK__ 条目为可选的。
+
+全部的 user ID qualifier 在全部的 __ACL_USER__ 标签类型的条目中必须唯一，全部的 group ID 在全部的 __ACL_GROUP__ 标签类型的条目中必须唯一。
+
+若一个目录不与默认 ACL 关联，则 `acl_get_file()` 函数返回一个具有零 ACL 条目的 ACL。对于目录而言，`acl_set_file()` 函数也接受一个零条目的 ACL 作为有效 ACL，表示该目录不应该与一个默认的 ACL 关联。它等价于 `acl_delete_def_file()` 函数。
+
+== ACL 条目与文件权限位的关系
+
+用 ACL 定义的权限是文件权限位定义的权限的一个超集。
+
+文件的 owner group other 权限在 ACL 中有对应的条目：owner 权限对应 __ACL_USER_OBJ__ 条目的权限。若 ACL 具有 __ACL_MASK__ 条目，则 group 权限对应 __ACL_MASK__ 条目的权限。其他情况下，若 ACL 不存在 __ACL_MASK__ 条目，则 group 权限对应 __ACL_GROUP_OBJ__ 条目的权限。other 权限对应 __ACL_OTHER_OBJ__ 条目的权限。
+
+文件的 owner group other 权限永远匹配对应的 ACL 条目的权限。修改文件的权限位会导致相关的 ACL 条目的权限的修改，而修改 ACL 条目会导致文件权限位的修改。
+
+== 对象的创建以及默认的 ACL
+
+一个文件对象的访问 ACL 在使用 `create()`、`mkdir()`、`mknod()`、`mkfifo()`、`open()` 函数创建对象时初始化。若一个目录关联了一个默认 ACL，那么创建文件对象的函数的 __mode__ 参数以及目录的默认 ACL 用于决定新对象的 ACL：
+
+. 新对象继承所在目录的默认 ACL 作为其访问 ACL。
+. 访问 ACL 中与文件权限位相关的条目会匹配 __mode__ 参数。
+
+若一个目录没有关联默认 ACL，那么创建文件对象的函数的 __mode__ 参数，以及 file creation mask（参见 umask(2)）用于决定新对象的 ACL：
+
+. 新对象会被分配一个具有 __ACL_USER_OBJ__ __ACL_GROUP_OBJ__ __ACL_OTHER__ 标签类型的访问 ACL。这些条目的权限由 file creation mask 指定。
+. 访问 ACL 中与文件权限位相关的条目会匹配 __mode__ 参数。
+
+== 访问检查算法
+
+一个进程可能会对一个受 ACL 保护的文件对象请求读取、写入或者执行、搜索权限。访问检查算法将决定是否能获得该对象的访问。
+
+. **若** 进程的 effective user ID 匹配文件对象 owner 的 user ID，**那么**
+.. **若** __ACL_USER_OBJ__ 条目包含所请求的权限，则授权访问，
+.. **否则** 拒绝访问。
+. **否则，若** 进程的 effective user ID 匹配任何 __ACL_USER__ 类型的条目的 qualifier，**那么**
+.. **若** 所匹配的 __ACL_USER__ 条目和 __ACL_MASK__ 条目包含所请求的权限，则授权访问，
+.. **否则** 拒绝访问。
+. **否则，若** 进程的 effective group ID 或任何 supplementary group ID 匹配文件的 group 或者任何 __ACL_GROUP__ 类型的条目的 qualifier，**那么**
+.. **若** ACL 包含一个 __ACL_MASK__ 条目，**则**
+... **若** __ACL_MASK__ 条目和任何匹配的 __ACL_GROUP_OBJ__ 或 __ACL_GROUP__ 条目包含所请求的权限，则授权访问，
+... **否则** 拒绝访问。
+.. **否则** （注意，若不具有 __ACL_MASK__ 条目，则不能具有 __ACL_GROUP__ 条目）
+... **若** __ACL_GROUP_OBJ__ 条目包含请求的权限，则授权访问，
+... **否则** 拒绝访问。
+. **否则，若** __ACL_OTHER__ 条目包含请求的权限，则授权访问。
+. **否则** 拒绝访问。
+
+== ACL 的文本形式
+
+定义了两种表示 ACL 的文本形式，一种长形式、一种短形式。在两种形式下，ACL 条目均被表示为三个由分号 `:` 分开的字段：一个 ACL 条目标签类型，一个 ACL 条目 qualifier，以及自定义的访问权限。第一个字段包含了下面的字段标签类型关键字中的一个：
+
+[cols="^,"]
+|===
+
+|`user`
+|一个 `user` ACL 条目指定了对于文件 owner（条目标签类型 __ACL_USER_OBJ__）或者一个特定用户（条目标签类型 __ACL_USER__）的访问权限
+
+|`group`
+|一个 `group` ACL 条目指定了对于文件 group（条目标签类型 __ACL_GROUP_OBJ__）或者一个特定组（条目标签类型 __ACL_GROUP__）的访问权限
+
+|`mask`
+|一个 `mask` ACL 条目指定了最大访问权限，该限制作用于除了文件 owner 的 user 条目和 other 条目之外的 ACL 条目（条目类型 __ACL_MASK__）
+
+|`other`
+|一个 `other` ACL 条目指定了不匹配任何 user 或者 group ACL 条目的进程的访问权限（条目标签类型 __ACL_OTHER__）
+
+|===
+
+当 ACL条目标签类型为 ACL_USER 或 ACL_GROUP 时，第二个字段为该条目对应的用户或组标识符，否则该字段为空。用户标识符可以为 user name 或者十进制的 user ID。组标识符可以为 group name 或者十进制的 group ID。
+
+第三个字段包含自定义的访问权限。读、写、搜索/执行 权限依次用 `r` `w` `x` 字符表示。将文本形式转换至内部表示时，缺失的权限不需要被指定。
+
+白空格可以出现在每个 ACL 条目的首位，也可以紧贴字段分隔符（分号）的两侧。
+
+=== 长文本形式
+
+长文本形式中，每行为一条 ACL 条目。额外的，一个井号（`#`）表示注释的开始，该注释直至该行的行尾。若一个 __ACL_USER__ __ACL_GROUP_OBJ__ __ACL_GROUP__ ACL 条目包含 __ACL_MASK__ 条目不包含的权限，则该条目后会跟随一个井号，之后是字符串 `effective:`，接着是该条目实际有效的访问权限。下面是一个长文本形式的例子：
+
+[source]
+----
+user::rw-
+user:lisa:rw-         #effective:r--
+group::r--
+group:toolies:rw-     #effective:r--
+mask::r--
+other::r--
+----
+
+=== 短文本形式
+
+短文本形式为一系列由逗号分隔的 ACL 条目组成，通常用于输入。不支持注释。条目标签类型关键字可以以非缩写的全称出现，也可以以单字母缩写的形式出现。`user` 的缩写为 `u`，`group` 为 `g`，`mask` 为 `m`，`other` 为 `o`。权限可以包含任意顺序的下述字符，字符最多出现一次：`r` `w` `x`。下面为短文本形式的样例：
+
+[source]
+----
+u::rw-,u:lisa:rw-,g::r--,g:toolies:rw-,m::r--,o::r--
+g:toolies:rw,u:lisa:rw,u::wr,g::r,o::r,m::r
+----
+
+== RATIONALE
+
+参见 link:https://man7.org/linux/man-pages/man5/acl.5.html#RATIONALE[]
+
+== 文件工具的变化
+
+在支持 ACL 的系统中，文件工具 ls(1) cp(1) mv(1) 以下面的方式修改它们的行为：
+
+* 对于具有默认 ACL 或者 ACL 包含多于三条必备 ACL 条目的文件，ls(1) 工具的长格式（`ls -l`）在权限字符串后显示一个加号(`+`)。
+* 若指定了 `-p`，那么 cp(1) 会保留 ACL。若不可能则提出警告。
+* mv(1) 工具总是保留 ACL。若不可能则提出警告。
+
+chmod(1) 工具和 chmod(2) 系统调用对于 ACL 的效果，参见 xref:_acl_条目与文件权限位的关系[]
+
+== STANDARS
+
+参见 link:https://man7.org/linux/man-pages/man5/acl.5.html#STANDARS[]
+
+== SEE ALSO
+
+参见 link:https://man7.org/linux/man-pages/man5/acl.5.html#SEE_ALSO[]
+
+== AUTHOR
+
+参见 link:https://man7.org/linux/man-pages/man5/acl.5.html#AUTHOR[]
+
+== COLOPHON
+
+参见 link:https://man7.org/linux/man-pages/man5/acl.5.html#COLOPHON[]
