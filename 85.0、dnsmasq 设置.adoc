@@ -1,0 +1,19 @@
+= dnsmasq 设置
+
+== 安装
+
+要编译并安装 dnsmasq，（以 root 身份）使用下面的命令就足够了。
+
+[source, sh]
+----
+make install
+----
+
+你可能希望编辑 config.h。dnsmasq（至少）可以运行在 Linux、uCLinux、AIX 4.1.5、FreeBSD 4.4 OpenBSD 以及
+Tru64 4.x 上。Dnsmasq 通常运行在一个防火墙机器上（该机器具有调制解调器，或者链接至互联网服务供应商），但它也可以运行在任何可以访问 ISP 域名服务器的机器上。将二进制文件放在 `/usr/local/sbin/dnsmasq`（运行 `make install` 会执行该操作），并将它规划为随系统启动而启动。注意 dnsmasq 需要以 root 身份运行，这是由于它会绑定特权端口。他会在启动后丢去 root 权限。dnsmasq 通过作为 syslog 构架下的 daemon 来记录日志。它将 debug 信息记录至 local。
+
+== 配置
+
+配置 dnsmasq 在几乎全部情况下都非常简单。程序需要的选项也非常少，这是由于即便已经开发了它们，但是大多数情况下并不需要它们。一个已经具有 DNS 配置的机器（比如在 `/etc/resolve.conf` 具有一个或多个外部名称服务器，并在 `/etc/host` 中记录了本地主机的机器）可以简单地运行 dnsmasq 来变成一个名称服务器，根本不需要选项或者配置。将运行 dnsmasq 的机器的 IP 地址作为 DNS 服务器地址，配置到任何你的网络中的机器上，即可。
+
+追加一些配置，就可以让 dnsmasq 执行一些更聪明的操作。dnsmasq 的配置可以在运行 dnsmasq 的命令行上指定，也可以通过它的配置文件 `/etc/dnsmasq.conf` 来指定。
