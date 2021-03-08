@@ -17,3 +17,83 @@ Tru64 4.x 上。Dnsmasq 通常运行在一个防火墙机器上（该机器具�
 配置 dnsmasq 在几乎全部情况下都非常简单。程序需要的选项也非常少，这是由于即便已经开发了它们，但是大多数情况下并不需要它们。一个已经具有 DNS 配置的机器（比如在 `/etc/resolve.conf` 具有一个或多个外部名称服务器，并在 `/etc/host` 中记录了本地主机的机器）可以简单地运行 dnsmasq 来变成一个名称服务器，根本不需要选项或者配置。将运行 dnsmasq 的机器的 IP 地址作为 DNS 服务器地址，配置到任何你的网络中的机器上，即可。
 
 追加一些配置，就可以让 dnsmasq 执行一些更聪明的操作。dnsmasq 的配置可以在运行 dnsmasq 的命令行上指定，也可以通过它的配置文件 `/etc/dnsmasq.conf` 来指定。
+
+== 让名称服务器使用 dnsmasq
+
+在上方描述的简单配置中，计算机本身的进程将不会使用 dnsmasq，这是由于它们从自身的 `/etc/resolv.conf` 文件决定要使用的名称服务器，而这个文件被设置为使用上游服务器。要改正它，简单将 `/etc/resolv.conf` 中的名称服务器改为本地地址 127.0.0.1，并直接向 dnsmasq 给出上游名称服务器的地址即可。你可以直接使用 `server` 选项指定，或者将它们放在另一个文件中，并通过 `reslove-file` 选项告诉 dnsmasq 该文件的位置。
+
+== 自动名称服务器配置
+
+最常用的两种自动 IP 网络配置（PPP 和 DHCP）协议会决定自动决定名称服务器的 IP 地址。这些服务可以被设置为输出一个具有名称服务器的 reslov.conf 格式的文件，该文件可以完美地被 dnsmasq 所使用。当名称服务器发生变化时，比如使用 PPP 拨号至一个新的 ISP 时，dnsmasq 会完全无感地自动重读该文件，并使用新的名称服务器。
+
+=== PPP 下的自动 DNS 服务器配置
+
+较新版本的 pppd 具有一个名为 `userpeerdns` 的选项，会让它写入路径为 `/etc/ppp/resolv.conf` 的包含 DNS 服务器地址的文件。如上所示配置 dnsmasq 并修改 `/etc/resolv.conf` 中的配置为 `nameserver 127.0.0.1`，并以 `reslov-file=/etc/resolv.conf` 的选项运行 dnsmasq。
+
+在 Redhat（至少在 7.1、7.2、7.3 版本）中，你可以在 `/etc/sysconfig/network-scripts/ifcfg-ippp0` 中设置 pppd 选项 `PPPOPTIONS=usepeerdns`。在相同的文件中，确保 `PEERDNS=no` 来阻止 Redhat 的网络初始化脚本将 `/etc/ppp/resolv.conf` 拷贝进 `/etc/resolv.conf` 中。
+On SuSE (at least version 8.1, and 8.2) you should use YaST to activate [x] Modify DNS when connected then stop SuSEs network initscripts from copying /etc/ppp/resolv.conf into /etc/resolv.conf by modifying MODIFY_RESOLV_CONF_DYNAMICALLY="no" in /etc/sysconfig/network/config.
+
+在 SuSE（至少在 8.1 和 8.2 版本）中，你应该使用 YaST 激活 `[x] Modify DNS when connected`，并将 `/etc/sysconfig/network/config` 修改为 `MODIFY_RESOLV_CONF_DYNAMICALLY="no"` 来阻止 SuSE 网络初始化脚本将 `/etc/ppp/resolv.conf` 拷贝入 `/etc/resolv.conf` 中。
+
+=== DHCP 下的自动 DNS 服务器配置
+
+你需要让你的 DHCP 客户端将 DNS 服务器的地址写入一个不是 `/etc/resolv.conf` 的文件中。对于 dhcpcd 来说，`dhcpcd.exe` 脚本用 shell 变量 `$DNS` 来查找名称服务器的地址。下面的一小段脚本用它来写入一个适用于 dnsmasq 的文件。
+
+[source, sh]
+----
+echo -n >|/etc/dhcpc/resolv.conf
+dnsservers=${DNS//,/ }
+for serv in $dnsservers; do
+    echo "nameserver $serv" >>/etc/dhcpc/resolv.conf
+done
+----
+
+记得向 dhcpcd 转递 `-R` 参数来防止覆写 `/etc/resolv.conf`
+
+对于其他的 DHCP 客户端应该也能找到等效的方法。
+
+=== DHCP 与 PPP
+
+在可能通过 调制解调器与 PPP 或者是以太网与 DHCP 的笔记本电脑上，可以结合上面的两种配置。以 `resolv-file=/etc/ppp/resolv.conf resolv-file=/etc/dhcpc/resolv.conf` 运行 dnsmasq，让它自动拉取**两个**文件，并用最后更新的数据。结果会自动在 DNS 服务器间切换。
+
+== 与 DHCP 的整合
+
+dnsmasq 读取 `/etc/hosts` 以便本地机器的名字可以出现在 DNS 中。当你给所有的本地机器配置了静态 IP 地址，且将地址写入 `/etc/hosts` 中时可用，但当本地机器使用 DHCP 配置时就行不通了，这是由于分配给机器的 IP 地址并不是固定的。dnsmasq 有一个整合的 DHCP 服务来解决这个问题。
+
+dnsmasq DHCP 服务会为网络上的主机分配地址，并尝试决定它们的名字。若成功，它将名字和地址对加入 DNS。基本上有两种方法将一个名字与 DHCP 配置的机器配对；要么是主机知道在获得 DHCP 租用时所使用的名字，或者 dnsmasq 基于其以太网卡给出一个名字。要让前者起效，一台机器必须在请求 DHCP 租用时知道它的名字。对于 dhcpcd 来说，`-h` 命令指定了它。名称可以是任何 DHCP 接受的名字，但 dnsmasq 追加了一些限制。默认情况下，名称必须不含域的名字的部分，也就说他们必须为英文字符和数字组成的名字，且不能含有任何点号 `.`。这是一个安全特性，以阻止你网络上的一台机器告诉 DHCP 它的名字是 `www.microsoft.com` 并借此捕获不应该流入它的流量。仅在设置了 `domain-suffix` 选项后，dnsmasq 才允许 DHCP 机器名包含域的名字，且域的名称必须与后缀向匹配。
+
+额外的提示，请确保 DHCP 在获得一个租用时不会设置主机名（对于 dhcpcd 来说是 `-H` 选项）。它并不可靠，这是由于 DHCP 服务器会通过 DNS 获得主机名，而此时 DNS 为 dnsmasq。这会造成一个竞争状态，此时 DNS 的主机名可能由于获得了 DHCP 租用而改变，但名称在查找前不会被传播。这样的净作用可能是主机其恶行它的名字与 DNS 中所记录的不同。为了保证安全，在本地机器上设置主机名，并在请求租用时，将该名字传递给 DHCP。
+
+== 建立一个邮件中心
+
+若你在你的私有网络中生成邮件，你可能对 dnsmasq 的 MX 记录功能感兴趣。它允许你让你的网络上的所有机器使用你的防火墙或者另一个设备作为“智能主机”，并向它发送邮件。建立它的详情与邮箱、系统和分发高相关。与 dnsmasq 相关的仅为邮箱需要询问 DNS，并找到你的邮件中心的 MX 记录。
+
+为 dnsmasq 指定 `mx-host` 选项，你就指定 dnsmasq 为特定的地址记录下一条 MX 记录。默认情况下，MX 记录指向运行 dnsmasq 的机器，此时发至该名称的邮件将发送至你防火墙机器上的邮箱上。你可以通过 `mx-target` 选项将 MX 记录指向另一台机器。
+
+有些情况下，让全部本地机器看到一条指向他们自己的 MX 记录是十分有效的：这允许执着于 MX 记录而不会回落到 A 记录的邮箱能在机器内部发送邮件。这些 MX 记录通过 `selfmx` 选项启用。
+
+== 使用特定的服务器
+
+dnsmasq 可以将请求特定域名的 DNS 请求发送至指定的上游名称服务器。该特性因 VPN 而加入，但却是通用的。运用场景如下：你通过 ISP 有一个标准的互联网连接，且 dnsmasq 被配置为向 ISP 名称服务器转发请求，接着你通过一条 VPN 连入你公司的网络，来访问你公司防火墙内部的主机。你能访问，但由于大多数内部主机对公共互联网不可用，你的公司不会在公共 DNS 上公布它们，于是你并不能从 ISP 的名称服务器上获得它们的 IP 地址。解决方案是，使用公司的名称服务器来解析公司的私有域，而 dnsmasq 允许这样做。假设公司内部机器全部在域名 `interal.myco.com`，且公司的名称服务器为 `192.168.10.1`，那么选项 `server=/internal.myco.com/192.168.10.1` 将把全部的内部域的请求导向正确的名称服务器。你可以在每个 server 选项中指定多于一个的域。若有多个名称服务器，则将多次指定 server 选项，将它们全部列出。
+
+== 本地域
+
+有些时候，人们会具有本地域，且并不想将它们转发至上游服务器。可以通过无服务器 IP 地址的服务器选项来实现。为了让事情更清晰，`local` 是 `server` 的同义词。举例来说，选项 `locale=/localnet/` 保证了任何以 `.localnet` 结尾的域名请求将会被 `/etc/hosts` 或者 DHCP 回应，而非被发送至上游服务器。
+
+== 防御顶层域名通配符
+
+在 September 2003 Verisign 为顶层域名 `.com` 和 `.net` 追加了通配符。该效果为任何请求至未注册的 `.com` 和 `.net` 名称将会返回 Verisign 的站点查找服务，而非“没有该域名”相应。要恢复正确的行为，你可以告诉 dnsmasq 站点查找的主机的地址，并让它在看到该地址时，替换为 NXDOMAIN 回复。当前站点查找的地址为 64.94.110.11，所以给出选项 `bogus-nxdomain=64.94.110.11` 将对 Verisign 启用该行为。若其他的 TLD 也做了相同的事情，你也可以为它们做相同的事情。参见 dnsmasq 的 FAQ 来了解 `bogus-nxdomain` 选项的详细信息。
+
+== 其他配置详情
+
+默认情况下，dnsmasq 在一个主机的全部已配置界面上提供 DNS 服务。而你很可能并不希望（比如）对通过 ADSL 或电话线路上的互联网提供 DNS 服务，于是 dnsmasq 允许你指定它要监听的界面。用 `interface` 或者 `address` 选项来指定。
+
+`filterwin2k` 选项让 dnsmasq 忽略特定的 DNS 请求，该请求由 Windows boxen 每隔几分钟发出。这些请求通常在全局 DNS 中不会获得有意义的回复，且会因为触发了 dial-on-demand 互联网链接而产生问题。
+
+对 dnsmasq 进程发送 `SIGHUP` 将会让它清空自己的缓存，并重载 `/etc/hosts` 和 `/etc/resolv.conf`。
+
+对 dnsmasq 进程发送 `SIGUSR1`（`killall -10 dnsmasq`）会导致记录缓存用量统计的日志，通常为 `/var/log/syslog` 或者 `/var/log/messages`。
+
+`log-queries` 选项会让 dnsmasq 详细地记录它所处理的请求，并会由 SIGUSR1 触发将缓存的内容完整 dump 至 syslog 中。
+
+要了解完整的选项列表，请查看手册 dnsmasq(8)。
