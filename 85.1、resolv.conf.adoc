@@ -1,6 +1,9 @@
 = resolve.conf
-:gethostname(2):link:https://man7.org/linux/man-pages/man2/gethostname.2.html[gethostname(2)]
-
+:gethostname_man2: link:https://man7.org/linux/man-pages/man2/gethostname.2.html[gethostname(2)]
+:resolver_man3: link:https://man7.org/linux/man-pages/man3/resolver.3.html[resolver(3)]
+:res_query_man3: link:https://man7.org/linux/man-pages/man3/res_query.3.html[res_query(3)]
+:gethostbyname_man3: link:https://man7.org/linux/man-pages/man3/gethostbyname.3.html[gethostbyname(3)]
+:getaddrinfo_man3: link:https://man7.org/linux/man-pages/man3/getaddrinfo.3.html[getaddrinfo(3)]
 
 == 名称
 
@@ -18,12 +21,56 @@ __解析器__是一组 C 库的例程，这些例程用于提供访问互联网�
 
 不同的配置选项为：
 
-`nameserver` 域名服务器 IP 地址::
+nameserver 域名服务器 IP 地址::
 解析器应该请求的名称服务器的互联网地址，要么是一个 IPv4 地址（用点号标记法表示）,或者依照 RFC 2373 定义的由分号（可能为点号）分隔的 IPv6 地址。最多支持列举 `MAXNS`（当前为 3，参见 `<resolv.h>`）个名称服务器。若有多个服务器，则解析器库会依照列表的顺序顺次发送请求。若没有出现 `nameserver` 条目，则默认值为使用本地机器上的名称服务器。（被使用的算法为，尝试一个名称服务器，若请求超时，则尝试下一个，直到用尽名称服务器，之后再重新尝试所有的名称服务器，直到达到最大的重试次数）。
 
-`search` 主机名的查找列表::
-默认情况下，查找列表包含一个条目，本地域名。它由 {gethostname(2)} 返回的本地主机名决定；本地域名来自首个点号 `.` 之后的全部内容。最后，若主机名不包含点号 `.`，那么就假设本地域名为根域。 +
+search 主机名的查找列表::
+默认情况下，查找列表包含一个条目，本地域名。它由 {gethostname_man2} 返回的本地主机名决定；本地域名来自首个点号 `.` 之后的全部内容。最后，若主机名不包含点号 `.`，那么就假设本地域名为根域。 +
 这可以通过在关键字 `search` 后罗列需要的域搜索路径来实现，多个名称之间可以用宫格或者制表符分隔。解析器的请求若少于 __ndots__ 个点（默认为 1），那么就逐次测试搜索路径，直到首个匹配。对于具有多重子域名的环境，轻阅读下方的 **options ndots:__n__** 来避免中间人工具，以及非必要的根 DNS 服务器流量。注意该过程可能较慢，并当所罗列的域名的服务器并不在本地时，生成大量的网络流量，并且若当某个域名没有可用的服务器时，请求会超时。 +
 若有多个 `search` 指令，则会使用最后一个出现的搜索列表。 +
 在 glibc 2.25 和之前的版本，搜索列表被限制为 6 个域，且总长度为 256 个字符。在 glibc 2.26 之后，搜索列表就没有限制了。 +
 `domain` 指令是 `search` 指令的遗弃名称，该指令仅能处理一个搜索列表条目。
+
+sortlist::
+该选项允许 {gethostname_man2} 返回的地址被排序。一个 sortlist 由 IP 地址和网络掩码组成的对组成。网络掩码为可选的，其默认值为网络的自然掩码。同一对的IP 地址和可选的网络掩码之间由斜线 `/` 分隔。可以指定至多 10 对。下面是一个样例：
++
+[source]
+----
+sortlist 130.155.160.0/255.255.240.0 130.155.0.0
+----
+
+options::
+选项允许修改特定的内部解析器变量。语法为 +
+**option** __option...__ +
+其中的 __option__ 为下面的一种：
+
+debug:::
+设置 ___res.options__ 中的 **RES_DEBUG** 值（仅当 glibc 的构建包含了 debug 支持；参见 {resolver_man3}）
+
+ndots:__n__:::
+设置一个名称中必须存在的点号的数量，该数量会传递给 {res_query_man3}（参见 {resolver_man3}），若低于该数量，则触发 __initial absolute query__。__n__ 的默认值为 1，意味着若一个名称中出现了任何点号，那么该名称将首先作为绝对名称执行搜索，再通过向其后追加 __search list__ 元素来执行搜索。该选项的值会静默地限制在小于等于 15。
+
+timeout:__n__:::
+设置解析器等待一个远程名称服务器的相应的时间，在超过该时间之后，它将尝试向另一个名称服务器发送请求。它可能与任何解析器 API 调用的总耗时**不**相同，且不能保证一个独立的解析器 API 调用与一个 timeout 对应。单位为秒，默认值为 **RES_TIMEOUT**（当前为 5，参见 __<resolv.h>__）。该选项的值会静默地限制在小于等于 30。
+
+attempts:__n__:::
+设置解析器在发送请求至它的名称服务器多少次之后，放弃并返回错误信息给调用应用。默认值为 **RES_DFLRETRY**（当前为 2，参见 __<resolv.h>__）。该选项的值会静默地限制在小于等于 5。
+
+rotate:::
+设置 ___res.options__ 中的 **RES_ROTATE** 值，导致以 round-robin 的选择方式从列表中选择名称服务器。它可以分散全部被罗列的服务器的负载，而非总是让全部的客户端总是首先对首个罗列的服务进行请求。
+
+
+no-check-names:::
+设置 ___res.options__ 中的 **RES_NOCHECKNAME** 值，其会关闭现代 BIND 检查，该检查会测试进入的主机名和邮箱名中的无效字符，比如下划线（`_`）、非 ASCII 字符或者控制字符。
+
+inet6:::
+设置 ___res.options__ 中的 **RES_USE_INET6** 值。它会导致在 {gethostbyname_man3} 函数中首先尝试 AAAA 请求后，在尝试 A 请求，且当存在 A 记录，而不存在 AAAA 记录时，将 IPv4 响应映射至 IPv6 “隧道形式”。在 glibc 2.25 之后，该选项被弃用；应用应该使用 {getaddrinfo_man3} 而非 {gethostbyname_man3}
+
+ip6-bytestring（自 glibc 2.3.4 至 2.24）:::
+设置 ___res.options__ 中的 **RES_USEBSTRING**。它导致反向 IPv6 查询使用 RFC 2673 中描述的 bit-label 格式；若该选项未设置（也即默认值），那么使用 nibble 格式。该选项在 glibc 2.25 中移除，这是因为它依赖于一个向前不兼容的 DNS 扩展，而该扩展从未在互联网上布置过。
+
+ip6-dotint/no-ip6-dotint（glibc 2.3.4 至 2.24）:::
+清除/设置 ___res.options__ 中的 **RES_NOIP6DOTONT**。当清楚该选项时（`ip6-dotint`），反向 IPv6 查找在（已弃用的）__ip6.int__ zone 中执行；当设置该选项时（`no-ip6-dotint`），反向 IPv6 查找默认在 __ip6.arpa__ zone 中执行。该选项直到 glibc 2.24 前都可用，且 `no-ip6-dotint` 为默认值。鉴于互联网早就弃用了 `ip6-dotint` 支持，该选项在 glibc 2.25 中被移除。
+
+edns0（自 glibc 2.6）:::
+设置 ___res.options__ 中的 **RES_USE_EDNSO**。它启用了 RFC 2671 中描述的 DNS 扩展的支持。
