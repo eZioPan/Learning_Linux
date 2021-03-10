@@ -4,6 +4,7 @@
 :res_query_man3: link:https://man7.org/linux/man-pages/man3/res_query.3.html[res_query(3)]
 :gethostbyname_man3: link:https://man7.org/linux/man-pages/man3/gethostbyname.3.html[gethostbyname(3)]
 :getaddrinfo_man3: link:https://man7.org/linux/man-pages/man3/getaddrinfo.3.html[getaddrinfo(3)]
+:resolv_conf_man5: link:https://man7.org/linux/man-pages/man5/resolv.conf.5.html[resolv.conf(5)]
 
 == 名称
 
@@ -74,3 +75,42 @@ ip6-dotint/no-ip6-dotint（glibc 2.3.4 至 2.24）:::
 
 edns0（自 glibc 2.6）:::
 设置 ___res.options__ 中的 **RES_USE_EDNSO**。它启用了 RFC 2671 中描述的 DNS 扩展的支持。
+
+single-request（自 glibc 2.10）:::
+设置 ___res.options__ 中的 **RES_SNGLKUP**。默认情况下，glibc 在 2.9 版本后会同步执行 IPv4 和 IPv6 的查询。有些实际的 DNS 服务器无法正确处理这些请求，并导致请求超时。该选项会禁用该行为，并让 glibc 顺序执行 IPv6 和 IPv4 请求（会带来些许解析进程的延迟）。
+
+single-request-reopen（自 glibc 2.9）:::
+设置 ___res.options__ 中的 **RES_SNGLKUPREOP**。解析器对 A 和 AAAA 请求使用相同的套字节。有些硬件会错误地仅返回一个回复。当它发生时，系统将停止并等待第二个回复。打开该选项会修改该行为，如此若从相同的端口发送的请求无法正常被处理，那么在发送第二个请求时，就会关闭该套字节，并打开一个新的。
+
+no-tld-query（自 glibc 2.14）:::
+设置 ___res.options__ 中的 **RES_NOTLDQUERY**。该选项导致 **res_nsearch()** 不会尝试解析一个无限定（unqualified）名称，就如同它是一个顶级域名。该选项会导致以 `localhost` 作为顶级域名，而非作为搜索列表上的一个或多个元素存在的站点。在设置了 **RES_DEFNAMES** 或者 **RES_DNSRCH** 时，该选项无效。
+
+use-vs（自 glibc 2.14）:::
+设置 ___res.options__ 中的 **RES_USEVE**。该选项强制 DNS 解析时使用 TCP。
+
+no-reload（自 glibc 2.26）:::
+设置 ___res.options__ 中的 **RES_NORELOAD**。该选项关闭对于修改的配置文件的自动重载。
+
+trust-ad（自 glibc 2.31）:::
+设置 ___res.options__ 中的 **RES_TRUSTAD**。该选项控制呆解析器（stub resolver）的 AD 位的行为。一个验证解析器在一个响应中设置了 AD 位，那么它指出响应中的数据受到 DNSSEC 的验证。要依靠 AD 位，那么本地系统必须信任 DNSSEC 验证解析器，以及通向它的网络路径，这也是为什么需要明确指定该选项的原因。若 **trust-ad** 选项被激活，那么呆解析器设置会设置发出的 DNS 请求的 AD 位（来启用 AD 位支持），并在响应中保留 AD 位。不设置该选项，则请求中不会设置 AD 位，且向应用返回响应时，总是会移除该位。这意味着，如果正确地设置了 **trust-ad** 选项，那么应用就可以信任响应中的 AD 位。 +
+在 glibc 2.30 版本之前，请求中不会自动设置 AD 位，而在响应中，AD 位不会做任何修改就传递给应用。
+
+系统级别的 `resolv.conf` 中的 `search` 关键字可以被每个进程覆盖，只要在环境变量 LOCALDOMAIN 中写入空格分隔的搜索域的列表即可。
+
+系统级别的 `resolv.conf` 中的 `options` 关键自可以被每个进程修改，只要在环境变量 RES_OPTIONS 中写入空格分隔的选项（参见上面的 options 段）即可。
+
+关键字和值必须出现在一个单行上，且关键字（比如 nameserver）必须作为每行的起始。值跟随关键字，用白空格分开。
+
+行首为分号（`;`）或井号（`#`）的行将作为注释存在。
+
+== 文件
+
+参见 {resolv_conf_man5}
+
+== 参见
+
+参见 {resolv_conf_man5}
+
+== 版权
+
+参见 {resolv_conf_man5}
