@@ -29,3 +29,27 @@ link:https://thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html[]
 ====
 
 注意，通常来说，允许丢失参数，者将关闭该功能，比如 `--pid-file` 将金庸写入一个 PID 文件。在 BSD 上，除非链接了 GNU getopt 库，否则选项的长形式无法在命令行中使用；但依旧可以在配置文件中识别。
+
+--test::
+读取配置文件并检查语法。若退出码为 0，则可用，否则不可用。不会启用 dnsmasq。
+
+-w, --help::
+显示全部命令行选项。`--help dhcp` 将显示已知的 DHCPv4 配置选项，`--help dhcp6` 将显示 DHCPv6 选项。
+
+-h, --no-hosts::
+不要读取 /etc/hosts 中的主机名。
+
+-H, --addn-hosts=<file>::
+额外的主机文件。同时读取指定的文件和 /etc/hosts。若给出了 `--no-host`，那么仅读取所指定的文件。该选项可指定多次来追加多个 hosts 文件。若给定了一个文件夹，则读取文件夹中的所有文件。
+
+--hostsdir=<path>::
+读取目录中的全部 hosts 文件。新加入的文件或者修改过的文件会被自动读取。参见 `--dhcp-hostsdir` 了解详情。
+
+-E, --expand-hosts::
+向 /etc/hosts 中的简单名称追加域名，如同 DHCP 发送的名称一样。注意这不适用于 cnames、PTR 记录、TXT 记录中的域名。
+
+-T, --local-ttl=<time>::
+当返回来自 /etc/hosts、配置文件、DHCP 租用文件的信息时，dnsmasq 默认会将 time-to-live 字段设置为 0，表示请求者自身不应该缓存信息。该设置在几乎全部的情况下都是正确的。该选项允许指定这些返回的 time-to-live（单位为秒）。它能降低服务器的负载，但会在在部分情况下导致客户端使用过期的数据。
+
+--dhcp-ttl=<time>::
+同 `--local-ttl`，但仅影响回复自 DHCP 租用的信息。如果两者都给出，`--dhcp-ttl` 应用于 DHCP 信息，`--local-ttl` 应用于其它。将该值设置为 0 将会消去 `--local-ttl` 对 DHCP 的影响。
