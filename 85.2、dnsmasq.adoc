@@ -22,12 +22,6 @@ dnsmasq 在编写时谨记微型嵌入式系统。它的目标就是在支持功
 
 == 选项
 
-[WARNING]
-====
-译者注：本段**仅记录翻译者本人**认为较为有用的选项，完整列表请参阅 +
-link:https://thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html[]
-====
-
 注意，通常来说，允许丢失参数，者将关闭该功能，比如 `--pid-file` 将金庸写入一个 PID 文件。在 BSD 上，除非链接了 GNU getopt 库，否则选项的长形式无法在命令行中使用；但依旧可以在配置文件中识别。
 
 --test::
@@ -53,3 +47,66 @@ link:https://thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html[]
 
 --dhcp-ttl=<time>::
 同 `--local-ttl`，但仅影响回复自 DHCP 租用的信息。如果两者都给出，`--dhcp-ttl` 应用于 DHCP 信息，`--local-ttl` 应用于其它。将该值设置为 0 将会消去 `--local-ttl` 对 DHCP 的影响。
+
+--neg-ttl=<time>::
+来自上游服务器的否定回答中的 SOA 记录通常包含 time-to-live 信息，该信息被 dnsmasq 用于缓存。若上游服务器隐去了该信息，dnsmasq 就不会缓存该信息。该选项给出了否定回答的默认 time-to-live 值（以秒计），当否定回复缺少 SOA 记录，dnsmasq 就会使用该选项的值来缓存记录。
+
+--max-ttl::
+设置将要发送给客户端的最大 TTL 值。若真实的 TTL 值比该值低，那么将向客户端发送该选项指定的最大 TTL。实际的 TTL 会存放在缓存中来防止对上游 DNS 服务器的冲击。
+
+--max-cache-ttl=<time>::
+设置缓存中的条目的最大 TTL 值。
+
+--min-cache-ttl=<time>::
+当缓存它们时，将 short TTL 值扩大至该值。TTL 值。注意，通常来说，人工扩大 TTL 的值都是坏注意，除非有充分的理由，并了解自己在做什么，否则不要使用它。dnsmasq 将该选项的值限制在了 1 小时，该限制仅能通过重编译修改。
+
+--auth-ttl=<time>::
+设置来自权威服务器的回答的 TTL 的值。
+
+-k, --keep-in-forground::
+不要像通常启动一样启动后就切入后台运行。它用于让 dnsmasq 运行在 daemontools 或 lauchd 的管理下。
+
+-d, --no-daemon::
+debug 模式：不要 fork 到后台，不要写入一个 pid 文件，不要修改 uid，在接到 SIGUSR1 后生成一个完整的 cache dump，同时向 stderr 和 syslog 写入日志，不要 fork 出新的进程来处理 TCP 请求。注意该选项仅用于 debug，要在生产环境中阻止 dnsmasq 自身的后台化，请使用 `--keep-in-forground`。
+
+-q, --log-queries::
+将 dnsmasq 处理的 DNS 请求的结果记录入日志。当收到 SIGUSR1 时，生成一个完整的 cache dump。若给定了参数 `extra`，比如 `--log-queries=extra`，那么会在日志的行首提供额外的信息。它包含了一个序列号，以及与序列号绑定的日志行，这些行包含独立的请求以及请求者的 IP 地址。
+
+-8， --log-facility=<facility>::
+dnsmasq 将把 syslog 条目发送给 __facility__，默认为 DAEMON，在 debug 模式中为 LOCAL0。若 __facility__ 至少包含一个 `/` 字符，那么该值被认为是文件名，dnsmasq 将向给定文件而非 syslog 写入日志。若 __facility__ 为 `-`，那么 dnsmasq 将日志写入 stderr。（在读取配置文件时产生的错误依旧会进入 syslog，但一次成功的启动的所有输出、以及运行时的全部输出都将排他地进入文件）。当向文件记录日志时，dnsmasq 将在收到 SIGUSR2 时关闭并重开文件。它允许日志文件被 rotate，而不需要停止 dnsmasq。
+
+--log-async[=<lines>]::
+启用异步日志写入，并可选地设置当 syslog 缓慢时，dnsmasq 可以队列的行的数量。dnsmasq 可以异步地写入日志：它允许 dnsmasq 继续其功能，而非被 syslog 阻塞运行，并允许 syslog 使用 dnsmasq 来查询 DNS，而不必冒生成死锁的风险。若日志行的队列已满，那么 dnsmasq 会记录该溢出，并记录丢失的信息的数量。默认的队列长度为 5，恰当的取值范围应该在 5 至 25 之间，最大值限制在了 100。
+
+-x, --pid-file=<path>::
+指定 dnsmasq 用于记录 pid 的文件的路径。通常为 `/var/run/dnsmasq.pid`
+
+-u, --user=<username>::
+指定在 dnsmasq 启动后，要切换至的用户。通常情况下，dnsmasq 必须以 root 身份启动，但在启动后，它就会抛弃 root 身份，并以另一个用户的 id 运行。该用户通常为 **nobody**，也可以通过该选项切换。
+
+-g, --group=<groupname>::
+指定 dnsmasq 运行时使用的组。若可用，则默认为 **dip**，这是为了访问 `/etc/ppp/resolv.conf`，而该文件通常并不是任何账户可读的。
+
+-v, --version::
+打印版本号。
+
+-p, --port=<port>::
+监听端口号 __port__ 而非标准 DNS 端口（53）。设置为 0 将完全关闭 DNS 功能，仅留下 DHCP 和/或 TFTP。
+
+-P, --edns-packet-max=<size>::
+指定被 DNS 转发者支持的最大 EDNS.0 UDP 包大小。默认为 4096，也是 RFC5625 的推荐大小。
+
+-Q, --query-port=<query_port>::
+用指定的 UDP 端口号 __query_port__、而非随机端口发送出站 DNS 请求，并监听其回复。注意，使用该选项将导致 dnsmasq 对 DNS 嗅探攻击的安全性下降，但可能提高速度并降低资源占用。将该值设置为 0 将导致 dnsmasq 使用由 OS 分配的单一端口：该行为在 2.43 版本前为默认行为。
+
+--min-port=<port>::
+不要使用小于该端口号的端口作为出站 DNS 请求的源端口。dnsmasq 将选择随机端口作为外部端口：当指定该选项后，所使用的端口将永远比指定的值大。对于防火墙后的系统很有用。默认值为 1024。
+
+--max-port=<port>::
+使用小于该端口号的端口作为出站 DNS 请求的源端口。nsmasq 将选择随机端口作为外部端口：当指定该选项后，所使用的端口将永远比指定的值小。对于防火墙后的系统很有用。
+
+-i, --interface=<interface name>::
+仅监听所指定的一个或多个接口。当使用 `--interface` 选项时，dnsmasq 会自动追加回环接口至接口列表。若不指定 `--interface` 或 `--listen-address` 选项，那么 dnsmasq 将监听除了由 `--except-interface` 选项给出的接口之外的全部可用接口。在 Linux 上，当 `--bind-interfaces` 或者 `--bind-dynamic` 起效，将识别 IP 别名接口标签（比如 **eth1:0**），而非接口名。在简化的情况下，当一个接口仅有一个地址时，它们指向同一个事情，但当一个接口具有多个地址时，它允许控制接受哪些地址。在默认的模式下，也可以使用 `--listen-address` 达到相同的效果。一个简单的通配符——一个尾缀的 `*`——可以用在 `--interface` 以及 `--expect-interface` 选项中。
+
+-I, --except-interface=<interface name>::
+不要监听指定的接口。注意，`--listen-address`、`--interface` 以及 `--except-interface` 选项的指定顺序并不重要，因为 `--except-interface` 选项将永远覆盖其它的。`--listen-address` 中描述的接口标签在这里同样适用。
