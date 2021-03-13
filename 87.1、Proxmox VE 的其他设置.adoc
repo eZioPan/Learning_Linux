@@ -1,0 +1,98 @@
+= Proxmox VE 的其他设置
+:experimental:
+
+这里记录了 PVE 日常使用中遇到的一些问题和解决方案
+
+== 防火墙/Firewall 设置
+
+[WARNING]
+====
+重要提示，在修改 PVE 的防火墙的时候，**强烈建议**将自己的电脑和 PVE 的主机放置在**同一个广播域**（同一个 LAN）中，这样即便是设置有些问题还能连上 PVE 的页面
+====
+
+=== 技能要求
+
+无
+
+建议了解网络 IP 层的相关概念，特别是**广播域**的概念
+
+=== 总述
+
+PVE 的防火墙设置起始比较简洁，特别是在单个广播域中的设置会很简单，如果出现了多个广播域，则要注意一些事项。
+
+PVE 的防火墙可以在三个位置设置，分别为
+
+|===
+| Web GUI | 配置文件 | 含义 | 本文简称
+
+| menu:Datacenter[Firewall]
+| `/etc/pve/firewall/cluster.fw`
+| cluster 级别的防火墙设置，作为防火墙模板存在
+| cluster 防火墙
+
+| menu:Datacenter[__hostname__ > Firewall]
+| `/etc/pve/nodes/<nodename>/host.fw`
+| PVE Host 主机的防火墙设置
+| Host 防火墙
+
+| menu:Datacenter[__hostname__ > __VM ID / CT ID__]
+| `/etc/pve/firewall/<VMID>.fw`
+| 虚拟机、容器的防火墙设置
+| VM 防火墙 / CT 防火墙
+|===
+
+三个位置的配置相互之间会有一些关联，下文会详细描述。
+
+在 Web GUI 每个位置的 Firewall 下又有一些设置特殊的设置，下面将以 cluster 防火墙为例，进行说明
+
+=== cluster 级别防火墙
+
+==== `Alias` 侧边栏
+
+用来定义一个 IP/掩码 对的名称，该名称可以插入其他配置中，直接表示对应的 IP/掩码 对。
+
+预定义的 alias
+
+`local_network`::
+表示 Host 主机所在的广播域，系统自动允许该 alias 中的 IP 地址进行同一 cluster 中的 Host 之间的通信。
+
+==== `IPSet` 侧边栏
+
+将多个 IP/掩码 对，以及 alias 组成一个 IPSet，并给出一个名称，该名称可以插入其他配置中，直接表示该 IPSet 中所有的 IP/掩码。
+
+预定义的 IPSet
+
+`management`::
+该 IPSet 不作用于 VM/CT 上，仅作用于 Host 上。处于该 IPSet 中的 IP 将自动允许执行常规管理操作（PVE GUI、VNC、SPICE、SSH） +
+`local_network` alias 会自动加入该 IPSet。
+
+`blacklist`::
+任何加入该 IPSet 的 IP 地址将会被全体 Host 和 VM/CT 抛弃。
+
+`ipfilter-net*`::
+这些过滤器属于 VM 的网络界面，主要用于阻止 IP 嗅探。一个界面上如果定义了这种 IPSet，那么任何外出流量的源 IP 不匹配对应界面的 ipfilter set，则流量被抛弃。 +
+对于配置了这类 IPSet 的容器，若它们存在（或通过 VM - Firewall 选项页的 `IP Filter` 选项启用），那么隐式地包含关联的 IP 地址。 +
+对于虚拟机和容器，它同样隐式地包含标准的 MAC 生成的 IPv6 本地链路，以允许邻居发现协议工作。
+
+==== `Security Group` 侧边栏
+
+将 IP、Alias、IPSet 与网络协议、放行设置等关联，形成防火墙的过滤规则条目，并将多个条目合并成 Security Group，它可以直接加入防火墙规则中，用来批量启用和关闭规则。
+
+==== `Firewall` 侧边栏
+
+将上述各种形式生成的内容组合成防火墙过滤规则，，并管理其启用与否
+
+==== `Options` 侧边栏
+
+总控防火墙的启用规则，以及默认规则
+
+=== 三种防火墙设置之间的关系
+
+. cluster 下的 Firewall 侧边栏 - Options 侧边栏 - Firewall 选项 将决定本 cluster 下管理的全体 Host 和 VM/CT 的防火墙的关闭与否，仅当该选项开启时，Host 和 VM/CT 下的防火墙功能才能起效。
+. cluster 下的其它规则则按照自身的限制分配至各个 Host/VM/CT 上。
+. Host 使用的防火墙与 VM/CT 使用的防火墙无关联。
+. 可以对特定的 Host 和 VM/CT 设置特定的防火墙规则。
+
+=== 综述
+
+由上可知，当远程管理主机的 IP 地址与 PVE Host 主机的 IP 地址不在同一个广播域中时，请先将管理主机的 IP 地址追加至 `management` IPSet 中再启用防火墙，否则会导致 Web GUI 无法连接的问题。
