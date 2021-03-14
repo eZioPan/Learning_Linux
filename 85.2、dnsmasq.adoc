@@ -1,4 +1,5 @@
 = DNSMASQ
+:resolv_conf_man5: xref:85.1、resolv.conf.adoc[resolv.conf(5)]
 
 == 名称
 
@@ -134,3 +135,21 @@ dnsmasq 将把 syslog 条目发送给 __facility__，默认为 DAEMON，在 debu
 
 -b, --bogus-priv::
 虚空化对私有地址的反向查询。全部对私有 IP 范围（比如 192.168.x.x）的反向查询，若无法再 /etc/hosts 或者 DHCP 租用文件中找到的，均会回复 **no such domain**，而不会转发至上游。受影响的 IPv4 以及 IPv6 前缀由 RFC6303 中的列表给出。
+
+-V, --alias=[<old-ip>]|[<start-ip>-<end-ip>],<new-ip>[,<mask>]::
+修改由上游名称服务器返回的 IPv4 地址；用 __new-ip__ 替换 __old-ip__。若给出了可选的 __mask__ 那么任何可以匹配该带掩码的 IP 的地址都会被重写。所以，对于 `--alias=1.2.3.0,6.7.8.0,255.255.255.0` 将会把 `1.2.3.56` 映射为 `6.7.8.56`。这就是被 Cisco PIX 路由称为 DNS doctoring 的东西。若旧 IP 以 IP 范围的形式给定，则仅有该范围内的 IP，而非整个子网会被重写。于是 `--alias=192.168.0.10-192.168.0.40,10.0.0.0,255.255.255.0` 将会把 `192.168.0.10` 至 `192.168.0.40` 映射至 `10.0.0.10` 到 `10.0.0.40`
+
+-B, --bogus-nxdomain=<ipaddr>::
+将包含指定 IP 地址的回复替换为 **no such domain** 回复。这是为了消去 Verisign 在 2003 年 9 月开始实行的迷惑操作：它们考试对于未注册的名称的请求返回一个广告页的地址，而非正确的 `NXDOMAIN` 响应。该选项告诉 dnsmasq 当它看到这种行为时应该伪造正确的响应。在 2003 年 9 月时 Verisign 返回的地址为 64.94.110.11。
+
+--ignore-address=<ipaddr>::
+忽略包含了指定地址的 A 记录的回复。不会生成错误，dnsmasq 简单地监听其它回复。在正确的回复到达前，它可以使用快速伪造对于特定域名的回复的方法来抵御封锁策略。
+
+-f, --filterwin2k::
+较新版本的 windows 会周期性地发送 DNS 请求，这些请求不会从公共 DNS 上获得什么有意义的回复，但会触发按需拨号链接而导致问题。启用该选项会过滤这类请求。会阻止的请求为具有 SOA 和 SRV 类型的请求，以及类型为 ANY、请求的名称中具有下划线的请求，也就是 LDAP 请求。
+
+-r, --resolv-file=<file>::
+从文件 __file__ 而非 /etc/resolv.conf 中读取上游名称服务器的 IP 地址。对于该文件的格式参见 {resolv_conf_man5}。与 dnsmasq 相关的行仅为 namserver 行。可以让 dnsmasq 轮询多个 resolv.conf 文件以拉取信息，指定的首个文件名将替换默认的，其后的每一个都会追加在列表后。仅在轮询时允许；会使用文件的最近修改时间。
+
+-R, --no-resolv::
+不要读取 /etc/resolv.conf。仅从命令行以及 dnsmasq 配置文件中读取上游服务器。
