@@ -110,3 +110,27 @@ dnsmasq 将把 syslog 条目发送给 __facility__，默认为 DAEMON，在 debu
 
 -I, --except-interface=<interface name>::
 不要监听指定的接口。注意，`--listen-address`、`--interface` 以及 `--except-interface` 选项的指定顺序并不重要，因为 `--except-interface` 选项将永远覆盖其它的。`--listen-address` 中描述的接口标签在这里同样适用。
+
+--auth-server=<domain>,[<interface>|<ip-address>...]::
+对到达特定接口或地址的请求启用 DNS 权威模式。注意这些接口或地址不需要在 `--interface` 或 `--listen-address` 配置中指出，`--auth-server` 将在特定接口上覆盖这些选项，并提供一个不同的 DNS 服务。__domain__ 为 **glue record**。它应该将全局 DNS 解析为指向 dnsmasq 所监听的 A 和/或 AAAA 记录。当指定接口时，它可以使用 `/4` 或者 `/6` 来指明仅监听与该接口绑定的 IPv4 或 IPv6 地址。由于任何定义好的权威 zone 同样作为受 dnmasq 支持的通常的递归 DNS 服务的一部分，所以也可以以无接口或地址，仅指定一个主外部名称服务器的方式声明 `--auth-server`。
+
+--local-service::
+仅接受地址在本地子网上的主机的 DNS 请求，比如服务器的接口所在的一个子网。该选项仅在没有 `--interface`、`--except-interface`、`--listen-address`、`--auth-server` 选项时起效。它应该在安装时设置为默认值，来允许未配置的安装有用，且远离 DNS 放大攻击。
+
+-2， --no-dhcp-interface=<interface name>::
+不要在指定的界面上提供 DHCP 或 TFTP，但会提供 DNS 服务。
+
+-a, --listen-address=<ipaddr>::
+监听给定的一个或多个地址。`--interface` 和 `--listen-address` 也可一同指定，此时全部指定的接口和地址会被使用。注意若不指定 `--interface`，但指定了 `--listen-address`，那么 dnsmasq 就不会自动监听回环接口。要监听它，它的 IP 地址 127.0.0.1 必须要明确地在 `--listen-address` 选项中指出。
+
+-z, --bind-interfaces::
+在支持的系统上，dnsmasq 会绑定通配符地址，即便它仅会监听一些地址。此后，它会丢掉那些不应该被回复的请求。这有助于平顺地工作，即便接口可能会出现、消失或者改变地址。该选项会强制 dnsmasq 仅真实地绑定它会监听的接口。该选项有用的情景大概只有一个，就是在同一个机器上还运行着另一个名称服务器（或另一个 dnsmasq 实例）。启用该选项同样会让同一个机器上可以运行多个提供 DHCP 服务的 dnsmasq 实例。
+
+--bind-dynamic::
+启用一个网络模式介于 `--bind-interface` 和默认模式之间的模式。dnsmasq 绑定独立接口的地址，允许多个 dnsmasq 实例，但如果新接口或地址出现，它会自动监听它们（受到访问控制配置的限制）。者让动态创建的接口与默认接口一样能工作。实现该选项要求非标准的网络 API，它仅出现在 Linux 上。其它平台则回落至 `--bind-interfaces` 模式。
+
+-y, --localise-queries::
+从 /etc/hosts 和 `--interface-name` 返回 DNS 请求的回答，其取决于请求接受的接口。若一个名字关联了多个地址，且其中至少有一个地址与请求发送的接口在相同的子网，那么仅返回在那个子网上的地址。它允许服务器在 /etc/hosts 中为它的每个接口设置地址，而主机则能依照它所在的网络获得正确的地址。当前该设置仅限 IPv4。
+
+-b, --bogus-priv::
+虚空化对私有地址的反向查询。全部对私有 IP 范围（比如 192.168.x.x）的反向查询，若无法再 /etc/hosts 或者 DHCP 租用文件中找到的，均会回复 **no such domain**，而不会转发至上游。受影响的 IPv4 以及 IPv6 前缀由 RFC6303 中的列表给出。
