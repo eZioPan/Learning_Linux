@@ -153,3 +153,15 @@ dnsmasq 将把 syslog 条目发送给 __facility__，默认为 DAEMON，在 debu
 
 -R, --no-resolv::
 不要读取 /etc/resolv.conf。仅从命令行以及 dnsmasq 配置文件中读取上游服务器。
+
+-1, --enable-dbus[=<service-name>]::
+允许 dnsmasq 的配置由 DBus 方法调用修改。可以被修改的配置为上游 DNS 服务器（以及对应的域名）以及清空缓存。需要 dnsmasq 构件为支持 DBus。若给出了服务名，那么 dnsmasq 将提供该名称的服务，而非默认值 **uk.org.thekelleys.dnsmasq**。
+
+--enable-ubus[=<service-name>]::
+启用 dnsmasq UBus 接口。DHCPACK 和 DHCPRELEASE 事件会触发它在 UBus 上发送信息。而且它还提供 mdetrics。需要 dnsmasq 构件为支持 UBus。若给出了服务名，那么 dnsmasq 将提供该名称的服务，而非默认值 **dnsmasq**。
+
+-o, --strict-order::
+默认情况下，dnsmasq 会向任何一个已知的上游服务器发送请求，且偏好其中已知在线的服务器。设置该标示强制让 dnsmasq 严格按照 /etc/resolv.conf 中定义的服务器顺序逐次请求每个服务器。
+
+--all-servers::
+默认情况下，若 dnsmasq 具有多个可用的上游服务器，它仅会向其中一个服务器发送请求。设置该标示会强制 dnsmasq 向全部可用的服务器发送请求。首个回复请求的服务器的回复会被发送回原始的请求者。
