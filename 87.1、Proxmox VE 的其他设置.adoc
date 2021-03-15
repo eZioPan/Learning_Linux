@@ -7,7 +7,8 @@
 
 [WARNING]
 ====
-重要提示，在修改 PVE 的防火墙的时候，**强烈建议**将自己的电脑和 PVE 的主机放置在**同一个广播域**（同一个 LAN）中，这样即便是设置有些问题还能连上 PVE 的页面
+. 在修改 PVE 的防火墙的时候，**强烈建议**将自己的电脑和 PVE 的主机放置在**同一个广播域**（同一个 LAN）中，这样即便是设置有些问题还能连上 PVE 的 Web GUI
+. 若实在无法处在同一个广播域中，依照 link:https://pve.proxmox.com/wiki/Firewall#_enabling_the_firewall[PVE 官方] 的提示，请先 SSH 登录 PVE Host，再启用防火墙，以防止配置错误将自己完全锁在 PVE 外。
 ====
 
 === 技能要求
