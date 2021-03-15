@@ -1,0 +1,39 @@
+= Learning_Linux
+
+原仓库名 Learning_CentOS7
+
+Linux 学习笔记，最初基于 **鸟哥的 Linux 私房菜 第四版** https://linux.vbird.org/linux_basic/centos7/
+
+在后来的学习和工作中也追加了不少其他来源的资料
+
+== 文件名编写规则
+
+* 序号从 `02` 开始的由小至大排列的部分为拜读鸟哥的私房菜后记录的笔记，如果有来源外部的补充内容则追加为 `<主序号>补<补充序号>`
+
+* 序号从 `99` 开始的由大至小排列的部分为自己遇到的问题在网络上查证后写的，如果有多篇目则编写为 `<主序号>.<小序号>`
+
+== 部分参考的文章来源列表
+
+由于时间有些久了，我也记不太清每篇文章所参考的资料的来源，下面记录了一些目前我还能记得的信息来源。
+
+* 鸟哥的 Linux 私房菜 第四版（CentOS7） https://linux.vbird.org/linux_basic/centos7/
+
+* Linux 自带的各种 man page
+
+* https://linux.die.net/ 上提供的 man page
+
+* https://www.man7.org/linux/man-pages/index.html 上提供的各种 man page
+
+* 21补1、C 库相关 翻译自 http://www.zipcon.net/~swhite/docs/computers/languages/c_programming_libraries.html
+
+* 21补2、configure,make,make install 背后的魔法 翻译自 https://robots.thoughtbot.com/the-magic-behind-configure-make-make-install
+
+* dnsmasq 的官方帮助 https://thekelleys.org.uk/dnsmasq/docs/
+
+* openssl 1.1.1 版本的官方帮助 https://www.openssl.org/docs/man1.1.1/
+
+* Proxmox VE 的官方帮助文档 https://pve.proxmox.com/wiki/Main_Page
+
+* systemd 相关内容来自 freedesktop.org https://www.freedesktop.org/software/systemd/man/
+
+__未完待续__
