@@ -29,8 +29,10 @@ Linux 学习笔记，最初基于 **鸟哥的 Linux 私房菜 第四版** https:
 * 21补2、configure,make,make install 背后的魔法 翻译自 https://robots.thoughtbot.com/the-magic-behind-configure-make-make-install
 
 * dnsmasq 的官方帮助 https://thekelleys.org.uk/dnsmasq/docs/
+** dnsmasq 的用法： https://fedoramagazine.org/dnsmasq-provide-dns-dhcp-services/
 
 * openssl 1.1.1 版本的官方帮助 https://www.openssl.org/docs/man1.1.1/
+** openssl 的用法：骏马金龙 https://www.junmajinlong.com/linux/index/#blogopenssl
 
 * Proxmox VE 的官方帮助文档 https://pve.proxmox.com/wiki/Main_Page
 
