@@ -197,3 +197,24 @@ IPv6 地址可以包含一个 `%interface` 限定 id，比如 fe80::202:a412:451
 
 --rev-server=<ip-address>/<prefix-len>[,<ipaddr>][#<port>][@<source-ip>|<interface>[#<port>]]::
 功能与 `--server` 一样，但提供了语法糖让指定 address-to-name 的请求更简单。举例来说 `--rev-server=1.2.3.0/24,192.168.0.1` 全等于 `--server=3.2.1.in-addr.arpa/192.168.0.1`
+
+-A, --address=/<domain>[/<domain>...]/[<ipaddr>]::
+指定域名中的主机对应的 IP 地址。域名中的请求永远不会被转发，并永远回复为给定的 IPv4 或 IPv6 地址。要同时为域名指定 IPv4 和 IPv6 地址，多次使用 `--adress` 标示。要在单个请求中包含多个 IP 地址，请转而使用 `--addn-hosts=<path>`。注意对于独立（individual）名称，/etc/hosts 和 DHCP 租用会覆盖该设置。一个常用的方法是将条目 doubleclick.net 域名跳转至更友好的局域网 web 服务器上，来防止顶部广告。域名指定与 `--server` 相同，且新增 `/#/` 表示任意域名。因此 `--address=/#/1.2.3.4` 会对无法从 /etc/hosts 和 DHCP 中回复的请求直接返回 **1.2.3.4**，而并不会转发至 `--server` 指定的上游服务器。对于 `--server`，一个或多个不具有地址的域名将返回 no-such-domain 回答，所以 `--address=/example.com/` 等价于 `--server=/example.com/`，并对 example.exe 以及其子域名返回 NXDOMAIN。由 `#` 指定的地址会被翻译为 NULL 地址 **0.0.0.0** 以及等价的 IPv6 地址 **::**，于是 `--address=/example.com/#` 将会对 example.com 以及其子域名返回 NULL 地址。这部分是 `--address=/example.com/0.0.0.0` 以及 `--address=/example.com/::` 的语法糖，但因为合并了两者而减少了配置文件的行数。注意 NULL 地址通常与 localhost 的作用相同，因此要注意查找这些名字的客户端最后都容易和自己对话。
+
+--ipset=/<domain>[/<domain>...]/<ipset>[,<ipset>...]::
+将一个或多个请求的域名所解析出来的 IP 地址放入指定的 Netfilter IP set 中。若给出了多个 setname，那么会在每个 set 中放置它们，但也会受到 IP set 的限制（IPv4 地址不能放在 IPv6 IP set 中，反之亦然）。域名和子域名的配置方法同 `--address`。这些 IP sets 必须预先存在。参见 **ipset(8)** 了解更多详情。
+
+-m, --mx-host=<mx name>[[,<hostname>],<preference>]::
+返回一个名为 __mx name__ 的 MX record，该 record 指向（若给出）给出的主机名，或者在 `--mx-target` 指定的主机，若均为指定，则指向 dnsmasq 所运行的主机。默认值长用于将邮件从一个本地系统上转发至一个中心服务器上。__preference__ 值为可选的，若不给定默认为 1.可以为一个主机指定多条 MX record。
+
+-t, --mx-target=<hostname>::
+指定 dnsmasq 返回的默认的 MX record 的目标。参见 `--mx-host`。若给定了 `--mx-target` 但不给定 `--mx-host`，dnsmasq 返回一个 MX 记录，该记录包含了 dnsmasq 所在机器的主机名的 MX 目标。
+
+-e, --selfmx::
+对每个本地机器都返回一条指向其自身的 MX record。本地机器存在与于 /etc/hosts 和 DHCP 租用中。
+
+-L, --localmx::
+对于每个本地机器都返回一条指向 `--mx-target` 给出的主机（或者 dnsmasq 运行的主机）的 MX record。本地机器存在与于 /etc/hosts 和 DHCP 租用中。
+
+-W, --srv-host=<_service>.<_port>.[<domain>],[<target>[,<port>[,<priority>[,<weight>]]]]::
+返回一个 SRV DNS 记录。参见 RFC2782 了解详情。若不给出，则由 `--domain` 给出。默认的目标域名为空，默认的端口为 1，默认的权重和优先级为 0。要小心从 BIND zone 文件转换而来的数据：port、weight、priority 数字的顺序不同。可以为一个 service/domain 设置多于一个的 SRV record，所有的匹配值均会被返回。
