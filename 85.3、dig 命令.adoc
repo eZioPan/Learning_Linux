@@ -100,3 +100,88 @@ __type__::
 ====
 仅应该使用 `-k` 选项，而不应该使用 `-y` 选项，因为 `-y` 中分享密钥以明文形式出现在命令行参数中。它可能会在 `PS1` 中输出，或者由用户 shell 维护的历史文件中出现。
 ====
+
+== 请求选项
+
+`dig` 提供了一系列影响查找的执行以及返回的显示的请求选项。有些选项会设置/取消请求头的标识位，有些选项决定回答中的那些段应该被打印，其他的选项决定超时和重试的策略。
+
+每个请求选项由关键字和前序的一个加号（`+`）构成。有些关键字可以设置/取消一个选项；这些选项可以通过在前面追加关键字 `no` 来反转该关键字的含义。其它关键字向该选项设置值，比如超时间隔。它们具有形式 `+keyword=value`。关键字可以简写，只要该简写不会产生歧义；举例来说，`+cd` 等价于 `+cdflag`。请求选项为：
+
++[no]aaflag::
+该选项为 `+[no]aaonly` 的同义词。
+
++[no]aaonly::
+该选项设置请求中的 `aa` 标识。
+
++[no]additional::
+该选项显示[或不显示]回复中的 additional section。默认为显示。
+
++[no]adflag::
+该选项设置[或不设置]请求中的 AD（authentic data）位。其要求服务器按照服务器的安全策略返回全部的 answer 和 authority section 均被验证是否为安全的。`AD=1` 表示全部的记录均被验证为安全的，且挥发并非来自 OPT-OUT 范围。`AD=0` 表示 answer 的部分内容非安全，或者未验证。该位默认设置。
+
++[no]all::
+该选项设置或清理全部的显示标识。
+
++[no]answer::
+该选项显示[或不显示]回答的 answer section。默认为显示。
+
++[no]authority::
+给选项显示[或不显示]回答的 authority section。默认为显示
+
++[no]badcookie::
+该选项在收到 BADCOOKIE 响应后对一个新的服务器重试查找。
+
++[no]besteffort::
+该选项尝试显示错误的报文中的内容。默认为不显示错误的回答。
+
++bufsize[=__B__]::
+该选项将使用 EDNS0 通告的 UDP 报文缓冲大小设置为 __B__ 字节。该缓冲的最大、最小量分别为 65535 和 0。`+bufsize` 还原默认的缓冲大小。
+
++[no]cdflag::
+该选项设置[或取消设置]请求中的 CD（checking disable）位。它要求服务器不要对响应执行 DNSSEC 检查。
+
++[no]class::
+该选项显示[或不显示]记录中的 CLASS。
+
++[no]cmd::
+该选项切换在输出中打印初始注释、`dig` 版本、以及以启用的请求选项。该选项永远有一个全局影响；它不可以在全局设置，然后再每个查找中覆写。默认为打印该注释。
+
++[no]comments::
+该选项切换输出中的部分注释行的显示，它们是关于包头部和 OPT pseudosection、以及 response section 的名称的信息。默认为打印这些注释。 +
+输出中其他类型的注释将不会受该选项的影响，但可以通过其他命令行参数控制。它们包括 `+[no]cmd`、`+[nquestiono]`、`+[no]stats` 以及 `+[no]rrcomments`。
+
++[no]cookie=__\####__::
+该选项发送[或不发送]一个 COOKIE EDNS 选项，并附带一个可选值。重演上一个回复的 COOKIE 允许服务器识别上一个客户端。默认为 `+cookie`。
+
++[no]crypto::
+该选项切换 DNSSEC 记录中 cryptographic 字段的显示。这些字段的内容对于大多数 DNSSEC 检验失败的排错都是没必要的。默认为显示这些字段。当隐藏时，它们由字符串 `[omitted]` 替代，若是 DNSKEY 导致，那么会替换 key ID 的显示为 `[ key id = value ]`。
+
++[no]defname::
+该选项被启用，被认为与 `+[no]search` 同义。
+
++[no]dns64prefix::
+查找 IPV4ONLY.ARPA AAAA，并答应任何找到的 DNS64 前缀。
+
++[no]dnssec::
+该选项要求在请求的 addtional section 中的 OPT 记录中设置 DNSSEC OK（DO）来发送 DNSSEC 记录。
+
++domain=__somename__::
+该选项设置搜索列表包含单一域名 __somename__，如同它在 `/etc/resolv.conf` 中以 `domain` 语句指定的一样，并启用搜索列表处理，就如同给出了 `+search` 选项一样。
+
++dscp=__value__::
+该选项设置发送请求时，要使用的 DSCP 码点。有效的 DSCP 码点在范围 [0..63]。默认不明确设置任何码点。
+
++[no]edns[=__#__]::
+该选项指请求中的 EDNS 版本。有效值为 0 至 255。设置 EDNS 版本会导致发送 EDNS 请求。`+noedns` 将清除已记忆的 EDNS 版本。ENDS 默认被设置为 0。
+
++[no]ednsflags[=__#__]::
+该选项位为 must-be-zero EDNS 标识位（Z bits）设置值。可接受十进制、十六进制、八进制的值。将忽略具名标识（比如 DO）。默认情况下，不设置任何 Z bits。
+
++[no]ednsnegotiation::
+该选项启用/停用 EDNS 版本协商。默认情况下，启用 EDNS 协商。
+
++[no]ednsopt[=__code__[:__value__]]::
+该选项以码点 __code__ 以及可选的十六进制的 __value__ 指定 EDNS 选项。__code__ 可以为 EDNS 选项名（比如 `NSID` 或 `ECS`）或者任意的数字值。`+noednsopt` 清除已设置的 EDNS 值。
+
++[no]expire::
+该选项发送uoge EDNS Expire 选项。
