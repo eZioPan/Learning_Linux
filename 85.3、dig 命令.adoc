@@ -185,3 +185,44 @@ __type__::
 
 +[no]expire::
 该选项发送uoge EDNS Expire 选项。
+
++[no]fail::
+该选项指出如果收到了 SERVFAIL，`named` 应该尝试[不应该尝试]下一个服务器。默认值为不要尝试下一个服务器，为普通呆解析器行为的反转。
+
++[no]header-only::
+该选项将发送一个具有 DNS 头部但是不具有 question section 的请求。默认为加上 question section。当设置该参数时，忽略请求类型和请求名称。
+
++[no]identify::
+当指定 `+short` 选项时，该选项指定显示[或不显示]提供答案的 IP 地址和端口号。若要求了名称的短格式，那么默认值为不显示提供答案的服务器的源地址和端口号。
+
++[no]idnin::
+该选项处理[或不处理]输入的 IDN 域名。它要求在编译时启动了 `IDN SUPPORT`。 +
+默认值为在标准输出为 tty 时处理 IDN。当 `dig` 的输出被重导向至文件、管道以及其它非 tty 的文件描述符时，关闭在输入中处理 IDN。
+
++[no]idnout::
+该选项在输出时转换[或不转换] puny code。它要求在编译时启动了 `IDN SUPPORT`。 +
+默认值为在标准输出为 tty 时处理 puny code。当 `dig` 的输出被重导向至文件、管道以及其它非 tty 的文件描述符时，关闭在输出中处理 puny code。
+
++[no]ignore::
+该选项忽略[或不忽略] UDP 响应中截断，若不忽略就尝试使用 TCP 重试。默认值为尝试 TCP 重试。
+
++[no]keepalive::
+该选项发送[或不发送] EDNS Keepalive 选项。
+
++[no]keepopen::
+该选项在请求之间保持[或不保持] TCP 套字节打开，并复用它，而不是每次查询都新建一个 TCP 套字节。默认为 `+nokeepopen`。
+
++[no]mapped::
+该选项允许[或不允许]使用 映射过的 IPv4-over-IPv6 地址。默认为 `+mapped`。
+
++[no]multiline::
+该选项以[或不以]附注了人类可读注释的详细的多行格式打印记录——比如 SOA 记录。默认为将每个记录打印至一行来满足机器解析 `dig` 的输出。
+
++ndots=__D__::
+该选项设置了要被认为是绝对路径 __name__ 必须具有的点号的数量（__D__）。默认值为使用 `/etc/resolv.conf` 中的 `ndots` 语句的值，若未出现 `ndots` 则使用 1。点号少于该数量的名称被认为是相对名，且当设置了 `+search` 后就会按照 `/etc/resolv.conf` 中的 `search` 和 `domain` 语句所设置的域名来搜索。
+
++[no]nsid::
+当启用时，发送请求时，该选项会包含一个 EDNS 名称服务器 ID 请求。
+
++[no]nssearch::
+当设置该选项后，`dig` 尝试在包含了所查找的名称的 zone 中找到权威名称服务器，并显示该 zone 中每个名称服务器的 SOA 记录。即便是不响应的服务器的地址也会被一同打印。
