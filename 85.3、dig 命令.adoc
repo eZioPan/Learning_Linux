@@ -226,3 +226,36 @@ __type__::
 
 +[no]nssearch::
 当设置该选项后，`dig` 尝试在包含了所查找的名称的 zone 中找到权威名称服务器，并显示该 zone 中每个名称服务器的 SOA 记录。即便是不响应的服务器的地址也会被一同打印。
+
++[no]onesoa::
+当启用时，该选项在执行一个 AXFR 时仅会显示一个（起始的）SOA 记录。默认为打印起始和结束的 SOA 记录。
+
++[no]opcode=__value__::
+当启用时，该选项设置（或还原）DNS 报文 opcode 至指定值。默认值为 QUERY(0)。
+
++padding=__value__::
+该选项用 EDNS Padding option 将请求网络包的大小扩大（pad）至整数倍的块大小，块的大小为 __value__ 字节。举例来说，`+padding=32` 将让 48 字节的请求扩展至 64 字节。默认的块大小为 0，也就是关闭 pad；最大值为 512。值通常期望为 2 的指数，比如 128；但是，它并非必须。被 pad 的请求对应的回复也可能被 pad，但仅当请求使用 TCP 或 DNS COKKIE 时才可能生效。
+
++qid=__value__::
+该选项指定发送请求时所使用的 query ID。
+
++[no]qr::
+该选项切换所发送的请求报文的显示与否。默认情况下，请求不被打印。
+
++[no]question::
+该选项切换是否在收到回答时，显示请求的 question section。默认值为以注释的方式打印 question section。
+
++[no]raflag::
+该选项设置[或不设置]请求中的 RA（Recursion Available）位。默认为 `+noraflag`。该位在 QUERY 下被服务器忽略。
+
++[no]rdflag::
+该选项为 `+[no]recurse` 的同义词。
+
++[no]recurse::
+该选项切换请求中的 RD（recursion desired）位设置。默认设置该位，也就是说 `dig` 通常会发送递归请求。当设置 `+nssearch` 或者 `+trace` 时自动关闭递归。
+
++retry=__T__::
+该选项将向服务器重试 UDP 请求的次数设置为 __T__ 而非默认值 2。与 `+tries` 不同，它不会包含初始请求。
+
++[no]rrcomments::
+该选项切换输出中的每记录注释的显示（比如，人类可读的 DNSKEY 记录的关键信息）。默认值为除非激活多行模式，否则不打印记录注释。
