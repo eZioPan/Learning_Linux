@@ -2,7 +2,7 @@
 
 [TIP]
 ====
-翻译自 link:https://bind9.readthedocs.io/en/v9_17_9/manpages.html#dig-dns-lookup-utility[dig - DNS lookup utility]
+翻译自 link:https://bind9.readthedocs.io/en/v9_17_9/manpages.html#dig-dns-lookup-utility[dig - DNS lookup utility] v9_17_9
 ====
 
 == 语法
@@ -259,3 +259,32 @@ __type__::
 
 +[no]rrcomments::
 该选项切换输出中的每记录注释的显示（比如，人类可读的 DNSKEY 记录的关键信息）。默认值为除非激活多行模式，否则不打印记录注释。
+
++[no]search::
+该选项使用[或不使用] `/etc/resolv.conf` 中以 `searchlist` 或 `domain` 语句定义的搜索列表。默认不使用搜索列表。 +
+`resolv.conf` 中的 `ndots`（默认值为 1）可能会被 `+ndots` 覆盖，该值决定一个名称是否被认为是相对的，从而决定是否要执行搜索。
+
++[no]short::
+该选项切换是否显示简洁回答。默认为打印详细回答。该选项总是具有全局影响；它不能在全局设置后再依照每查找进行设置。
+
++[no]showsearch::
+该选项执行[或不执行]一个用于显示中间结果的搜索。
+
++[no]sigchase::
+该特性已过时且被移除；请转而使用 `delv`。
+
++split=__W__::
+该选项把长的十六进制或 base64 编码的资源记录中的字段分段为 __W__ 个字符（__W__ 会被上进位至最近的 4 的倍数）的块。指定 `+nosplit` 或者 `+splite=0` 将导致不分段字段。默认为 56 个字符，激活多行模式时为 44 个字符。
+
++[no]stats::
+该选项切换是否打印统计：请求是何时产生的，回复的大小，等等。默认值为在每次查找之后以注释的方式打印请求统计。
+
++[no]subnet=__addr__[/__prefix-length__]::
+该选项发送[或不发送]设置了特定 IP 地址和网络前缀的 EDNS CLIENT-SUBNET option。 +
+`dig +subnet=0.0.0.0/0` 或简写为 `dig +subnet=0`，发送空地址和零前缀长度的 EDNS CLIENT-SUBNET option，以提示解析器客户端地址信息禁止用于解析该请求。
+
++[no]tcflag::
+该选项设置[或不设置]请求中的 TC（TrunCation）位。默认为 `+notcflag`。在 QUERY 中服务器忽略该选项。
+
++[no]tcp::
+该选项指出在请求名称服务器时是否使用 TCP。默认行为了使用 UDP，除非指定了类型 `any`，或者要求了 `ixfr=N` 请求，上述两种情况下默认使用 TCP。AXFR 请求总是使用 TCP。
