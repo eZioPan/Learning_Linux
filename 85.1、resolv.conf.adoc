@@ -60,7 +60,6 @@ attempts:__n__:::
 rotate:::
 设置 ___res.options__ 中的 **RES_ROTATE** 值，导致以 round-robin 的选择方式从列表中选择名称服务器。它可以分散全部被罗列的服务器的负载，而非总是让全部的客户端总是首先对首个罗列的服务进行请求。
 
-
 no-check-names:::
 设置 ___res.options__ 中的 **RES_NOCHECKNAME** 值，其会关闭现代 BIND 检查，该检查会测试进入的主机名和邮箱名中的无效字符，比如下划线（`_`）、非 ASCII 字符或者控制字符。
 
