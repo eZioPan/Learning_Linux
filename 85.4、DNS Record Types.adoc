@@ -1,0 +1,180 @@
+= DNS Record Types
+:resolv_conf_man5_rotate: xref:./85.4、resolv.conf.adoc#_rotate[rotate]
+:aws_elb: link:https://aws.amazon.com/elasticloadbalancing/[]
+
+[TIP]
+====
+本文摘译自 link:https://www.integralist.co.uk/posts/dns-101/#record-types[]
+====
+
+DNS 中有很多不同的 RR（资源记录 Resource Record）类型，下面的是最常见的：
+
+== NS
+
+NS 记录应该指向你的域名下的负责处理 DNS 事务的条目。
+
+为了增加弹性，你必须至少具有两条名称服务器记录。
+
+名称服务器列举的序列/顺序与优先级无关（此处与 MX 记录不同，详见下文）。举例来说，下面的情况**不会**发生：“先请求 A 名称服务器，若没有响应，__则__请求 B 名称服务器。”
+
+[TIP]
+.译者注：
+====
+此处与 **resolv.conf(5)** 关于 {resolv_conf_man5_rotate} 选项的说明有冲突，该选项表明在设置了 `rotate` 选项后，解析器才会随机挑选可用的名称服务器进行查找。
+====
+
+多个 NS 记录就是表示有多个名称服务器用来给客户端应用请求记录。
+
+NS 记录指出当前源（origin）的权威名称服务器。但记住一整个域名的不同部分可以由不同的条目（比如不同的 Zone/SOA）控制。
+
+如果你对哪个根服务器负责特定的 TLD 感兴趣，那么你就可以用 `dig` 找到该信息。举例来说，要查看 `.co.uk` 对应的 ccTLD 名称服务器，执行下面的命令：
+
+[source, sh]
+----
+dig +short -t ns co.uk
+----
+
+[NOTE]
+====
+我们使用了 `dig` 提供的 `+short` 标识，它让输出更简洁。 +
+另一个技巧是连用 `+short +noshort` 来输出简洁信息的同时又提供一些额外的信息。
+====
+
+它会返回下面的回应：
+
+====
+dnsd.nic.uk.
+dns4.nic.uk.
+nsb.nic.uk.
+dns1.nic.uk.
+dns2.nic.uk.
+nsc.nic.uk.
+nsa.nic.uk.
+dns3.nic.uk.
+====
+
+如果你对你的解析器会向哪个根服务器请求特定的域名，那么你可以使用下面的 `dig` 命令的变体：
+
+[source, sh]
+----
+dig +short -t ns .
+----
+
+[NOTE]
+====
+你会注意到最后的点号
+正如前面提到的，
+点号标识 DNS 层级的“根”
+====
+
+执行该命令会返回下面的输出：
+
+====
+a.root-servers.net.
+b.root-servers.net.
+c.root-servers.net.
+d.root-servers.net.
+e.root-servers.net.
+f.root-servers.net.
+g.root-servers.net.
+h.root-servers.net.
+i.root-servers.net.
+j.root-servers.net.
+k.root-servers.net.
+l.root-servers.net.
+m.root-servers.net.
+====
+
+== A
+
+一个 A 记录应该指向一个 IP 地址（比如，它是一个“地址记录”）。
+
+要提供冗余度，你可以将多个 A 记录关联至一个域名。举例来说，假设你的服务运行在一个负载均衡器（比如 {aws_elb}）之后。那么你可能会创建一个指向你的负载均衡器本身的 CNAME（当使用负载均衡器时，一般你不会直接将你的域名指向直接的 IP 地址，这是因为若负载均衡器发生了变动，你就需要更新你的 DNS，这可能带来潜在的巨大的宕机时间）的 CNAME（详情见下方），之后负载均衡器会负责创建多个指向实际运行的服务器的 IP 地址的 A 记录。
+
+== CNAME
+
+CNAME 记录不指向一个 IP 地址（A 记录就指向 IP 地址），而是指向一个 CNAME 或者 A 记录。
+
+让我们通过 `dig` 看看这个实际的网站（特别是 `www` 主机名）
+
+[source, sh]
+----
+dig www.integralist.co.uk
+----
+
+返回的信息（见下方）指出我们可以使用一个 CNAME（www.integralist.co.uk.）指向 GitHub（integralist.github.com.）；而后者又指向一个 A 记录（github.map.fastly.net.），这个 A 记录则指向托管内容的服务器的 IP 地址：
+
+====
+;; ANSWER SECTION:
+www.integralist.co.uk.  14266   IN      CNAME   integralist.github.com.
+integralist.github.com. 2       IN      CNAME   github.map.fastly.net.
+github.map.fastly.net.  17      IN      A       185.31.19.133
+====
+
+== MX
+
+我不会花太多时间在 MX 记录上，简要来说，它表示“Mail eXchange”，你可以为了冗余度添加多个记录。每个 MX 记录具有一个“优先值”，其指出了相对于所罗列的其他 MX 记录的值。它表示一个更低的值具有更高的优先性，从而被首先用于导向电子邮件。
+
+我没有为 `integralist.co.uk` 域名设置电子邮件，所以 `dig mx integralist.co.uk` 并不能用于展示它。让我们转而看看 BBC：
+
+[source, sh]
+----
+dig mx bbc.co.uk +short
+----
+
+它会返回下面的回应：
+
+====
+20 cluster1a.eu.messagelabs.com.
+10 cluster1.eu.messagelabs.com.
+====
+
+如你所见，BBC 可能在使用 `http://messagelabs.com/` 作为他们管理邮件系统的入口。
+
+== SOA
+
+在本文的开头（译者注：未翻译）我们讨论了 zone 的概念，它用于指出哪个条目在 DNS 中，对于域名的特定部分具有权威性。一个 SOA 记录（表示 “Start of Authority”）详细记录了关于当前 zone 的 TTL 的特定信息。
+
+举例来说，如果我用下面的命令查看 `integralist.co.uk` 的 SOA：
+
+[source, sh]
+----
+dig soa integralist.co.uk +short
+----
+
+那么我就会获得下方的回复：
+
+====
+ns.hosteurope.com. hostmaster.integralist.co.uk. 2012022703 86400 3600 1209600 14400
+====
+
+让我们将该回复分解一下：
+
+* `ns.hosteurope.com.`：首要权威名称服务器
+* `hostmaster.integralist.co.uk.`：你的域名的责任方
+* `2012022703`：在域名更新时更新的时间戳
+* `86400`：zone 刷新 TTL（以秒计）
+* `3600`：失败 zone 刷新重试（以秒计）
+* `1209600`：zone 权威所有权过期（以秒计）
+* `14400`：否定结果 TTL（解析器应该在多长时间后认为获得了子域名有效结果的“否定结果”，并重新尝试请求主机名/子域名）
+
+每个 zone（比如，具有对于域名的特定部分具有权威性的每个名称服务器/条目）将提供他们自己的 SOA 记录。所以如果我查找 `integralist.co.uk` 的 `www` 的 CNAME，那么我会找到它指向一个 GitHub CNAME，后者又指向一个 Fastly CNAME，而最后的权威名称服务器（在 2015 年时）为 `ns1.p04.dynect.net`。这意味着一个新的 zone 由 Fastly 定义，于是他们具有为全域名的 `www` 的部分的左侧添加主机名的权威：
+
+[source, sh]
+----
+dig soa www.integralist.co.uk
+----
+
+我将获得下面的回应：
+
+====
+;; QUESTION SECTION:
+;www.integralist.co.uk.		IN	SOA
+
+;; ANSWER SECTION:
+www.integralist.co.uk.	14389	IN	CNAME	integralist.github.com.
+integralist.github.com.	19	IN	CNAME	github.map.fastly.net.
+
+;; AUTHORITY SECTION:
+fastly.net.		289	IN	SOA	ns1.p04.dynect.net. hostmaster.fastly.com. 2015092706 3600 600 604800 3600
+====
