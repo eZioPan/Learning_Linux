@@ -1,6 +1,8 @@
 = DNS Record Types
 :resolv_conf_man5_rotate: xref:./85.4、resolv.conf.adoc#_rotate[rotate]
-:aws_elb: link:https://aws.amazon.com/elasticloadbalancing/[]
+:aws_elb: link:https://aws.amazon.com/elasticloadbalancing/[AWS_ELB]
+:SkyDNS: link:https://blog.gopheracademy.com/skydns/[SkyDNS]
+:Etc: link:https://github.com/coreos/etcd[Etc]
 
 [TIP]
 ====
@@ -42,7 +44,7 @@ dig +short -t ns co.uk
 
 它会返回下面的回应：
 
-====
+----
 dnsd.nic.uk.
 dns4.nic.uk.
 nsb.nic.uk.
@@ -51,7 +53,7 @@ dns2.nic.uk.
 nsc.nic.uk.
 nsa.nic.uk.
 dns3.nic.uk.
-====
+----
 
 如果你对你的解析器会向哪个根服务器请求特定的域名，那么你可以使用下面的 `dig` 命令的变体：
 
@@ -69,7 +71,7 @@ dig +short -t ns .
 
 执行该命令会返回下面的输出：
 
-====
+----
 a.root-servers.net.
 b.root-servers.net.
 c.root-servers.net.
@@ -83,7 +85,7 @@ j.root-servers.net.
 k.root-servers.net.
 l.root-servers.net.
 m.root-servers.net.
-====
+----
 
 == A
 
@@ -104,12 +106,12 @@ dig www.integralist.co.uk
 
 返回的信息（见下方）指出我们可以使用一个 CNAME（www.integralist.co.uk.）指向 GitHub（integralist.github.com.）；而后者又指向一个 A 记录（github.map.fastly.net.），这个 A 记录则指向托管内容的服务器的 IP 地址：
 
-====
+----
 ;; ANSWER SECTION:
 www.integralist.co.uk.  14266   IN      CNAME   integralist.github.com.
 integralist.github.com. 2       IN      CNAME   github.map.fastly.net.
 github.map.fastly.net.  17      IN      A       185.31.19.133
-====
+----
 
 == MX
 
@@ -124,10 +126,10 @@ dig mx bbc.co.uk +short
 
 它会返回下面的回应：
 
-====
+----
 20 cluster1a.eu.messagelabs.com.
 10 cluster1.eu.messagelabs.com.
-====
+----
 
 如你所见，BBC 可能在使用 `http://messagelabs.com/` 作为他们管理邮件系统的入口。
 
@@ -144,9 +146,9 @@ dig soa integralist.co.uk +short
 
 那么我就会获得下方的回复：
 
-====
+----
 ns.hosteurope.com. hostmaster.integralist.co.uk. 2012022703 86400 3600 1209600 14400
-====
+----
 
 让我们将该回复分解一下：
 
@@ -167,7 +169,7 @@ dig soa www.integralist.co.uk
 
 我将获得下面的回应：
 
-====
+----
 ;; QUESTION SECTION:
 ;www.integralist.co.uk.		IN	SOA
 
@@ -177,4 +179,127 @@ integralist.github.com.	19	IN	CNAME	github.map.fastly.net.
 
 ;; AUTHORITY SECTION:
 fastly.net.		289	IN	SOA	ns1.p04.dynect.net. hostmaster.fastly.com. 2015092706 3600 600 604800 3600
+----
+
+== SRV
+
+SRV 记录的作用就是提供关于你的域名能提供的服务的信息。你可以发现包括 {SkyDNS} 和 {Etc} 在内的一些服务使用 DNS 和特定的 SRV 记录来处理分布式的“服务发现”。
+
+这些记录具有十分特定的格式，它们看起来如下所示：
+
+----
+_<name>._<protocol>.<domain>.
+----
+
+[NOTE]
+====
+__name__ 应该是一个易于辨认的识别名，我还不知道其他的架构或者限制。
+====
+
+所以如果我希望向其他服务或应用指出在顶层域名 `integralist.co.uk` 下具有一个网站，那么我就可以创建下面的 SRV 记录：
+
+----
+_website._tcp.integralist.co.uk.
+----
+
+接着你就可以使用如下的 `dig` 命令验证这条 SRV 记录：
+
+[source, sh]
+----
+dig _website._tcp.integralist.co.uk SRV +short +noshort
+----
+
+会返回下面的回复：
+
+----
+_website._tcp.integralist.co.uk. 14400 IN SRV 11 1 80 www.integralist.co.uk.
+----
+
+我用我的 DNS 提供商自带的 GUI 进行了上面的设置（你自己的提供商可能有不同的界面），但这个回复等价于向请求者指出我在 `www.integralist.co.uk` 具有一个单一服务，你可以通过 TCP 访问 `80` 端口来获取。
+
+上述信息可详细分解为：
+
+* 主机名：`_website._tcp`
+* 类型：`SRV`
+* 优先级：`11`（值越小优先级越高）
+* TTL：`60`（以秒计）
+* 终点：`1 80 www.integralist.co.uk`（<权重> <端口> <全限定源>）
+
+[NOTE]
+====
+当你将多个主机配置为提供相同的服务时，`priority` 就很有用了，此时 `weight` 通常用于具有相同的 `priority` 的服务。
+====
+
+== PTR
+
+PTR 在实现上惊人得复杂，但在缘由和设置上则相对简单。简单来说，你使用 PTR 执行 __反向映射（reverse-mapping）__，表示将一个 IP 翻译为一个主机名（一个典型的 RR 记录被称为 __正向映射（forward-mapping）__，也就是将一个主机名翻译为 IP）。
+
+传统上，一个 RTP 记录是因为认证/安全原因而存在的。考虑一个邮件服务器尝试阻止一个来自看起来有效的主机发出的垃圾信息。在这个情况下，邮件服务器会尝试双向验证 主机/IP 对：正向和反向。若匹配失败则邮件会被回绝。
+
+[NOTE]
+====
+过去，我收到过客户抱怨他们的邮件被他们的收件方回绝，你会发现它们的 DNS 中缺少一个 PTR 记录。收件方几乎总是会要求我们为我们的客户的 DNS 中添加一条 PTR 记录。
+====
+
+我不会在这里详解它的实现，正如我前面说的，它很复杂，就基本原理来说，有一个顶层域名 `arpa`，它还有一个次级域名 `in-addr`。
+
+这个新的域名与 gTLD 和 ccTLD 的原理类似，因此它也会具有一个三级域名，但不同的是此时顺序会被反转。所以如果你网页服务器的 IP 是 `185.31.19.133`，那么三级域名将使用 `185` 作为名称。这些三级域名也会它们自己的用于描述该级别的 DNS 的 zonefile。
+
+在 zonefile 中你会发现一些形似下方的东西（注意我们上面提到的 IP 地址由于标准 DNS 层级结构的原因已经被反转）：
+
+----
+$ORIGIN 19.31.185.IN-ADDR.ARPA.
+----
+
+[NOTE]
+====
+约定指出虽然域名是大小写不敏感的，但 `in-addr.arpa.` 应该为大写状态
+====
+
+只要在 PTR 记录的语境下，你将使用你地址的最后一个部分作为你的 PTR 记录的名字。举例来说，如果你有一个 IP `185.31.19.133`，那么 `133` 就会是你的 PTR 记录的名字，而它的值为全限定域名，比如 `www.example.com.`：
+
+----
+133      IN    PTR    www.example.com.
+----
+
+[NOTE]
+====
+由于我们在 zonefile 里定义的 `$ORIGIN` 是一个 arpa 地址，我们通常在其他 RR 中使用全限定域名（正如我们在上面的 PTR 样例中看到的）。
+====
+
+这意味着 DNS 现在可以支持反向查找，对于 IP `185.31.19.133`，他会定位 `133` PTR 记录，并发现该记录解析为 `www.example.com.`，因此提供了合理的认证，指出请求是相关的，且未被欺骗。
+
+== TXT
+
+TXT 记录提供了所请求的域名的一个描述。你必须用双引号将该描述包裹（如果你通过 DNS 服务商添加这条记录，那么他们很可以以及帮你做了这步，这是由于你大概率是通过 HTML 输入框输入的该记录的值）。
+
+让我们通过 `dig` 和 `host` 命令来看看真实世界中的样例：
+
+[source, sh]
+----
+dig txt my-service-description.integralist.co.uk +short
+host -t txt my-service-description.integralist.co.uk
+----
+
+该请求应该返回下面这类响应（响应在 `host` 命令中应该稍有不同，因为它不具有与 `dig` 的 `+short` 标识相似的标识）：
+
+----
+"integralist.co.uk is a tech blog"
+----
+
+[NOTE]
+====
+如果没有发现 TXT 记录，那么 `dig` 不会返回任何值，而 `host` 将返回 `integralist.co.uk has no TXT record`
+====
+
+当我刚设置好了 TXT 记录，它并没有出现在我本地的 DNS 解析器上，于是在它在互联网传播之前，在下面的案例中我请求了一个授权服务器以及 Google 服务器来查看新的 TXT 记录：
+
+----
+dig txt my-service-description.integralist.co.uk @ns.123-reg.co.uk. +short
+dig txt my-service-description.integralist.co.uk @8.8.8.8 +short
+----
+
+[NOTE]
+====
+虽然 `8.8.8.8` 是 Google 自己的 DNS 名称服务器中的一个，虽然它并非我的域名的权威名称服务器，但它会很快的抓取新的记录。
 ====
