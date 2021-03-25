@@ -1,0 +1,70 @@
+= 域名系统
+:type_of_rr: link:https://bind9.readthedocs.io/en/v9_17_9/reference.html#types-of-resource-records-and-when-to-use-them[Types of Resource Records and When to Use Them]
+:rfcs_list: link:https://bind9.readthedocs.io/en/v9_17_9/general.html#rfcs[Requests for Comment (RFCs)]
+:rfc1033: link:https://tools.ietf.org/html/rfc1033.html[RFC 1033]
+:rfc1034: link:https://tools.ietf.org/html/rfc1034.html[RFC 1034]
+:rfc1035: link:https://tools.ietf.org/html/rfc1035.html[RFC 1035]
+:diagnostic_tools: link:https://bind9.readthedocs.io/en/v9_17_9/configuration.html#diagnostic-tools[Diagnostic Tools]
+
+[NOTE]
+====
+本文摘译自 link:https://bind9.readthedocs.io/en/v9_17_9/introduction.html#the-domain-name-system-dns[]
+====
+
+该文档解释了 BIND（Berkeley Internet Name Domain）软件包的安装和维护。由于域名系统（DNS）与 BIND 相关，我们由此开始回顾域名系统的基础。
+
+== DNS 基础
+
+域名系统 Domain Name System（DNS）是一个层级式、分布式的数据库。它存储了关于互联网主机至 IP 地址的映射及其反向映射的信息、邮件路由信息、以及其他互联网应用使用的信息。
+
+客户端通过调用名为 __resolver__ 的库来查找 DNS 中的信息，该库会向一个或多个 __名称服务器（name server）__ 发送请求，并解释响应。BIND 9 软件分发包包含了一个名称服务器——`named`，以及一系列的相关工具
+
+== 域（Domain）与域名（Domain Name）
+
+存储在 DNS 的数据由 __域名（domain name）__ 定义，以树状管理，以组织边界或管理边界作为界定。树的每个的节点，称为 __域（domain）__，都会具有一个标签。一个节点的域名由该节点直至 __根（root）__ 节点路径上的全部标签组成。它的书写形式表现为从左至右排列的标签的字符串，并在标签和标签之间用点号隔开。一个标签仅需在它的父级域中唯一即可。
+
+举例来说，一个在 __Example, Inc.__ 公司中的主机的域名可以为 `ourhost.example.com`，其中 `com` 为 `ourhost.example.com` 所在的顶级域名，`example` 为 `com` 的次级域名，`ourhost` 为主机名。
+
+处于管理的目的，名称空间被分为多个区域，称为 __zone__，每个 __zone__ 由一个节点开始，一直延伸至“叶子”节点，或者延伸至其他 zone 的起始处。每个 zone 的数据都存储在一个 __名称服务器__ 上，它会使用 __DNS 协议__ 应答对于该 zone 的请求。
+
+与每个域名相关的数据都以 __资源记录 resource records（RRs）__ 的形式存储。部分被支持的资源记录类型在 {type_of_rr} 中描述了。
+
+对于 DNS 和 DNS 协议的设置的更详细信息，请参阅罗列在 {rfcs_list} 列表中的标准文档。
+
+== Zone
+
+要正确使用一个名称服务器，理解 __zone__ 和 __domain__ 之间的差异至关重要。
+
+如前文所说，一个 zone 是 DNS 树的一个授权点（point of delegation）。一个 zone 是域名树上的一片连续的区域，一个名称服务器具有此区域的完整信息，且管理该区域。它包含了域名树中特定点之下的、除了授权给其他 zone 之外的全体域名。一个授权点由父级 zone 中记录的一个或多个 __NS 记录__ 标注，而父级 zone 也应该记录在根授权 zone 中的等同的 NS 记录中。
+
+举例来说，考虑 `example.com` 域，其中包含名称 `host.aaa.example.com` 和 `host.bbb.example.com`，即便 `example.com` zone 仅包含了 `aaa.example.com` 和 `bbb.example.com` zone 的授权。一个 zone 可以精确地映射为单个域，也可以映射为一个域的部分，而该域的其他部分将授权给其他名称服务器。DNS 树的每个名称都是一个域，即便它是 __终点 terminal__，也仅标识它不具有 __子域 subdomain__。每个子域都是一个域，而除了根域之外的域也都是子域。这些属于并不直观，我们建议阅读 {rfc1033}、{rfc1033}、{rfc1033} 来全面地了解这个困难又细节的话题。
+
+虽然 BIND 9 被称作一个“域名服务器”，其实它主要的处理对象为 zone。`named.conf` 文件中的 `primary` 和 `secondary` 声明描述的是 zone，而非 domain。当 BIND 请求其它站点是否愿意成为一个 domain 的次级服务器（secondary server），它实际上是在询问（成为）部分 zone 的次级服务。
+
+== 权威名称服务器（Authoritative Name Servers）
+
+每个 zone 都由至少一个 __权威名称服务器__ 提供服务，该服务器具有该 zone 的完整数据。要让 DNS 对于服务器和网络故障具有容忍度，大多数 zone 都会在不同的网络上具有两个或更多的权威服务器。
+
+来自权威服务器的响应会在响应包中设置 “authoritative answer”（AA）位。这让使用 `dig`（{diagnostic_tools}）这类 DNS 配置排错工具排错时更容易区分它们。
+
+=== Primary Server
+
+权威服务器，其中维护着 zone 数据的主要拷贝，被称为 __primary__（旧时称为 __master__）服务器，或简称为 __primary__。通常情况下，它会从本地的由人编辑的文件中载入 zone 的内容，或者从人编辑的本地文件中生成 zone 信息。这个文件被称为 __zone file__ 或则 __master file__。
+
+有且情况下，__master file__ 可能完全无法被人编辑，而是 __dynamic update__ 操作的结果。
+
+=== Secondary Server
+
+其它的权威服务器——__secondary__ 服务器（旧时称为 __slave__）服务器从另一个服务器通过被称为 __zone transfer__ 的复制过程载入 zone 的内容。通常情况下数据直接由 primary 转移而来，但也可以从另一个 secondary 转移而来。也就是说，一个 secondary 服务器可以作为其它从属的 secondary 服务器的 primary。
+
+secondary 服务器必须周期性地发送一个刷新请求来了解 zone 的内容是否被更新。该操作由发送一个请求 zone 的 Start of Authority（SOA）记录的操作，并比对 SERIAL 字段是否更新来完成；若字段更新，则启动一次新的 __transfer request__。刷新请求的时值由 SOA REFRESH 和 RETRY 字段控制，也可以由 `max-refresh-time`、`min-refresh-time`、`max-retry-time` 和 `min-retry-time` 选项覆盖。
+
+若 zone 的数据不能在 SOA EXPIRE 选项（最长值硬编码为 24 周）所指定的时间之内更新，那么 secondary zone 将过期，并不再响应任何请求。
+
+=== Stealth Server
+
+通常情况下，一个 zone 的全部权威服务器都列举在父级 zone 的 NS 记录里。这些 NS 记录就构成了从父级分离出来的 zone 的 __授权__。权威服务器也会被罗列在 zone file 之中，就处于 zone 的 __top level__ 或 __apex__ 中。不在父级 NS 授权的服务器依旧可以被列在 zone 的顶级 NS 记录中，但不存在于 zone 的顶级的服务器不可以列入父级的授权中。
+
+一个 __stealth server__ 就是一个未列举在 zone 的 NS 记录中的、该 zone 的一个权威服务器。stealth server 可以用作本地保留的 zone 备份，来加速 zone 记录的访问，或者确保在“官方”服务器无法访问时 zone 依旧可用。
+
+若一个配置将 primary 服务器配置为 stealth server，那么我们就常称该配置为 “hidden primary” 配置。该配置的一个用途就是当 primary 处在防火墙后，无法直接与外部通信时使用。
