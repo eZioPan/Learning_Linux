@@ -234,3 +234,73 @@ IPv6 地址可以包含一个 `%interface` 限定 id，比如 fe80::202:a412:451
 
 --caa-record=<name>,<flags>,<tag>,<value>::
 返回一个 RFC6844 定义的 CAA DNS 记录。
+
+--cname=<cname>,[<cname>,]<target>[,<TTL>]::
+返回一个 CNAME 记录，它指出 <cname> 实际为 <target>。对于 target 有明显的限制；它必须是 dnsmasq 所知的 DNS 记录，而非来自上游服务器的记录。cname 必须唯一，但允许多个 cname 指向同一个 target。实际上也支持在同一行中将多个 cname 指向同一个 target，如：`--cname=cnam1,cname2,cname3,target`
+
+若给定了 time-to-live，那么覆盖默认值，默认值一般为 0 或者 `--local-ttl` 的值。值为正整数，并以秒作为 time-to-live 的单位。
+
+--dns-rr=<name>,<RR-number>,[<hex data>]::
+返回一个任意的 DNS 资源记录。数字为记录的类型（它总是在 C_IN 类别中）。记录的值由十六进制数据给出，格式可以为 01:23:45 或 01 23 45 或 012345 或混用上述格式。
+
+--interface-nane=<name>,<interface>[/4|/6]::
+返回 DNS 记录，其中的名称与给出的接口的地址相关联。该标识为给定的名称指定一个 A 或 AAAA 记录，其与在 /etc/hosts 给出的方式相同，不同之处在于，地址并非定值，而是从给定的接口上获得。可以在接口后追加 `/4` 或 `/6`，表示应该使用接口的 IPv4 或者 IPv6 接口。若接口下线、未配置或不存在，则返回一个空记录。会同时创建对应的 PTR 记录，将接口地址映射至名字。可通过重复指定该标识将多个名字与一个接口地址关联；这种情况下，首个实例将用于反向地址至名字的映射。注意，在 `--interface-name` 条目里的名字可能不会出现在 /etc/hosts 中。
+
+--synth-domain=<domain>,<address range>[,<prefix>[*]]::
+为一个范围内的地址人为创建 A/AAAA 和 PTR 记录。这些记录要么是序列数字，或者是地址，其中的点号（或者 IPv6 的分号）被连字符替代。 +
+用一个案例来说。首先是序列数字。`--synth-domain=thekelleys.org.uk,192.168.0.50.192.168.0.70,internal-*`（注意尾部的星号 `*`） 将导致名称 internal-0.thekelleys.org.uk 返回 192.168.0.50，名称 internal-1.thekelleys.org.uk 返回 192.168.0.51 以此类推。相同的机制也同样适用于 IPv6 地址（数字可能会非常大）。对地址到名称的反向查找的行为在预期之中。 +
+其二，`--synth-domain=thekelleys.org.uk,192.168.0.0/24,internal-`（无星号 `*`）将导致 internal-192-168-0-56.thekelleys.org.uk 返回 192.168.0.56，反向查找反之亦然。相同情况也适用于 IPv6，但 IPv6 可能会以 `::` 开头，而 DNS 标签不能以 `-` 开头，此时若未指定前缀，则会在标签前添加一个 `0`。::1 就会变成 0--1。 +
+V4 映射的 IPv6 地址，其表现为 ::ffff:1.2.3.4，会被特殊处理，变成 0--ffff-1-2-3-4 +
+地址段可以通过 <ip address>,<ip address> 或者 <ip address>/<netmask> 两种形式指定。
+
+--dumpfile=<path/to/file>::
+指定一个地址用于存放 pcap 格式的文件，该文件记录了用于排错的 dnsmasq 所 dump 的网络包。若 dnsmasq 启动时文件已存在，则不会删除原文件；而是直接在文件尾追加新包裹。
+
+--dumpmask=<mask>::
+指定哪些包应该被加入 dumpfile。其参数应该为要被 dump 的包的类型的 bitmask 的 OR 操作后的值：可以以 0x 作为前缀的十六进制值标识。每当一个包被记录入 dumpfile，dnsmasq 均记录包的序列号、以及它的类型的 mask。当前的类型为：
++
+[cols=2]
+|===
+|0x0001
+|来自客户端的 DNS 请求
+
+|0x0002
+|返回客户端的 DNS 回复
+
+|0x0004
+|向上游服务器发送的 DNS 请求
+
+|0x0008
+|来自上游服务器的 DNS 回复
+
+|0x0010
+|发送至上游服务器的 DNSSEC 验证的请求
+
+|0x0020
+|DNSSEC 验证的请求的回复
+
+|0x0040
+|向客户端回复的验证进程无法完成的 DNSSEC 验证
+
+|0x0080
+|向客户端回复的 DNSSEC 验证失败的回复。
+|===
+
+--add-mac[=base64|text]::
+向上游服务器转发 DNS 请求时，附上请求者的 MAC 地址。它用于上游服务器的 DNS 过滤。仅当请求者与 dnsmasq 服务器处在相同的子网下时，才能附加 MAC 地址。注意用于实现它的机制（EDNS0 选项）未被标准化，所以它应该被认为是实验性质的。同时也要注意以这种方式暴露 MAC 地址可能会引起安全和隐私漏洞。`--add-subnet` 给出的关于缓存的警告同样适用于 `--add-mac`。用 base64 编码的 MAC 地址也可以通过添加 `base64` 参数来实现，而以 十六进制/冒号 编码的人类可读的编码可以通过添加 `text` 参数来实现。
+
+--add-cpe-id=<string>::
+在转发至上游服务器的 DNS 请求中追加一个任意的辨识字符串。
+
+--add-subnet[[=[<IPv4 address>/]<IPv4 prefix length>][,[<IPv6 address>/]<IPv6 prefix length>]]::
+在向上游转发的 DNS 请求中追加一个子网地址。若在参数中指定了地址，那么就用指定的地址，其它情况下，会使用请求者的地址。要转发的地址的长度将又前缀长度参数决定：32（对于 IPv6 为 128）将整个地址转发，0 不会转发任何值，但依旧会在请求中标记该值，这样上游服务器也不会追加客户端地址。对于 IPv4 和 IPv6 其默认值均为 0。注意上游名称服务器可能会被配置为依照该信息返回不同的结果，但 dnsmasq 缓存并不关心这个值。因此对于这类回复，会关闭缓存，除非添加的子网地址为定值。 +
+举例来说，`--add-subnet=24,69` 将分别为 IPv4 和 IPv6 请求者添加 /24 和 /96 长度的子网。`--add-subnet=1.2.3.4/24` 将会为 IPv4 请求者添加 1.2.3.0/24，为 IPv6 请求者添加 ::/0。`--add-subnet=1.2.3.4/24,1.2.3.4/24` 将同时为 IPv4 和 IPv6 的请求者添加 1.2.3.0/24。
+
+-c, --cache-size=<cachesize>::
+设置 dnsmasq 缓存的大小。默认为 150 个名字。设置为 0 关闭缓存。注意：值过大将影响性能。
+
+-N, --no-negcache::
+关闭 negative 缓存。negative 缓存允许 dnsmasq 记忆来自上游名称服务的“no such domain”回答，并在收到完全相同的请求之后不再转发它们。
+
+-0, --dns-forward-max=<queries>::
+设置并发的 DNS 请求的最大数量。默认为 150 个，该值对于大多数设置都够了。目前仅知的需要增加该值的情景是用于网页服务器日志解析器，它会生成大量的并发请求。
