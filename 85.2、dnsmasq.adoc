@@ -304,3 +304,13 @@ V4 映射的 IPv6 地址，其表现为 ::ffff:1.2.3.4，会被特殊处理，�
 
 -0, --dns-forward-max=<queries>::
 设置并发的 DNS 请求的最大数量。默认为 150 个，该值对于大多数设置都够了。目前仅知的需要增加该值的情景是用于网页服务器日志解析器，它会生成大量的并发请求。
+
+--dnssec::
+验证 DNS 回复，并缓存 DNSSEC 数据。当转发 DNS 请求时，dnsmasq 会请求用于验证回复的 DNSSEC 记录。回复被验证，返回的 DNS 包会被设置 Authenticated Data 位。额外的 DNSSEC 记录会保存在缓存里，让 validation by clients 更高效。注意 validation by clients 是最安全的 DNSSEC 模式，但对于无法执行验证的客户端，只要能保证 dnsmasq 服务器和客户端之间的网络是可信的，那么设置 AD 位就很有用了。dnsmasq 必须以 HAVE_DNSSEC 启用的方式编译，并提供了 DNSSEC trust anchor，参见 --trust-anchor。由于 DNSSEC 验证过程使用了缓存，所以在启用了 DNSSEC 后，就不允许将缓存大小减小得比默认值还小。dnsmasq 的上游服务器必须是 DNSSEC 兼容的，比如能够返回具有 DNSSEC 记录的数据。如果它们不能做到，那么 dnsmasq 将无法决定回答的可信状态，从而导致整个 DNS 服务损坏。
+
+--trust-anchor=[<class>],<domain>,<key-tag>,<algorithm>,<digest-type>,<digest>::
+提供一个 DS 记录，作为 DNSSEC 验证的 trust anchor。通常来说，它们应该是具有根 zone 的 Key Signing key（KSK）的 DS 记录，也可以使用对于有限域的 trust anchor。当前的根 zone 的 trust anchor 可以从 https://data.iana.org/root-anchors/root-anchors.xml 下载。
+
+--dnssec-check-unsigned[=no]::
+默认情况下，dnsmasq 会检查未签名的 DNS 回复是合法的：即便这会导致对当前未签名的众多 zone 发送额外的请求。若 `--dnssec-check-unsignes=no` 出现在了配置中，那么那么这类回复就会被认为是有效的并传回（当然，也不会设置 authentic data 位。这并不能抵御攻击者修改来自签名的 DNS zone 的非签名回复，但它很块。 +
+先于 2.80 版本的 dnsmasq，默认不会检查未签名的回复，使用 `--dnssec-check-unsigned` 将开启它。这种配置已久可以使用，但那些原来默认为不检查的需要切换为明确地指出不检查。新的默认值是由于关闭对维签名的回复的检查是自然危险的。不仅是由于它会对被恶意修改的回复敞开大门，也是因为当上游服务器不支持 DNSSEC 时依旧允许所有东西看起来都正常运行，即便此时不会执行任何 DNSSEC 检查。
