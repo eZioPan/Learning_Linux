@@ -1,6 +1,11 @@
 = DNSMASQ
 :resolv_conf_man5: xref:85.1、resolv.conf.adoc[resolv.conf(5)]
 
+[TIP]
+====
+本文译自 https://thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html
+====
+
 == 名称
 
 dnsmasq - 一个轻量的 DHCP 以及缓存型 DNS 服务器。
@@ -314,3 +319,35 @@ V4 映射的 IPv6 地址，其表现为 ::ffff:1.2.3.4，会被特殊处理，�
 --dnssec-check-unsigned[=no]::
 默认情况下，dnsmasq 会检查未签名的 DNS 回复是合法的：即便这会导致对当前未签名的众多 zone 发送额外的请求。若 `--dnssec-check-unsignes=no` 出现在了配置中，那么那么这类回复就会被认为是有效的并传回（当然，也不会设置 authentic data 位。这并不能抵御攻击者修改来自签名的 DNS zone 的非签名回复，但它很块。 +
 先于 2.80 版本的 dnsmasq，默认不会检查未签名的回复，使用 `--dnssec-check-unsigned` 将开启它。这种配置已久可以使用，但那些原来默认为不检查的需要切换为明确地指出不检查。新的默认值是由于关闭对维签名的回复的检查是自然危险的。不仅是由于它会对被恶意修改的回复敞开大门，也是因为当上游服务器不支持 DNSSEC 时依旧允许所有东西看起来都正常运行，即便此时不会执行任何 DNSSEC 检查。
+
+--dnssec-no-timecheck::
+DNSSEC 签名尽在特定的时间窗口内有效，且应该在这些窗口之外废弃。若一台机器没有实时时钟，那么它就带来了一个先有鸡还是先有蛋的问题。通常来说，这些机器要通过 NTP 获得正确的时间，从而需要使用 DNS，但要验证 DNS 的有效性又需要已知正确的时间。设置该标示会移除时间窗口检查（但不会移除其它 DNSSEC 检查），直到 dnsmasq 进程接到 SIGINT。其用意在于系统应该在自认为可靠时间当前不可用时，让 dnsmasq 以该标识启动。一旦建立的可靠的时间，应当向 dnsmasq 发送 SIGINT，它会启用时间检查，并移除任何未被完全检查的缓存的 DNS 记录。 +
+先前版本的 dnsmasq 重载了 SIGHUP（用于重读大部分配置）同样会启动时间检验。 +
+若 dnsmasq 在 debug 模式下启动（`--no-daemon` 标识），那么 SIGINT 会保持通常的含义，用于终止 dnsmasq 进程。
+
+--dnssec-timestamp=<path>::
+启用一个替代方法来检查对于 DNSSEC 的系统时间的有效性（见 `--dnssec-no-timecheck`）。在该情景下，若系统时间比特定的文件的时间戳要晚，就会认为系统时间是有效的。该文件会被创建，且被 dnsmasq 自动设置。该文件必须存放在永续的文件系统上，让该文件和文件的 mtime 能跨系统重启而保留。该时间戳文件在 dnsmasq 放弃 root 后创建，所以该文件必须可以被 dnsmasq 所运行的非特权账户写入。
+
+--proxy-dnssec::
+将来自 DNSSEC Authenticated Data 位从上游服务器拷贝至下游客户端。这是让 dnsmasq 验证 DNSSEC 的一个替代方案，但它依靠于 dnsmasq 于上游服务器之间的网络安全，以及对上游服务器的可信度。注意，在所有的情况下，正确地缓存 Authenticated Data 位在技术上是不可行的。若设置该选项后要依靠 AD 位，那么缓存大小就应该用 `--cache-size=0` 设置为 0。对于大多数情况，在 dnsmasq 中启用 DNSSEC 检验是个更好的选择。参见 `--dnssec` 了解详情。
+
+--dns-debug::
+为 DNSSEC 验证设置 debug 模式，对上游服务器的请求设置 Checking Disable 位，且不会将未验证的回复转换为带有 SERFAIL 返回码的回复。注意设置它会以糟糕的方式影响 DNS 的行为，它也不是一个记录额外日志的标识，也不应该用于生产环境。
+
+--auth-zone=<domain>[,<subnet>[/<prefix length>][,<subnet>[/<prefix length>].....][,exclude:<subnet>[/<prefix length>]].....]::
+设置 dnsmasq 作为权威服务器的 DNS zone。会提供本地定义的 DNS 记录。若给定了 subnet，那么 A 和 AAAA 记录必须处于指定的子网之一中。 +
+作为直接指定子网的替代方法之一，也可以给出接口的名字，此时会使用接口配置的地址、掩码/前缀长度作为子网；在使用 DHCP 为 dnsmasq 分配地址时很有效，因为配置 dnsmasq 时不知道实际会被分配的 IP 地址。接口的地址可以通过 <interface>/6 配置为仅 IPv6 地址，或通过 <interface>/4 配置为仅 IPv4 地址。此时，接口就可以动态地决定应该把一个全局的 IPv6 地址加入 zone，但不会把 RFC1918 中的 IPv4 地址加入其中。接口名和文本指定的地址可以自由地在同一个 `--auth-zone` 声明中使用。 +
+可以从响应中排除特定的 IP 地址。它可以被用于，保证回答仅包含全局路由可达的 IP 地址（排除了回环、RFC1918、ULA 地址）。 +
+subnet 也同时用于定义用于 DNS 反查请求的 in-addr.arpa 以及 ip6.arpa 域。若未指定，那么前缀长度默认为 IPv4 为 24，IPv6 为 64。对于 IPv4 subnet，前缀长度应为 8、16、24 中的一个，除非你熟悉 RFC 2317，并依次配置了 in-addr.arpa 授权。注意若不指定 subnet，那么就不会回应反查请求。
+
+--auth-soa=<serial>[,<hostmaster>[,<refresh>[,<retry>[,<expiry>]]]]::
+指定权威 zone 的 SOA 记录中的字段。注意其为可选项，所有值都被设置了合理的默认值。
+
+--auth-sec-servers=<domain>[,<domain>[,<domain>...]]::
+为 dnsmasq 所管辖的 zone 指定任意 secondary 服务器。这些服务器必须被配置为通过 zone transfer 从 dnsmasq 获得 zone 数据，且与 dnsmasq 一样回复对于相同的权威 zone 的请求。
+
+--auth-peer=<ip-address>[,<ip-address>[,<ip-address>...]]::
+指定允许对于 dnsmasq 管辖的 zone 发起 zone transfer（AXFR）请求的 secondary server 的地址。若不给出该选项，但给定了 `--auth-sec-server`，那么就允许来自任何 secondary 的 AXFR 请求。指定 `--auth-peer` 而不指定 `--auth-sec-servers` 会启用 zone transfer，但不会在 dnsmasq 返回的 NS 记录中推荐 secondary。
+
+--conntrack::
+读取与进入的 DNS 请求关联的 Linux 连接追踪标记，并为回复自上游服务器的回答设置相同的标记值。它允许由 dnsmasq 生成的流量关联至导致它的请求，对于流量计费和防火墙很有用。dnsmasq 必须将 conntrack 支持编译其中，且内核必须包含且配置了 conntrack 支持。该选项不能与 `--query-port` 连用。
