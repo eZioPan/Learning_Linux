@@ -4,7 +4,7 @@
 :SkyDNS: link:https://blog.gopheracademy.com/skydns/[SkyDNS]
 :Etc: link:https://github.com/coreos/etcd[Etc]
 
-[TIP]
+[NOTE]
 ====
 本文摘译自 link:https://www.integralist.co.uk/posts/dns-101/#record-types[]
 ====

@@ -3,6 +3,11 @@
 :openssl_man1: link:https://www.openssl.org/docs/man1.1.1/man1/openssl.html[openssl(1)]
 :x509_man1: link:https://www.openssl.org/docs/man1.1.1/man1/x509.html[]
 
+[NOTE]
+====
+本文译自 {x509_man1}
+====
+
 == 名称
 
 openssl-x509, x509 - 证书显示和签发工具

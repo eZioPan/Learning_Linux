@@ -1,7 +1,7 @@
 = DNSMASQ
 :resolv_conf_man5: xref:85.1、resolv.conf.adoc[resolv.conf(5)]
 
-[TIP]
+[NOTE]
 ====
 本文译自 https://thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html
 ====

@@ -3,6 +3,11 @@
 :x509v3_config_man5: xref:86.1.1、x509v3 配置文件.adoc[x509v3_config(5)]
 :req_man1: link:https://www.openssl.org/docs/man1.1.1/man1/req.html[]
 
+[NOTE]
+====
+本文译自 {req_man1}
+====
+
 == 名称
 
 openssl-req, req - PKCS#10 证书请求以及证书生成工具

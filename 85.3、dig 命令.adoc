@@ -2,7 +2,7 @@
 :rfc_3597: link:https://tools.ietf.org/html/rfc3597.html[RFC 3597]
 :rfc_1035: link:https://tools.ietf.org/html/rfc1035.html[RFC 1035]
 
-[TIP]
+[NOTE]
 ====
 翻译自 link:https://bind9.readthedocs.io/en/v9_17_9/manpages.html#dig-dns-lookup-utility[dig - DNS lookup utility] v9_17_9
 ====

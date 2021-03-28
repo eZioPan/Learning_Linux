@@ -5,6 +5,11 @@
 
 == 防火墙/Firewall 设置
 
+[NOTE]
+====
+本文参考 https://pve.proxmox.com/wiki/Firewall
+====
+
 [WARNING]
 ====
 . 在修改 PVE 的防火墙的时候，**强烈建议**将自己的电脑和 PVE 的主机放置在**同一个广播域**（同一个 LAN）中，这样即便是设置有些问题还能连上 PVE 的 Web GUI

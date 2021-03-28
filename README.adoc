@@ -16,26 +16,30 @@ Linux 学习笔记，最初基于 **鸟哥的 Linux 私房菜 第四版** https:
 
 由于时间有些久了，我也记不太清每篇文章所参考的资料的来源，下面记录了一些目前我还能记得的信息来源。
 
-* 鸟哥的 Linux 私房菜 第四版（CentOS7） https://linux.vbird.org/linux_basic/centos7/
+* 主线流程
+** 鸟哥的 Linux 私房菜 第四版（CentOS7） https://linux.vbird.org/linux_basic/centos7/
 
-* Linux 自带的各种 man page
+* C 语言
+** 21补1、C 库相关 翻译自 http://www.zipcon.net/~swhite/docs/computers/languages/c_programming_libraries.html
+** 21补2、configure,make,make install 背后的魔法 翻译自 https://robots.thoughtbot.com/the-magic-behind-configure-make-make-install
 
-* https://linux.die.net/ 上提供的 man page
+* HTTPS 证书
+** OpenSSL
+*** openssl 1.1.1 版本的官方帮助 https://www.openssl.org/docs/man1.1.1/
+*** openssl 的用法：骏马金龙 https://www.junmajinlong.com/linux/index/#blogopenssl
 
-* https://www.man7.org/linux/man-pages/index.html 上提供的各种 man page
+* DNS 相关
+** 基本概念
+*** https://www.petekeen.net/dns-the-good-parts
+** dig
+*** dig 的官方帮助 https://bind9.readthedocs.io/en/v9_17_9/manpages.html#dig-dns-lookup-utility
+** dnsmasq
+*** dnsmasq 的官方帮助 https://thekelleys.org.uk/dnsmasq/docs/
+*** dnsmasq 的用法： https://fedoramagazine.org/dnsmasq-provide-dns-dhcp-services/
 
-* 21补1、C 库相关 翻译自 http://www.zipcon.net/~swhite/docs/computers/languages/c_programming_libraries.html
-
-* 21补2、configure,make,make install 背后的魔法 翻译自 https://robots.thoughtbot.com/the-magic-behind-configure-make-make-install
-
-* dnsmasq 的官方帮助 https://thekelleys.org.uk/dnsmasq/docs/
-** dnsmasq 的用法： https://fedoramagazine.org/dnsmasq-provide-dns-dhcp-services/
-
-* openssl 1.1.1 版本的官方帮助 https://www.openssl.org/docs/man1.1.1/
-** openssl 的用法：骏马金龙 https://www.junmajinlong.com/linux/index/#blogopenssl
-
-* Proxmox VE 的官方帮助文档 https://pve.proxmox.com/wiki/Main_Page
-
-* systemd 相关内容来自 freedesktop.org https://www.freedesktop.org/software/systemd/man/
-
-__未完待续__
+* 时间久远或不成体系
+** Linux 自带的各种 man page
+** https://linux.die.net/ 上提供的 man page
+** https://www.man7.org/linux/man-pages/index.html 上提供的各种 man page
+** Proxmox VE 的官方帮助文档 https://pve.proxmox.com/wiki/Main_Page
+** systemd 相关内容来自 freedesktop.org https://www.freedesktop.org/software/systemd/man/

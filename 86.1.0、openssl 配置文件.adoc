@@ -1,6 +1,11 @@
 = config
 :config_man5: link:https://www.openssl.org/docs/man1.1.1/man5/config.html[]
 
+[NOTE]
+====
+本文译自 {config_man5}
+====
+
 == 名称
 
 openssl CONF 库配置文件

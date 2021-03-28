@@ -1,6 +1,6 @@
 = dnsmasq 设置
 
-[TIP]
+[NOTE]
 ====
 本文译自 https://thekelleys.org.uk/dnsmasq/docs/setup.html
 ====

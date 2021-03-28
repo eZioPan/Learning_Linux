@@ -1,6 +1,11 @@
 = rsa
 :rsa_man1: link:https://www.openssl.org/docs/man1.1.1/man1/rsa.html[]
 
+[NOTE]
+====
+本文译自 {rsa_man1}
+====
+
 == 名称
 
 openssl-rsa, rsa - RSA 密钥处理工具

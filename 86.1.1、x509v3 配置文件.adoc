@@ -1,6 +1,11 @@
 = x509v3_config
 :x509v3_config_man5: link:https://www.openssl.org/docs/man1.1.1/man5/x509v3_config.html[]
 
+[NOTE]
+====
+本文译自 {x509v3_config_man5}
+====
+
 == 名称
 
 x509v3_config - X509 V3 证书扩展配置格式

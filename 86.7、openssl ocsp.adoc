@@ -2,6 +2,11 @@
 :verify_man1: link:https://www.openssl.org/docs/man1.1.1/man1/verify.html[verify(1)]
 :ocsp_man1: link:https://www.openssl.org/docs/man1.1.1/man1/ocsp.html[]
 
+[NOTE]
+====
+本文译自 {ocsp_man1}
+====
+
 == 名称
 
 openssl-ocsp, ocsp - 在线证书状态协议工具
