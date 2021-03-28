@@ -12,6 +12,10 @@ Linux 学习笔记，最初基于 **鸟哥的 Linux 私房菜 第四版** https:
 
 * 序号从 `99` 开始的由大至小排列的部分为自己遇到的问题在网络上查证后写的，如果有多篇目则编写为 `<主序号>.<小序号>`
 
+== 当前活跃编写内容
+
+DNS 以及 dnsmasq，第 85 章
+
 == 部分参考的文章来源列表
 
 由于时间有些久了，我也记不太清每篇文章所参考的资料的来源，下面记录了一些目前我还能记得的信息来源。
@@ -31,6 +35,8 @@ Linux 学习笔记，最初基于 **鸟哥的 Linux 私房菜 第四版** https:
 * DNS 相关
 ** 基本概念
 *** https://www.petekeen.net/dns-the-good-parts
+*** https://www.integralist.co.uk/posts/dns-101/
+*** https://bind9.readthedocs.io/en/v9_17_9/introduction.html
 ** dig
 *** dig 的官方帮助 https://bind9.readthedocs.io/en/v9_17_9/manpages.html#dig-dns-lookup-utility
 ** dnsmasq
@@ -43,3 +49,6 @@ Linux 学习笔记，最初基于 **鸟哥的 Linux 私房菜 第四版** https:
 ** https://www.man7.org/linux/man-pages/index.html 上提供的各种 man page
 ** Proxmox VE 的官方帮助文档 https://pve.proxmox.com/wiki/Main_Page
 ** systemd 相关内容来自 freedesktop.org https://www.freedesktop.org/software/systemd/man/
+
+
+__未完待续__
