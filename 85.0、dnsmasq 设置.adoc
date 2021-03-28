@@ -1,5 +1,10 @@
 = dnsmasq 设置
 
+[TIP]
+====
+本文译自 https://thekelleys.org.uk/dnsmasq/docs/setup.html
+====
+
 == 安装
 
 要编译并安装 dnsmasq，（以 root 身份）使用下面的命令就足够了。
