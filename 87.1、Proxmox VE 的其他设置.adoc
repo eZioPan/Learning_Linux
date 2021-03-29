@@ -102,3 +102,70 @@ PVE 的防火墙可以在三个位置设置，分别为
 === 综述
 
 由上可知，当远程管理主机的 IP 地址与 PVE Host 主机的 IP 地址不在同一个广播域中时，请先将管理主机的 IP 地址追加至 `management` IPSet 中再启用防火墙，否则会导致 Web GUI 无法连接的问题。
+
+== 具有 VLAN 的网络设置
+
+[WARNING]
+====
+此处设置不当可能造成 PVE 无法通过网络连接（WebUI 和 SSH 均无法接入），请看完整段、并大致理解流程后再进行操作。
+====
+
+=== 技能要求
+
+了解 VLAN、Bridge VLAN、tagged/trunk、untagged/access 的基本概念
+
+=== 条件描述
+
+在较为复杂的网络环境下，PVE 主机可能处于有 VLAN 的网络环境中，考虑以下情况：
+
+. PVE 主机的 eno1 网口用一根网线连接至交换机的 eth10 网口上
+. 交换机将 eth10 网口并入了网桥 br2 上
+. 网桥 br2 上配置了 vlan filtering，其接受 VLAN10 和 VLAN20 两个 vlan，并特别指定了 eth10 同时为 VLAN100 和 VLAN200 的 tagged 口（又称 trunk 口）
++
+[NOTE]
+====
+若此处 eth10 被指定为仅为某一个 vlan 的 untagged 口（或称 access 口），那么 Proxmox 就可以当 vlan 不存在，执行普通设置即可
+====
+. 此时可以对 Proxmox 进行一些设置，让 Proxmox 同时接入两个 vlan 中。
+
+=== 操作步骤
+
+[NOTE]
+====
+. 此处的配置依照上面的假设条件进行配置，若实际情况与上面的不同，请酌情修改
+. 这里的配置使用的是比较新的 Linux kernel 支持的 VLAN aware bridge 的设置
+====
+
+对于 PVE 主机来说
+
+[start=0]
+. 在 PVE 主机的 menu:Datacenter[__hostname__ > System > Network] 下，可以配置 PVE 主机的网络设置。 +
+一般来说，除了 `eno1` 之外，还会额外配置一个名为 `vmbr0` 的 Linux Bridge，主要为虚拟机和容器提供网络接入的服务
+. 配置 `vmbr0`
+.. 打开 `vmbr0` 的配置页面
+.. 勾选 `VLAN aware`
+.. 并检查 `eno1` 存在于 `Bridge ports` 的列表中
+.. 记住当前 `vmbr0` 的 IP 地址，虽然**最终**会被移除，但这里请**先不要移除它**
+. 添加 VLAN10 相关配置
+.. 右上方 menu:Create按钮[Linux VLAN]
+.. 关于接口名称 `Name`，下方设置**三选一**
+*** `Name` 设置为 `vmbr0.10` a.k.a __<网桥名>.<VLAN 号>__
+*** `Name` 设置为 `vlan10` a.k.a __vlan<VLAN 号>__，`Vlan raw device` 设置为 `vmbr0` a.k.a __<网桥名>__
+*** `Name` 不符合上述两种格式，`Vlan raw device` 设置为 `vmbr0` a.k.a __<网桥名>__，`VLAN Tag` 设置为 `10` a.k.a __<VLAN 号>__
+.. 设置对应的 IP 地址
+. VLAN20 的配置同 VLAN10
+. 思考 PVE 主机要使用的网关地址（该地址用于转发 PVE 主机、虚拟机、容器与非所在广播域的交流），设置 PVE 的默认网关至所在的网络接口上
+. 【可选】如若开启了防火墙，且并不熟悉防火墙的设置，建议先关闭防火墙，测试无误后再打开
+. 应用配置，重启，并检查网络连入状态
+** 若连入失败，可以尝试通过 `vmbr0` 上配置的 IP 地址连入 PVE
+. 检查成功且不再需要 `vmbr0` 上的 IP 地址，请移除，应用配置并重启
+. 再次检查网络连入状态，依照新的网络设置更新防火墙的配置、并启用
++
+[TIP]
+====
+有关防火墙的配置参阅 xref:_防火墙firewall_设置[]
+====
+
+对于虚拟机和容器来说
+
+menu:Datacenter[__hostname__ > __VMID/CTID__ > Network] 下的网络接口，依照所要加入的网桥和 VLAN 的不同，分别设置 `Bridge` 和 `VLAN Tag`
