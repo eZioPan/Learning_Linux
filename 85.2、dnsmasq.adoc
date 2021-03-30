@@ -397,3 +397,18 @@ IPv6（仅）支持另一类范围。在该情况下，开始地址和额外的�
 以太网地址（不能是 client-id）可以有通配符字节，所以，举例来说 `--dhcp-host=00:20:e0:3b:13:*,ignore` 将导致 dnsmasq 忽略一系列硬件地址。注意在命令行中 `*` 需要被转义或者被引号引起，但配置文件中不需要。 +
 硬件地址通常匹配任何网络（ARP）类型，但也可以通过前缀 ARP 类型（十六进制表示）以及 `-` 来指定单独的 ARP 类型。所以 `--dhcp-host=06-00:20:e0:3b:13:af,1.2.3.4` 仅会匹配令牌环硬件地址，这是由于令牌环的 ARP 地址类型为 6。 +
 作为特殊的情况，在 DHCPv4 中，可以包含多个硬件地址。比如 `--dhcp-host=11:22:33:44:55:66,12:34:56:78:90:12,192.168.0.2`。它允许一个 IP 地址与多个硬件地址关联，给 dnsmasq 权限，让它能在其中一个硬件地址请求租用时，弃用另一个硬件地址的租用。要小心这样做很危险，仅在保证任意时间点上仅有一个硬件地址被激活的情况下才是可靠的，而 dnsmasq 无法保证它。举例来说，它可以方便同时具有有线和无线连接的笔记本电脑具有稳定的 IP 地址。
+
+--dhcp-hostsfile=<path>::
+从指定的文件读取 DHCP 主机信息。若给定了一个目录，则读取目录下的全部文件。文件的内容为每行一个主机的信息。每行的格式即为 `--dhcp-host` 的 `=` 右侧的文本。将 DHCP 主机信息存储在该文件的优势是，不用重启 dnsmasq 就可以修改配置：当 dnsmasq 收到 SIGHUP 后就会重读文件。
+
+--dhcp-optsfile=<path>::
+从指定的文件中读取 DHCP 选项信息。若给定了一个目录，则读取目录下的全部文件。使用该选项的优势与 `--dhcp-hostsfile` 相同：当 dnsmasq 收到 SIGHUP 后就会重读 `--dhcp=optsfile`。注意，可以将 `-dhcp-boot` 标识中的信息编码为 DHCP 选项，所使用的选项名称为 `bootfile-name`、`server-ip-address` 以及 `tftp-server`。这就允许这些内容被包含在 `--dhcp-optsfile` 中。
+
+--dhcp-hostsdir=<path>::
+除了以下的不同，其等价于 `--dhcp-hostsfile`。路径**必须**为文件夹，不可以为独立的文件。在该目录下修改或新建文件都会被自动读取，而不需要发送 SIGHUP。若一个文件被 dnsmasq 读取之后被删除或修改，那么它所包含的主机记录直到 dnsmasq 收到 SIGHUP 或重启之前都会被保留；也就是主机记录仅会动态地增加。
+
+--dhcp-optsdir=<path>::
+等价于 `--dhcp-optsfile`，不同处类比 `--dhcp-hostsdir`。
+
+-Z, --read-ethers::
+为 DHCP 服务器读取 /etc/ethers 中关于主机的信息。/etc/ethers 的格式是一个硬件地址，跟随一个主机名或者点号四分的 IP 地址。当这些行被 dnsmasq 读取时，它们具有与包含了相同信息的 `--dhcp-host` 选项相同的效应。/etc/ethers 在 dnsmasq 收到 SIGHUP 被重读。IPv6 地址不会从 /etc/ethers 中获取。
