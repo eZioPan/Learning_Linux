@@ -193,7 +193,7 @@ dnsmasq 将把 syslog 条目发送给 __facility__，默认为 DAEMON，在 debu
 告诉 dnsmasq 不要将直接名称（plain name）——不含点号或者域名部分——的 A 或者 AAAA 请求转发给上游名称服务器。若名称不能从 /etc/hosts 或者 DHCP 中找到，那么返回回答 not found。
 
 -S, --local, --server=[/[<domain>]/[domain/]]<ipaddr>[\#<port>]][@<source-ip>|<interface>[#<port>]]::
-直接指定上游服务器的 IP 地址。设置该标示并不会抑制读取 /etc/resolv.conf，要抑制读取，请使用 `--no-resolv`。若给出了一个或多个可选域名，那么这些服务器仅用于解析这些域名，且这些域名也仅由这些服务器解析。它意在用于私有名称服务器：若在你的网络上有一个地址为 192.168.1.1 的名称服务器，其用于处理具有 xxx.interal.thekelleys.org.uk 格式的地址，那么给定标示 `--server=/internal.thekelleys.org.uk/192.168.1.1` 会让全部查询内部机器的请求流向该名称服务器，其他的依旧使用 /etc/resolv.conf 中指定的服务器。会关闭对这类私有服务器的 DNSSEC 校验，除非为该域名指定了 `--trust-anchor`。若指定了空域名，`//` 具有特殊的含义——仅为未限定名称，比如名称中不具有点号。可以使用非标准端口作为 IP 地址的组成部分，用 `#` 分隔。可以指定多个 `--server`，每次指定都需要对应的 __domain__ 或者 __ipaddr__。 +
+直接指定上游服务器的 IP 地址。设置该标示并不会抑制读取 /etc/resolv.conf，要抑制读取，请使用 `--no-resolv`。若给出了一个或多个可选域名，那么这些服务器仅用于解析这些域名，且这些域名也仅由这些服务器解析。它意在用于私有名称服务器：若在你的网络上有一个地址为 192.168.1.1 的名称服务器，其用于处理具有 xxx.interal.thekelleys.org.uk 格式的地址，那么给定标示 `--server=/internal.thekelleys.org.uk/192.168.1.1` 会让全部查询内部机器的请求流向该名称服务器，其他的依旧使用 /etc/resolv.conf 中指定的服务器。会关闭对这类私有服务器的 DNSSEC 校验，除非为该域名指定了 `--trust-anchor`。若指定了空域名，`//` 具有特殊的含义——仅为未限定名称，比如名称中不具有点号。可以使用非标准端口作为 IP 地址的组成部分，用 `\#` 分隔。可以指定多个 `--server`，每次指定都需要对应的 __domain__ 或者 __ipaddr__。 +
 更详细的域名会覆盖不详细的域名，所以 `--server=/google.com/1.2.3.4 --server=/www.google.com/2.3.4.5` 将把 *.google.com 的请求发送至 1.2.3.4，但会单独把 *www.google.com 的请求发送至 2.3.4.5。 +
 特殊的服务器地址 `#` 表示 使用标准服务器，所以 `--server=/google.com/1.2.3.4 --server=/www.google.com/#` 将把 *.google.com 的请求发送至 1.2.3.4，而让 *www.google.com 的请求通常转发。 +
 也可以指定域名而不指定 IP 地址；这告诉 dnsmasq 该域名为本地域名，它可以从 /etc/hosts 和 DHCP 查询地址，但永远不要将该域名的查询转发至上游服务器。`--local` 为 `--server` 的同义词，意在明确配置文件中的这种情况。 +
