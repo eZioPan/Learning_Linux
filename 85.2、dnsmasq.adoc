@@ -412,3 +412,6 @@ IPv6（仅）支持另一类范围。在该情况下，开始地址和额外的�
 
 -Z, --read-ethers::
 为 DHCP 服务器读取 /etc/ethers 中关于主机的信息。/etc/ethers 的格式是一个硬件地址，跟随一个主机名或者点号四分的 IP 地址。当这些行被 dnsmasq 读取时，它们具有与包含了相同信息的 `--dhcp-host` 选项相同的效应。/etc/ethers 在 dnsmasq 收到 SIGHUP 被重读。IPv6 地址不会从 /etc/ethers 中获取。
+
+-O, --dhcp-option=[tag:<tag>,[tag:<tag>,]][encap:<opt>,][vi-encap:<enterprise>,][vendor:[<vendor-class>],][<opt>|option:<opt-name>|option6:<opt>|option6:<opt-name>],[<value>[,<value>]]::
+对 DHCP 客户端给出不同的或额外的选项。默认情况下，dnsmasq 会发送一些标准选项至 DHCP 客户端，子网地址和广播地址与 dnsmasq 所运行的主机的设置相同，DNS 服务器和默认路由则设置为 dnsmasq 所运行的主机的地址（等价规则适用于 IPv6）。若设置了域名选项，也会一同发送。该配置允许覆盖这些默认值，或者指定其它选项。要发送的选项，可以以十进制数给出，或者以 `option:<option-name>` 的形式给出。选项号在 RFC2132 以及其后的 RFC 中指定。dnsmasq 了解的 option-name 可以通过 `dnsmasq --help dhcp` 命令获得。举例来说，要设置默认路由至 192.168.4.4，指定 `--dhcp-option=3,192.168.4.4` 或者 `--dhcp-option=option:router,192.158.4.4`，要设置时间服务器的地址为 192.168.0.4，指定 `--dhcp-option=42,192.168.0.4` 或者 `--dhcp-option=ntp-server,192.168.0.4`。特殊地址 `0.0.0.0` 表示 dnsmasq 运行的机器的地址。
