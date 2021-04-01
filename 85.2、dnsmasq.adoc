@@ -423,3 +423,15 @@ IPv6 须向以关键字 `option6:` 定义，其后跟随选项数或选项名。
 一个选项也可以被其它的选项封装（仅限 IPv4）：举例来说 `--dhcp-option=encap:175,190,iscsi-client0`，将发送 option 175，其中包裹着 option 190。若给出了多个选项，它们被同一个选项号封装，那么它们会被正确包裹进一个封装过的选项中。在同一个 `--dhcp-option` 中 `encap:` 和 `vendor:` 不应该同时指定。 +
 对于封装选项最后的变化为“供应商辨识供应商选项（Vendor-Identifying Vendor Options）”，由 RFC3925 定义。它们如这样标识：`--dhcp-option=vi-encap:2,10,text`。`vi-encap:` 段的数字为用于分辨该选项的 IANA 企业数。在 IPv6 中也支持这种封装样式。 +
 在封装样式中，地址 `0.0.0.0` 不会被特殊对待。
+
+--dhcp-option-force=[tag:<tag>,[tag:<tag>,]][encap:<opt>,][vi-encap:<enterprise>,][vendor:[<vendor-class>],]<opt>,[<value>[,<value>]]::
+该选项与 `--dhcp-option` 的工作方式相同，不同之处在于，这里指定的选项永远会被发送出去，即便客户端并没有在参数请求列表中请求它。有时候需要它，比如当发送给 PXELinux 时。
+
+--dhcp-no-override::
+（仅 IPv4）禁用复用 DHCP servername 和 filename 字段作为额外选项空间。若可行，则 dnsmasq 会将启动服务器和文件名信息从（`--dhcp-boot` 中的）他们自己的字段移入 DHCP 选项中。它为 DHCP 选项提供了额外的空间，同时也有很小的可能会迷惑旧的或损坏的客户端。该标识强制“简单又安全”的行为以在这种情况下防止问题。
+
+--dhcp-relay=<local address>,<server address>[,<interface>]::
+配置 dnsmasq 执行 DHCP 中继。local address 是 dnsmasq 所运行的机器的一个接口分配的一个地址。所有达到哪个接口的 DHCP 请求都会被转发至 server address 所指定的远程 DHCP 服务器上。可以通过指定多个 `--dhcp-relay`，并配置为相同的本地地址和不同的服务器地址，从单个本地地址向多个远程服务器中继。服务地址必须为 IP 字面值，不可以是域名。对于 DHCPv6 的情况，服务器地址可以为 ALL_SERVERS 多播地址 `ff05::1:3`。在这种情况下，必须给出接口，且不能含有通配符，该接口用于将多播导向到达 DHCP 服务器的正确接口。 +
+对于 DHCP 客户端的访问控制与 DHCP 服务器的规则相同，参见 `--interface`、`--except-interface` 等。`--dhcp-relay` 配置中的可选 interface 有一个额外的作用：它控制来自哪个接口服务器回复的 DHCP 回复会被接受。意在用于配置三种接口：一个接受中继、一个连接至 DHCP 服务器，第三个为不信任的网络，通常为宽广的互联网。它用于防止可能由第三个接口接收的欺骗性的回复。 +
+允许 dnsmasq 作为一组接口的 DHCP 服务器，同时作为另一组不相交的接口的中继。注意，虽然能写出看起来可以在一个端口同时运行服务器和中继的配置，但它并不被支持：中继功能会更优先。 +
+DHCPv4 和 DHCPv6 中继均被支持。但不可以将 DHCPv4 中继至 DHCPv6，反之亦然。
