@@ -3,7 +3,7 @@
 
 [NOTE]
 ====
-本文译自 https://thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html
+本文译自 https://thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html 2020-04-05 版本
 ====
 
 == 名称
@@ -435,3 +435,23 @@ IPv6 须向以关键字 `option6:` 定义，其后跟随选项数或选项名。
 对于 DHCP 客户端的访问控制与 DHCP 服务器的规则相同，参见 `--interface`、`--except-interface` 等。`--dhcp-relay` 配置中的可选 interface 有一个额外的作用：它控制来自哪个接口服务器回复的 DHCP 回复会被接受。意在用于配置三种接口：一个接受中继、一个连接至 DHCP 服务器，第三个为不信任的网络，通常为宽广的互联网。它用于防止可能由第三个接口接收的欺骗性的回复。 +
 允许 dnsmasq 作为一组接口的 DHCP 服务器，同时作为另一组不相交的接口的中继。注意，虽然能写出看起来可以在一个端口同时运行服务器和中继的配置，但它并不被支持：中继功能会更优先。 +
 DHCPv4 和 DHCPv6 中继均被支持。但不可以将 DHCPv4 中继至 DHCPv6，反之亦然。
+
+-U, --dhcp-vendorclass=set:<tag>,[enterprise:<IANA-enterprise number>,]<vendor-class>::
+将一个供应商类别字符串映射至一个标签。大多数 DHCP 客户端都会提供一个“供应商类别”，它在一定程度上表示了主机的类型。该选项将供应商类别映射至标签，借此就可以选择性地将 DHCP 选项发送至不同的类别的主机。举例来说：`--dhcp-vendorclass=set:printers,Hewlett-Packard JetDirect` 将允许通过 `--dhcp-option=tag:printers,3,192.168.4.4` 仅为 HP 打印机设置该 DHCP 选项。供应商类别字符串会对客户端提供的供应商类别进行子字符串匹配，来允许模糊匹配。`set:` 前缀为可选的，但为了一致性可以设置。 +
+注意仅在 IPv6 中，供应商类别使用一个 IANA 分配的企业号作为名称空间。它带来了 `enterprise:` 关键字，并表示仅搜索匹配了指定数字的供应商类别。
+
+-j, --dhcp-userclass=set:<tag>,<user-class>::
+将一个用户类别字符串映射至一个标签（同样是子字符串匹配，如同供应商类别一样）。大多数 DHCP 客户端都提供一个可配置的“用户类别”。该选项将用户类别映射为标签，借此就可以选择性地将 DHCP 选项发送至不同的类别的主机。它可以，举例来说，用它为“会计”类别和“工程师”类别的主机设置不同的打印机服务器。
+
+-4, --dhcp-mac=set:<tag>,<MAC address>::
+将一个 MAC 地址映射至一个标签。MAC 地址可以包含通配符。举例来说 `--dhcp-mac=set:3com,01:34:23:*:*:*` 将为任何 MAC 地址匹配该样式的主机设置标签 `3com`。
+
+--dhcp-circuitid=set:<tag>,<circuit-id>, --dhcp-remoteid=set:<tag>,<remote-id>::
+将一个 RFC3046 中继代理选项映射至一个标签。该数据可以由 DHCP 中继代理提供。__circuit-id__ 或 __remote_id__ 通常以分号分隔的十六进制给出，但也可以是一个简单字符串。若 circuit ID 或 agent ID 与某个中继代理提供的值精确匹配上，则设置该标签。 +
+`--dhcp-remoteid` 支持 IPv6（`--dhcp-circuitid` 不支持）。
+
+--dhcp-subscrid=set:<tag>,<subscriber-id>::
+（IPv4 或 IPv6）将 RFC3993 subscriber-id relay agent option 映射为标签。
+
+--dhcp-proxy[=<ip addr>]......::
+（仅 IPv4）一个普通的 DHCP 中继代理仅用于转发与 DHCP 服务器的初始交互的部分。一旦一个客户端已经被配置，则它将于服务器直接通信。若中继代理向 DHCP 包中追加了额外的信息，比如被 `--dhcp-circuitid` 和 `--dhcp-remoteid` 所使用的，则不期望该行为。一个全代理实现可以通过使用 RFC5107 serverid-override 选项，强制 DHCP 服务器使用该代理作为一个全代理，所有的包都会通过它。该选项为不支持 RFC5107 的中继提供了一个执行相同事情的替代方案。总的来说，它会修改通过中继的全部交互的 server-id。若给出了一个 IP 地址列表，那么仅有这些地址通过中继的交互会被影响。
