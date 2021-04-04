@@ -459,3 +459,27 @@ DHCPv4 和 DHCPv6 中继均被支持。但不可以将 DHCPv4 中继至 DHCPv6�
 --dhcp-match=set:<tag>,<option number>|option:<option name>|vi-encap:<enterprise>[,<value>]::
 当不给出值时，若客户端发送了指定的 DHCP 选项数或选项名，那么就设置标签。当给出一个值时，仅当发送了该选项，且选项值与给出的值相同时，才设置标签。值可以为 `01:ff:*:02` 这种格式，此时值必须匹配（注意通配符）但所发送的选项的值在其末尾可能会有不匹配的数据。值也可以具有 `--dhcp-option` 中的格式，此时发送的选项就作为一个数组处理，且必须匹配其中的一个元素，因此 `--dhcp-match=set:efi-ia32,option:client-arch,6` 会为 option 93（参见 RFC4578）中记录的 list of architectures 中出现了数字 6 的客户端设置标签 efi-ia32。若值为一个字符串，那么会使用子字符串匹配。 +
 特殊格式 `vi-encap:<enterprise number>` 匹配对于特定企业的供应商定义的供应商类别。参见 RFC3925 了解关于这类少见且有趣的怪兽。
+
+--tag-if=set:<tag>[,set:<tag>[,tag:<tag>[,tag:<tag>]]]::
+对标签执行布尔操作。若所有 `set:<tag>` 指定的标签全都被设置（或 `tag!<tag>` 表示该标签未设置），则会设置 `set:<tag>` 指定的标签。若不指定 `tag:<tag>`，那么 `set:<tag>` 会无视条件直接设置。可以指定任意数量、任意顺序的 `set:` 以及 `tag:`。`--tag-if` 行按顺序执行，也就是说，如果在 `tag:<tag>` 中指定的标签由另一个 `--tag-if` 设置，那么设置该标签的行必须先于检验该标签的行。
+
+-J, --dhcp-ignore=tag:<tag>[,tag:<tag>]::
+当全部给定的标签全都出现时，忽略该主机，并不会为它分配一个 DHCP 租用。
+
+--dhcp-ignore-names[=tag:<tag>[,tag:<tag>]]::
+当全部给定的标签全都出现时，忽略由该主机提供的主机名。注意，与 `--dhcp-ignore` 不同，它允许不提供任何标签，此时总是抛弃 DHCP 客户端提供的主机名，添加至 DNS 的 DHCP 主机仅会使用 dnsmasq 中的 `--dhcp-host` 配置、以及 `/etc/hosts` 和 `/etc/ethers` 的内容。
+
+--dhcp-generate-names=tag:<tag>[,tag:<tag>]::
+（仅 IPv4）为没有名字的 DHCP 客户端生成名字，名字为十六进制表示的 MAC 地址，由分隔符分开。注意，若主机名提供了名字，那么其优先于该设置，除非设置了 `--dhcp-ignore-name`。
+
+--dhcp-broadcast[=tag:<tag>[,tag:<tag>]]::
+（仅 IPv4）当全部给定的标签全都出现时，当主机未被配置时，永远用广播与其沟通。可以不提供任何标签，此时它无条件执行。大多数需要广播回复的 DHCP 客户端会在它们的请求中设置一个标识，让其自动发生，但一些老旧的 BOOTP 客户端不会这么做。
+
+-M, --dhcp-boot=[tag:<tag>,]<filename>,[<servername>[,<server address>|<tftp_servername>]]::
+（仅 IPv4）设置 DHCP 服务器返回的 BOOTP 选项。服务器名和地址为可选项：若不提供，那么名称留空，地址设置为 dnsmasq 运行的机器。若 dnsmasq 提供了一个 TFTP 服务（参见 `--enable-tftp`）那么此处仅需 __filename__ 就可以启用网络启动。若给出了可选的标签，那么就必须要匹配这些标签才会发送这个配置。除了 IP 地址，TFTP 服务器地址可以以域名的形式给出，该域名会在 `/etc/hosts` 中查找。该名称可以在 /etc/hosts 中与多个 IP 地址关联，此时会以 round-robin 方式使用它们。该架构可用于在一组服务器上均衡负载。
+
+--dhcp-sequential-ip::
+dnsmasq 被设置为依照客户端的 MAC 地址的散列值为 DHCP 客户端选取 IP 地址。它通常允许一个客户端地址在长时间里保持稳定，即便客户端有时会让 DHCP 租用超时。在默认模式下， IP 地址在整个可分配的范围中伪随机地分布。在一些情况下（主要是服务器部署），让 IP 地址连续地、从最低地可用地址开始分配会更方便，设置这个标识会启用该模式。注意在顺序模式下，若客户端允许租用过期，那么它就更容易移动 IP 地址；鉴于这个原因，它不应该被广泛地使用。
+
+--dhcp-ignore-clid::
+dnsmasq 会读取客户端发送的（若存在）client identifier 选项（RFC2131）来分辨客户端。它允许为一个主机地多个界面配置相同的 IP 地址。使用该选项禁用 client identifier 的读取，也就是说，永远通过 MAC 地址分辨一个主机。
