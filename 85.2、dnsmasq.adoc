@@ -3,7 +3,7 @@
 
 [NOTE]
 ====
-本文译自 https://thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html 2020-04-05 版本
+本文译自 link:https://thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html[] 2020-04-05 版本
 ====
 
 == 名称
@@ -455,3 +455,7 @@ DHCPv4 和 DHCPv6 中继均被支持。但不可以将 DHCPv4 中继至 DHCPv6�
 
 --dhcp-proxy[=<ip addr>]......::
 （仅 IPv4）一个普通的 DHCP 中继代理仅用于转发与 DHCP 服务器的初始交互的部分。一旦一个客户端已经被配置，则它将于服务器直接通信。若中继代理向 DHCP 包中追加了额外的信息，比如被 `--dhcp-circuitid` 和 `--dhcp-remoteid` 所使用的，则不期望该行为。一个全代理实现可以通过使用 RFC5107 serverid-override 选项，强制 DHCP 服务器使用该代理作为一个全代理，所有的包都会通过它。该选项为不支持 RFC5107 的中继提供了一个执行相同事情的替代方案。总的来说，它会修改通过中继的全部交互的 server-id。若给出了一个 IP 地址列表，那么仅有这些地址通过中继的交互会被影响。
+
+--dhcp-match=set:<tag>,<option number>|option:<option name>|vi-encap:<enterprise>[,<value>]::
+当不给出值时，若客户端发送了指定的 DHCP 选项数或选项名，那么就设置标签。当给出一个值时，仅当发送了该选项，且选项值与给出的值相同时，才设置标签。值可以为 `01:ff:*:02` 这种格式，此时值必须匹配（注意通配符）但所发送的选项的值在其末尾可能会有不匹配的数据。值也可以具有 `--dhcp-option` 中的格式，此时发送的选项就作为一个数组处理，且必须匹配其中的一个元素，因此 `--dhcp-match=set:efi-ia32,option:client-arch,6` 会为 option 93（参见 RFC4578）中记录的 list of architectures 中出现了数字 6 的客户端设置标签 efi-ia32。若值为一个字符串，那么会使用子字符串匹配。 +
+特殊格式 `vi-encap:<enterprise number>` 匹配对于特定企业的供应商定义的供应商类别。参见 RFC3925 了解关于这类少见且有趣的怪兽。
