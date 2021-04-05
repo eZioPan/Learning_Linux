@@ -528,3 +528,10 @@ dnsmasq 支持 PXE proxy-DHCP，此时网络上的另一个 DHCP 服务器用于
 
 -l, --dhcp-leasefile=<path>::
 用特定的文件存储 DHCP 租用信息。
+
+--dhcp-duid=<enterprise-id>,<uid>::
+（仅 IPv6）指定 DHCPv6 服务器会使用的 server persistent UID UID。该选项通常不被需要，因为 dnsmasq 会在 DUID 首次被需要的时候自动创建它。当给出后，该选项为 dnsmasq 提供创建 DUID-EN 类型的 DUID 所需要的数据。注意，一旦设置，DUID 就会被存储在租用数据库中，所以在 DUID-EN 和自动创建的 DUID 之间的变换需要重新初始化租用数据库。__enterprise-id__ 由 IANA 分配，__uid__ 则是一个十六进制八位元组字符串，它对于特定的设备唯一。
+
+-6 --dhcp-script=<path>::
+每当 DHCP 租用被创建、或者旧的租用被销毁、或者 TFTP 文件传送完成，就会执行该选项定义的可执行文件。__path__ 必须为一个绝对路径名，不会执行 PATH 搜索。传递给进程的参数为 `add`、`old` 或 `del`，主机的 MAC 地址（IPv6 为 DUID），IP 地址，以及主机名（若已知）。`add` 表示一个租用被创建，`del` 表示它被销毁，`old` 则是 dnsmasq 启动时，对于一个已存在的租用的提醒，或是对于已存在的租用的 MAC 地址或主机名的修改（若设置了 `--leasefile-ro` 则还会传递租用时长或过期以及 client-id，若设置了 `--script-on-renewal` 则还会传递租用过期）。若 MAC 地址来自非以太网网络类型，它还会前缀网络类型，比如对于令牌环为 `06-01:23:45:67:89:ab`。该进程会以 root 运行（假设 dnsmasq 最开始以 root 运行）即便 dnsmasq 被配置为变换 UID 至一个无特权用户。 +
+环境变量继承于 dnsmasq 的调用者，会追加部分或全部的变量 +
