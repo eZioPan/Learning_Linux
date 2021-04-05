@@ -507,3 +507,24 @@ dnsmasq 支持 PXE proxy-DHCP，此时网络上的另一个 DHCP 服务器用于
 
 -K, --dhcp-authoritative::
 当 dnsmasq 绝对是网络上唯一的 DHCP 服务器时应该设置它。对于 DHCPv4，它改变了严格遵守 RFC 的行为，依此会忽略对于未知主机的未知租用的 DHCP 请求。在所有的情况下，它都省去了新主机获得一个租用所需要等待的无聊的超时时间。当租用数据库丢失时，它也无需要求每个客户端重新获取租用就可以重建它的租用数据库。对于 DHCPv6 它将回复中的优先级设置为 255（最大值）而非 0（最小值）。
+
+--dhcp-rapid-commit::
+启动 RFC4039 定义的 DHCPv4 Rapid Commit Option。启用时，当收到的 DHCPDISCOVER 信息包含了 Rapid Commit 选项，dnsmasq 所回复的 DHCPACK 会包含 Rapid Commit 选项、以及完全确认的地址以及配置信息。仅当该服务器为该子网唯一的服务器，或者出现多个服务器，且每个服务都为全部的客户端提供一个绑定时设置。
+
+--dhcp-alternate-port[=<server port>[,<client port>]]::
+（仅 IPv4）修改默认的 DHCP 所使用的端口。若仅指定该选项，但不给出参数，则它将 DHCP 的端口从 67 和 68 修改至 1067 和 1068。若只给定一个参数，则该端口号用于服务器，且 端口号 +1 用于客户端。最后，使用两个端口号则允许随意指定 DHCP 的服务器和客户端的端口。
+
+-3, --bootp-dynamic[=<network-id>[,<network-id>]]::
+（仅 IPv4）启用对 BOOTP 客户端的 IP 地址动态分配。请小心使用，这是由于每个分配给 BOOTP 客户端的租用都是永久的，因此会永久地无法被其它主机重用。若不带标签给出该选项，则它将无视条件启用动态分配。当具有标签时，仅当全部满足时才启用。它可以已不同地标签集重复多次指定。
+
+-5, --no-ping::
+（仅 IPv4）默认情况下，DHCP 服务器将尝试保证一个地址在分配给一个主机前不会正在被使用。它通过对所需要地地址发送一个 ICMP echo request（也就是 ping）来确认。若它获得一个回复，则地址必然正在使用，此时它会尝试使用其它地址。该标识会关闭检查。请小心使用。
+
+--log-dhcp::
+对 DHCP 记录额外的日志：记录全部发送给 DHCP 客户端的选项，并记录用于决定他们的标签。
+
+--quiet-dhcp, --quiet-dhcp6, --quiet-ra::
+抑制记录这些协议的日常操作。错误和问题依旧会被记录。`--quiet-dhcp` 和 `--quiet-dhcp6` 会被 `--log-dhcp` 覆盖。
+
+-l, --dhcp-leasefile=<path>::
+用特定的文件存储 DHCP 租用信息。
