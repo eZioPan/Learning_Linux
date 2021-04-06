@@ -193,12 +193,20 @@ dnsmasq 将把 syslog 条目发送给 __facility__，默认为 DAEMON，在 debu
 告诉 dnsmasq 不要将直接名称（plain name）——不含点号或者域名部分——的 A 或者 AAAA 请求转发给上游名称服务器。若名称不能从 `/etc/hosts` 或者 DHCP 中找到，那么返回回答 not found。
 
 -S, --local, --server=[/[<domain>]/[domain/]]<ipaddr>[\#<port>]][@<source-ip>|<interface>[#<port>]]::
-直接指定上游服务器的 IP 地址。设置该标示并不会抑制读取 `/etc/resolv.conf，要抑制读取，请使用` `--no-resolv`。若给出了一个或多个可选域名，那么这些服务器仅用于解析这些域名，且这些域名也仅由这些服务器解析。它意在用于私有名称服务器：若在你的网络上有一个地址为 192.168.1.1 的名称服务器，其用于处理具有 xxx.interal.thekelleys.org.uk 格式的地址，那么给定标示 `--server=/internal.thekelleys.org.uk/192.168.1.1` 会让全部查询内部机器的请求流向该名称服务器，其他的依旧使用 `/etc/resolv.conf` 中指定的服务器。会关闭对这类私有服务器的 DNSSEC 校验，除非为该域名指定了 `--trust-anchor`。若指定了空域名，`//` 具有特殊的含义——仅为未限定名称，比如名称中不具有点号。可以使用非标准端口作为 IP 地址的组成部分，用 `\#` 分隔。可以指定多个 `--server`，每次指定都需要对应的 __domain__ 或者 __ipaddr__。 +
-更详细的域名会覆盖不详细的域名，所以 `--server=/google.com/1.2.3.4 --server=/www.google.com/2.3.4.5` 将把 *.google.com 的请求发送至 1.2.3.4，但会单独把 *www.google.com 的请求发送至 2.3.4.5。 +
-特殊的服务器地址 `#` 表示 使用标准服务器，所以 `--server=/google.com/1.2.3.4 --server=/www.google.com/#` 将把 *.google.com 的请求发送至 1.2.3.4，而让 *www.google.com 的请求通常转发。 +
-也可以指定域名而不指定 IP 地址；这告诉 dnsmasq 该域名为本地域名，它可以从 `/etc/hosts` 和 DHCP 查询地址，但永远不要将该域名的查询转发至上游服务器。`--local` 为 `--server` 的同义词，意在明确配置文件中的这种情况。 +
-IPv6 地址可以包含一个 `%interface` 限定 id，比如 fe80::202:a412:4512:7bbf%eth0。 +
++
+--
+直接指定上游服务器的 IP 地址。设置该标示并不会抑制读取 `/etc/resolv.conf，要抑制读取，请使用` `--no-resolv`。若给出了一个或多个可选域名，那么这些服务器仅用于解析这些域名，且这些域名也仅由这些服务器解析。它意在用于私有名称服务器：若在你的网络上有一个地址为 192.168.1.1 的名称服务器，其用于处理具有 xxx.interal.thekelleys.org.uk 格式的地址，那么给定标示 `--server=/internal.thekelleys.org.uk/192.168.1.1` 会让全部查询内部机器的请求流向该名称服务器，其他的依旧使用 `/etc/resolv.conf` 中指定的服务器。会关闭对这类私有服务器的 DNSSEC 校验，除非为该域名指定了 `--trust-anchor`。若指定了空域名，`//` 具有特殊的含义——仅为未限定名称，比如名称中不具有点号。可以使用非标准端口作为 IP 地址的组成部分，用 `\#` 分隔。可以指定多个 `--server`，每次指定都需要对应的 __domain__ 或者 __ipaddr__。
+
+更详细的域名会覆盖不详细的域名，所以 `--server=/google.com/1.2.3.4 --server=/www.google.com/2.3.4.5` 将把 *.google.com 的请求发送至 1.2.3.4，但会单独把 *www.google.com 的请求发送至 2.3.4.5。
+
+特殊的服务器地址 `#` 表示 使用标准服务器，所以 `--server=/google.com/1.2.3.4 --server=/www.google.com/#` 将把 *.google.com 的请求发送至 1.2.3.4，而让 *www.google.com 的请求通常转发。
+
+也可以指定域名而不指定 IP 地址；这告诉 dnsmasq 该域名为本地域名，它可以从 `/etc/hosts` 和 DHCP 查询地址，但永远不要将该域名的查询转发至上游服务器。`--local` 为 `--server` 的同义词，意在明确配置文件中的这种情况。
+
+IPv6 地址可以包含一个 `%interface` 限定 id，比如 fe80::202:a412:4512:7bbf%eth0。
+
 可选的在 `@` 之后的字符串告诉 dnsmasq 如何设置到该名称服务器的请求的源。它可以是 IP 地址、一个界面名，或者两者皆有。IP 地址应该属于 dnsmasq 所运行的机器，否则 server 行就会被忽略，并记录日志。若给定了一个接口名，那么发给服务器的请求会强制走所指定的接口；若给定了一个 IP 地址，那么请求的源地址就会设为该地址；若两者皆设置了，那么 IP 地址和接口名均会用于限制发送至服务器的请求。若指定了源地址，那么会忽略任何为该服务器设置的 `query-port` 选项，这是由于可以直接在源地址中指定端口。强制请求走某个端口并非在全部 dnsmasq 支持的平台上可用。
+--
 
 --rev-server=<ip-address>/<prefix-len>[,<ipaddr>][\#<port>][@<source-ip>|<interface>[#<port>]]::
 功能与 `--server` 一样，但提供了语法糖让指定 address-to-name 的请求更简单。举例来说 `--rev-server=1.2.3.0/24,192.168.0.1` 全等于 `--server=3.2.1.in-addr.arpa/192.168.0.1`
@@ -225,8 +233,12 @@ IPv6 地址可以包含一个 `%interface` 限定 id，比如 fe80::202:a412:451
 返回一个 SRV DNS 记录。参见 RFC2782 了解详情。若不给出，则由 `--domain` 给出。默认的目标域名为空，默认的端口为 1，默认的权重和优先级为 0。要小心从 BIND zone 文件转换而来的数据：port、weight、priority 数字的顺序不同。可以为一个 service/domain 设置多于一个的 SRV 记录，所有的匹配值均会被返回。
 
 --host-record=<name>[,<name>....],[<IPv4-address>][,<TTL>]::
-向 DNS 添加 A、AAAA、PTR 记录。它向 DNS 中追加一个或多个关联了名称的 A（IPv4）或 AAAA（IPv6）记录。一个名称可以出现在多个 --host-record 中，此时它会对应多个地址。仅有第一个创建了 PTR 记录的地址会被链接至名称。于读取 hosts 文件的规则相同。`--host-record` 选项先于 host 文件读取，如果在该选项中出现，也同时出现在 hosts 文件，那么他就会阻止 PTR 记录的生成。与 hosts 文件不同，名称不会被扩展，即便 `--expand-hosts` 有效。短名和长名可以同时出现在一个 `--host-record` 中，比如 `--host-record=laptop,laptop.thekelleys.org,192.168.0.1,1234::100`。 +
++
+--
+向 DNS 添加 A、AAAA、PTR 记录。它向 DNS 中追加一个或多个关联了名称的 A（IPv4）或 AAAA（IPv6）记录。一个名称可以出现在多个 --host-record 中，此时它会对应多个地址。仅有第一个创建了 PTR 记录的地址会被链接至名称。于读取 hosts 文件的规则相同。`--host-record` 选项先于 host 文件读取，如果在该选项中出现，也同时出现在 hosts 文件，那么他就会阻止 PTR 记录的生成。与 hosts 文件不同，名称不会被扩展，即便 `--expand-hosts` 有效。短名和长名可以同时出现在一个 `--host-record` 中，比如 `--host-record=laptop,laptop.thekelleys.org,192.168.0.1,1234::100`。
+
 如果给出了 time-to-live，那么它会覆盖默认值，默认值要么是 0 要么是 `--local-ttl`。该值为正整数，且以秒计数。
+--
 
 -Y, --txt-record=<name>[[,<text>],<text>]::
 返回一个 TXT DNS 记录。TXT 记录的值为一系列字符串，因此可以包含任何用逗号分隔数字；可以用引号将逗号放入字符串。注意单个字符串的最大长度为 255 个字符，大于该长度的字符串将被分为长度为 255 个字符的分块。
@@ -252,18 +264,27 @@ IPv6 地址可以包含一个 `%interface` 限定 id，比如 fe80::202:a412:451
 返回 DNS 记录，其中的名称与给出的接口的地址相关联。该标识为给定的名称指定一个 A 或 AAAA 记录，其与在 `/etc/hosts` 给出的方式相同，不同之处在于，地址并非定值，而是从给定的接口上获得。可以在接口后追加 `/4` 或 `/6`，表示应该使用接口的 IPv4 或者 IPv6 接口。若接口下线、未配置或不存在，则返回一个空记录。会同时创建对应的 PTR 记录，将接口地址映射至名字。可通过重复指定该标识将多个名字与一个接口地址关联；这种情况下，首个实例将用于反向地址至名字的映射。注意，在 `--interface-name` 条目里的名字可能不会出现在 `/etc/hosts` 中。
 
 --synth-domain=<domain>,<address range>[,<prefix>[*]]::
-为一个范围内的地址人为创建 A/AAAA 和 PTR 记录。这些记录要么是序列数字，或者是地址，其中的点号（或者 IPv6 的分号）被连字符替代。 +
-用一个案例来说。首先是序列数字。`--synth-domain=thekelleys.org.uk,192.168.0.50.192.168.0.70,internal-\*`（注意尾部的星号 `*`） 将导致名称 internal-0.thekelleys.org.uk 返回 192.168.0.50，名称 internal-1.thekelleys.org.uk 返回 192.168.0.51 以此类推。相同的机制也同样适用于 IPv6 地址（数字可能会非常大）。对地址到名称的反向查找的行为在预期之中。 +
-其二，`--synth-domain=thekelleys.org.uk,192.168.0.0/24,internal-`（无星号 `*`）将导致 internal-192-168-0-56.thekelleys.org.uk 返回 192.168.0.56，反向查找反之亦然。相同情况也适用于 IPv6，但 IPv6 可能会以 `::` 开头，而 DNS 标签不能以 `-` 开头，此时若未指定前缀，则会在标签前添加一个 `0`。::1 就会变成 0--1。 +
-V4 映射的 IPv6 地址，其表现为 ::ffff:1.2.3.4，会被特殊处理，变成 0--ffff-1-2-3-4 +
++
+--
+为一个范围内的地址人为创建 A/AAAA 和 PTR 记录。这些记录要么是序列数字，或者是地址，其中的点号（或者 IPv6 的分号）被连字符替代。
+
+用一个案例来说。首先是序列数字。`--synth-domain=thekelleys.org.uk,192.168.0.50.192.168.0.70,internal-\*`（注意尾部的星号 `*`） 将导致名称 internal-0.thekelleys.org.uk 返回 192.168.0.50，名称 internal-1.thekelleys.org.uk 返回 192.168.0.51 以此类推。相同的机制也同样适用于 IPv6 地址（数字可能会非常大）。对地址到名称的反向查找的行为在预期之中。
+
+其二，`--synth-domain=thekelleys.org.uk,192.168.0.0/24,internal-`（无星号 `*`）将导致 internal-192-168-0-56.thekelleys.org.uk 返回 192.168.0.56，反向查找反之亦然。相同情况也适用于 IPv6，但 IPv6 可能会以 `::` 开头，而 DNS 标签不能以 `-` 开头，此时若未指定前缀，则会在标签前添加一个 `0`。::1 就会变成 0--1。
+
+V4 映射的 IPv6 地址，其表现为 ::ffff:1.2.3.4，会被特殊处理，变成 0--ffff-1-2-3-4
+
 地址段可以通过 <ip address>,<ip address> 或者 <ip address>/<netmask> 两种形式指定。
+--
 
 --dumpfile=<path/to/file>::
 指定一个地址用于存放 pcap 格式的文件，该文件记录了用于排错的 dnsmasq 所 dump 的网络包。若 dnsmasq 启动时文件已存在，则不会删除原文件；而是直接在文件尾追加新包裹。
 
 --dumpmask=<mask>::
-指定哪些包应该被加入 dumpfile。其参数应该为要被 dump 的包的类型的 bitmask 的 OR 操作后的值：可以以 0x 作为前缀的十六进制值标识。每当一个包被记录入 dumpfile，dnsmasq 均记录包的序列号、以及它的类型的 mask。当前的类型为：
 +
+--
+指定哪些包应该被加入 dumpfile。其参数应该为要被 dump 的包的类型的 bitmask 的 OR 操作后的值：可以以 0x 作为前缀的十六进制值标识。每当一个包被记录入 dumpfile，dnsmasq 均记录包的序列号、以及它的类型的 mask。当前的类型为：
+
 [cols=2]
 |===
 |0x0001
@@ -290,6 +311,7 @@ V4 映射的 IPv6 地址，其表现为 ::ffff:1.2.3.4，会被特殊处理，�
 |0x0080
 |向客户端回复的 DNSSEC 验证失败的回复。
 |===
+--
 
 --add-mac[=base64|text]::
 向上游服务器转发 DNS 请求时，附上请求者的 MAC 地址。它用于上游服务器的 DNS 过滤。仅当请求者与 dnsmasq 服务器处在相同的子网下时，才能附加 MAC 地址。注意用于实现它的机制（EDNS0 选项）未被标准化，所以它应该被认为是实验性质的。同时也要注意以这种方式暴露 MAC 地址可能会引起安全和隐私漏洞。`--add-subnet` 给出的关于缓存的警告同样适用于 `--add-mac`。用 base64 编码的 MAC 地址也可以通过添加 `base64` 参数来实现，而以 十六进制/冒号 编码的人类可读的编码可以通过添加 `text` 参数来实现。
@@ -298,8 +320,12 @@ V4 映射的 IPv6 地址，其表现为 ::ffff:1.2.3.4，会被特殊处理，�
 在转发至上游服务器的 DNS 请求中追加一个任意的辨识字符串。
 
 --add-subnet[[=[<IPv4 address>/]<IPv4 prefix length>][,[<IPv6 address>/]<IPv6 prefix length>]]::
-在向上游转发的 DNS 请求中追加一个子网地址。若在参数中指定了地址，那么就用指定的地址，其它情况下，会使用请求者的地址。要转发的地址的长度将又前缀长度参数决定：32（对于 IPv6 为 128）将整个地址转发，0 不会转发任何值，但依旧会在请求中标记该值，这样上游服务器也不会追加客户端地址。对于 IPv4 和 IPv6 其默认值均为 0。注意上游名称服务器可能会被配置为依照该信息返回不同的结果，但 dnsmasq 缓存并不关心这个值。因此对于这类回复，会关闭缓存，除非添加的子网地址为定值。 +
++
+--
+在向上游转发的 DNS 请求中追加一个子网地址。若在参数中指定了地址，那么就用指定的地址，其它情况下，会使用请求者的地址。要转发的地址的长度将又前缀长度参数决定：32（对于 IPv6 为 128）将整个地址转发，0 不会转发任何值，但依旧会在请求中标记该值，这样上游服务器也不会追加客户端地址。对于 IPv4 和 IPv6 其默认值均为 0。注意上游名称服务器可能会被配置为依照该信息返回不同的结果，但 dnsmasq 缓存并不关心这个值。因此对于这类回复，会关闭缓存，除非添加的子网地址为定值。
+
 举例来说，`--add-subnet=24,69` 将分别为 IPv4 和 IPv6 请求者添加 /24 和 /96 长度的子网。`--add-subnet=1.2.3.4/24` 将会为 IPv4 请求者添加 1.2.3.0/24，为 IPv6 请求者添加 ::/0。`--add-subnet=1.2.3.4/24,1.2.3.4/24` 将同时为 IPv4 和 IPv6 的请求者添加 1.2.3.0/24。
+--
 
 -c, --cache-size=<cachesize>::
 设置 dnsmasq 缓存的大小。默认为 150 个名字。设置为 0 关闭缓存。注意：值过大将影响性能。
@@ -317,13 +343,22 @@ V4 映射的 IPv6 地址，其表现为 ::ffff:1.2.3.4，会被特殊处理，�
 提供一个 DS 记录，作为 DNSSEC 验证的 trust anchor。通常来说，它们应该是具有根 zone 的 Key Signing key（KSK）的 DS 记录，也可以使用对于有限域的 trust anchor。当前的根 zone 的 trust anchor 可以从 https://data.iana.org/root-anchors/root-anchors.xml 下载。
 
 --dnssec-check-unsigned[=no]::
-默认情况下，dnsmasq 会检查未签名的 DNS 回复是合法的：即便这会导致对当前未签名的众多 zone 发送额外的请求。若 `--dnssec-check-unsignes=no` 出现在了配置中，那么那么这类回复就会被认为是有效的并传回（当然，也不会设置 authentic data 位。这并不能抵御攻击者修改来自签名的 DNS zone 的非签名回复，但它很块。 +
++
+--
+默认情况下，dnsmasq 会检查未签名的 DNS 回复是合法的：即便这会导致对当前未签名的众多 zone 发送额外的请求。若 `--dnssec-check-unsignes=no` 出现在了配置中，那么那么这类回复就会被认为是有效的并传回（当然，也不会设置 authentic data 位。这并不能抵御攻击者修改来自签名的 DNS zone 的非签名回复，但它很块。
+
 先于 2.80 版本的 dnsmasq，默认不会检查未签名的回复，使用 `--dnssec-check-unsigned` 将开启它。这种配置已久可以使用，但那些原来默认为不检查的需要切换为明确地指出不检查。新的默认值是由于关闭对维签名的回复的检查是自然危险的。不仅是由于它会对被恶意修改的回复敞开大门，也是因为当上游服务器不支持 DNSSEC 时依旧允许所有东西看起来都正常运行，即便此时不会执行任何 DNSSEC 检查。
+--
 
 --dnssec-no-timecheck::
-DNSSEC 签名尽在特定的时间窗口内有效，且应该在这些窗口之外废弃。若一台机器没有实时时钟，那么它就带来了一个先有鸡还是先有蛋的问题。通常来说，这些机器要通过 NTP 获得正确的时间，从而需要使用 DNS，但要验证 DNS 的有效性又需要已知正确的时间。设置该标示会移除时间窗口检查（但不会移除其它 DNSSEC 检查），直到 dnsmasq 进程接到 SIGINT。其用意在于系统应该在自认为可靠时间当前不可用时，让 dnsmasq 以该标识启动。一旦建立的可靠的时间，应当向 dnsmasq 发送 SIGINT，它会启用时间检查，并移除任何未被完全检查的缓存的 DNS 记录。 +
-先前版本的 dnsmasq 重载了 SIGHUP（用于重读大部分配置）同样会启动时间检验。 +
++
+--
+DNSSEC 签名尽在特定的时间窗口内有效，且应该在这些窗口之外废弃。若一台机器没有实时时钟，那么它就带来了一个先有鸡还是先有蛋的问题。通常来说，这些机器要通过 NTP 获得正确的时间，从而需要使用 DNS，但要验证 DNS 的有效性又需要已知正确的时间。设置该标示会移除时间窗口检查（但不会移除其它 DNSSEC 检查），直到 dnsmasq 进程接到 SIGINT。其用意在于系统应该在自认为可靠时间当前不可用时，让 dnsmasq 以该标识启动。一旦建立的可靠的时间，应当向 dnsmasq 发送 SIGINT，它会启用时间检查，并移除任何未被完全检查的缓存的 DNS 记录。
+
+先前版本的 dnsmasq 重载了 SIGHUP（用于重读大部分配置）同样会启动时间检验。
+
 若 dnsmasq 在 debug 模式下启动（`--no-daemon` 标识），那么 SIGINT 会保持通常的含义，用于终止 dnsmasq 进程。
+--
 
 --dnssec-timestamp=<path>::
 启用一个替代方法来检查对于 DNSSEC 的系统时间的有效性（见 `--dnssec-no-timecheck`）。在该情景下，若系统时间比特定的文件的时间戳要晚，就会认为系统时间是有效的。该文件会被创建，且被 dnsmasq 自动设置。该文件必须存放在永续的文件系统上，让该文件和文件的 mtime 能跨系统重启而保留。该时间戳文件在 dnsmasq 放弃 root 后创建，所以该文件必须可以被 dnsmasq 所运行的非特权账户写入。
@@ -335,10 +370,16 @@ DNSSEC 签名尽在特定的时间窗口内有效，且应该在这些窗口之�
 为 DNSSEC 验证设置 debug 模式，对上游服务器的请求设置 Checking Disable 位，且不会将未验证的回复转换为带有 SERFAIL 返回码的回复。注意设置它会以糟糕的方式影响 DNS 的行为，它也不是一个记录额外日志的标识，也不应该用于生产环境。
 
 --auth-zone=<domain>[,<subnet>[/<prefix length>][,<subnet>[/<prefix length>].....][,exclude:<subnet>[/<prefix length>]].....]::
-设置 dnsmasq 作为权威服务器的 DNS zone。会提供本地定义的 DNS 记录。若给定了 subnet，那么 A 和 AAAA 记录必须处于指定的子网之一中。 +
-作为直接指定子网的替代方法之一，也可以给出接口的名字，此时会使用接口配置的地址、掩码/前缀长度作为子网；在使用 DHCP 为 dnsmasq 分配地址时很有效，因为配置 dnsmasq 时不知道实际会被分配的 IP 地址。接口的地址可以通过 <interface>/6 配置为仅 IPv6 地址，或通过 <interface>/4 配置为仅 IPv4 地址。此时，接口就可以动态地决定应该把一个全局的 IPv6 地址加入 zone，但不会把 RFC1918 中的 IPv4 地址加入其中。接口名和文本指定的地址可以自由地在同一个 `--auth-zone` 声明中使用。 +
-可以从响应中排除特定的 IP 地址。它可以被用于，保证回答仅包含全局路由可达的 IP 地址（排除了回环、RFC1918、ULA 地址）。 +
++
+--
+设置 dnsmasq 作为权威服务器的 DNS zone。会提供本地定义的 DNS 记录。若给定了 subnet，那么 A 和 AAAA 记录必须处于指定的子网之一中。
+
+作为直接指定子网的替代方法之一，也可以给出接口的名字，此时会使用接口配置的地址、掩码/前缀长度作为子网；在使用 DHCP 为 dnsmasq 分配地址时很有效，因为配置 dnsmasq 时不知道实际会被分配的 IP 地址。接口的地址可以通过 <interface>/6 配置为仅 IPv6 地址，或通过 <interface>/4 配置为仅 IPv4 地址。此时，接口就可以动态地决定应该把一个全局的 IPv6 地址加入 zone，但不会把 RFC1918 中的 IPv4 地址加入其中。接口名和文本指定的地址可以自由地在同一个 `--auth-zone` 声明中使用。
+
+可以从响应中排除特定的 IP 地址。它可以被用于，保证回答仅包含全局路由可达的 IP 地址（排除了回环、RFC1918、ULA 地址）。
+
 subnet 也同时用于定义用于 DNS 反查请求的 in-addr.arpa 以及 ip6.arpa 域。若未指定，那么前缀长度默认为 IPv4 为 24，IPv6 为 64。对于 IPv4 subnet，前缀长度应为 8、16、24 中的一个，除非你熟悉 RFC 2317，并依次配置了 in-addr.arpa 授权。注意若不指定 subnet，那么就不会回应反查请求。
+--
 
 --auth-soa=<serial>[,<hostmaster>[,<refresh>[,<retry>[,<expiry>]]]]::
 指定权威 zone 的 SOA 记录中的字段。注意其为可选项，所有值都被设置了合理的默认值。
@@ -354,49 +395,80 @@ subnet 也同时用于定义用于 DNS 反查请求的 in-addr.arpa 以及 ip6.a
 
 -F, --dhcp-range=[tag:<tag>[,tag:<tag>],][set:<tag>,]<start-addr>[,<end-addr>|<mode>][,<netmask>[,<broadcast>]][,<lease time>]::
 -F, --dhcp-range=[tag:<tag>[,tag:<tag>],][set:<tag>,]<start-IPv6addr>[,<end-IPv6addr>|constructor:<interface>][,<mode>][,<prefix-len>][,<lease time>]::
-启动 DHCP 服务器。给出的地址从 <start-addr> 至 <end-addr>，以及 `--dhcp-host` 选项中给出的静态地址。若给出了租期，那么租用将给出那么长的时间。租期的单位为秒，或分钟（比如 45m）或小时（比如 1h）或无限长 `infinite`。若不给出，那么默认的租期为 IPv4 一小时、IPv6 一天。最小的租期为两分钟。对于 IPv6 范围，租期可能为 `deprecated`；它设置 DHCP 租用或路由宣告中的偏好的生命周期至零，会导致客户端使用其它地址（若可用）进行新连接，来前导重编号。 +
-可用不同的地址，重复指定该选项，来为多个网络启用 DHCP 服务。对于直接连接的网络（比如，dnsmasq 运行的机器所具有的一个接口）网络掩码为可选项：dnsmasq 将从接口配置中获取它。对于通过中继获取 DHCP 服务的网络，dnsmasq 不能通过自身决定该值，所以必须指定它，否则 dnsmasq 则需要通过网络地址的类别（class A、class B、class C）猜测它。广播地址永远是可选的。永远允许在一个子网中具有多个 `--dhcp-range`。 +
-对于 IPv6，参数稍有不同：它不用网络掩码和广播地址，而是具有一个可选的前缀长度，该长度必须等于或大于本地接口的前缀长度。若不给出，那么默认值为 64。与 IPv4 的情况不同，前缀长度不会自动从接口的配置推断出来。前缀长度的最小值为 64。 +
-IPv6（仅）支持另一类范围。在该情况下，开始地址和额外的结束地址仅包含网络部分（比如 ::1），且它们气候跟随 `constructor:<interface>`。它形成了一个模板，描述了如果基于分配给接口的地址创建一个范围。举例来说
 +
+--
+启动 DHCP 服务器。给出的地址从 <start-addr> 至 <end-addr>，以及 `--dhcp-host` 选项中给出的静态地址。若给出了租期，那么租用将给出那么长的时间。租期的单位为秒，或分钟（比如 45m）或小时（比如 1h）或无限长 `infinite`。若不给出，那么默认的租期为 IPv4 一小时、IPv6 一天。最小的租期为两分钟。对于 IPv6 范围，租期可能为 `deprecated`；它设置 DHCP 租用或路由宣告中的偏好的生命周期至零，会导致客户端使用其它地址（若可用）进行新连接，来前导重编号。
+
+可用不同的地址，重复指定该选项，来为多个网络启用 DHCP 服务。对于直接连接的网络（比如，dnsmasq 运行的机器所具有的一个接口）网络掩码为可选项：dnsmasq 将从接口配置中获取它。对于通过中继获取 DHCP 服务的网络，dnsmasq 不能通过自身决定该值，所以必须指定它，否则 dnsmasq 则需要通过网络地址的类别（class A、class B、class C）猜测它。广播地址永远是可选的。永远允许在一个子网中具有多个 `--dhcp-range`。
+
+对于 IPv6，参数稍有不同：它不用网络掩码和广播地址，而是具有一个可选的前缀长度，该长度必须等于或大于本地接口的前缀长度。若不给出，那么默认值为 64。与 IPv4 的情况不同，前缀长度不会自动从接口的配置推断出来。前缀长度的最小值为 64。
+
+IPv6（仅）支持另一类范围。在该情况下，开始地址和额外的结束地址仅包含网络部分（比如 ::1），且它们气候跟随 `constructor:<interface>`。它形成了一个模板，描述了如果基于分配给接口的地址创建一个范围。举例来说
+
 [source, sh]
 ----
 --dhcp=range=::1,::400,constructor:eth0
 ----
-+
-将会查看 eth0 上的地址，并创建一个从 <network>::1 至 <network>::400 的范围。若接口被分配了多个网络，那么对应的范围将会被自动创建，若地址被弃用并删除，那么范围也随之启动并删除。接口名的末尾可以具有一个通配符 `*`。注意不是 eth0 上的任何地址均可用：它不可以是自动配置的或者私有地址，也不能处于弃用状态。 +
+
+将会查看 eth0 上的地址，并创建一个从 <network>::1 至 <network>::400 的范围。若接口被分配了多个网络，那么对应的范围将会被自动创建，若地址被弃用并删除，那么范围也随之启动并删除。接口名的末尾可以具有一个通配符 `*`。注意不是 eth0 上的任何地址均可用：它不可以是自动配置的或者私有地址，也不能处于弃用状态。
+
 若 `--dhcp-range` 仅用于无状态 DHCP 和/或 SLAAC，那么地址可以更简单：
-+
+
 [source, sh]
 ----
 --dhcp-range=::,constructor::eth0
 ----
-+
-可选的 `set:<tag>` 会设置一个用于标记该网络的字母数字标签，让 DHCP 选项可以基于每网络指定。当转而使用 `tag:` 前缀的时候，修改的配置会匹配标签。仅可设置一个标签，但可匹配多个标签。 +
-可选的 `<mode>` 关键字可以为 `static`，表示 dnsmasq 应该为指定的网络启用 DHCP，但不要动态分配 IP 地址：仅有通过 `--dhcp-host` 给出的地址以及来自 `/etc/ethers` 的地址会被提供。一个地址全部为零的、仅静态的子网可以作为“全捕获”地址，以此在无状态 DHCPv6 提供的子网上回复回复全部的信息请求包，比如 `--dhcp-range=::,static` +
-对于 IPv4，`<mode>` 可以为 `proxy`，此时 dnsmasq 会在特定的子网上提供代理 DHCP（参见 `--pxe-prompt` 和 `--pxe-service` 了解详情）。 +
-对于 IPv6，`<mode>` 可以为 `ra-only`、`slaac`、`ra-name`、`ra-stateless`、`ra-advrouter`、`off-link` 的组合。 +
-`ra-only` 告诉 dnsmasq 在此子网上仅提供路由器宣告 Router Advertisement，而不提供 DHCP。 +
-`slaac` 告诉 dnsmasq 在此子网上提供路由器宣告，并设置路由器宣告中的 A 位，以此让客户端使用 SLAAC 地址，同时使用 DHCP 提供的其它配置信息。 +
-`ra-stateless` 发送设置了 O 位和 A 位的路由器宣告，并提供无状态 DHCP 服务。 +
-`ra-names` 启用的模式为对 SLAAC 的 IPv6 的双栈主机给出 DNS 名称。dnsmasq 使用主机的 IPv4 租用获得名字、网络段、MAC 地址，并假设主机同样会具有一个通过 SLAAC 算法获得的同网络段上的 IPv6 地址。会 ping 该地址，若获得了回复，则向 DNS 中为该 IPv6 追加一个 AAAA 记录。注意它仅发生于直连网络，（不会发生于中级 DHCP 上）且若一个主机使用了隐私扩展，则无法起效。`ra-name` 可以与 `ra-stateless` 和 `slaac` 连用。 +
-`ra-advrouter` 启用的模式为在宣告中包含路由器地址，而非前缀。它描述于 RFC3775 section 7.2，并用于 mobile IPv6。在该模式下，会包括一个 interval 选项，其如 RFC3775 section 7.3 中描述的一样。 +
+
+可选的 `set:<tag>` 会设置一个用于标记该网络的字母数字标签，让 DHCP 选项可以基于每网络指定。当转而使用 `tag:` 前缀的时候，修改的配置会匹配标签。仅可设置一个标签，但可匹配多个标签。
+
+可选的 `<mode>` 关键字可以为 `static`，表示 dnsmasq 应该为指定的网络启用 DHCP，但不要动态分配 IP 地址：仅有通过 `--dhcp-host` 给出的地址以及来自 `/etc/ethers` 的地址会被提供。一个地址全部为零的、仅静态的子网可以作为“全捕获”地址，以此在无状态 DHCPv6 提供的子网上回复回复全部的信息请求包，比如 `--dhcp-range=::,static`
+
+对于 IPv4，`<mode>` 可以为 `proxy`，此时 dnsmasq 会在特定的子网上提供代理 DHCP（参见 `--pxe-prompt` 和 `--pxe-service` 了解详情）。
+
+对于 IPv6，`<mode>` 可以为 `ra-only`、`slaac`、`ra-name`、`ra-stateless`、`ra-advrouter`、`off-link` 的组合。
+
+`ra-only` 告诉 dnsmasq 在此子网上仅提供路由器宣告 Router Advertisement，而不提供 DHCP。
+
+`slaac` 告诉 dnsmasq 在此子网上提供路由器宣告，并设置路由器宣告中的 A 位，以此让客户端使用 SLAAC 地址，同时使用 DHCP 提供的其它配置信息。
+
+`ra-stateless` 发送设置了 O 位和 A 位的路由器宣告，并提供无状态 DHCP 服务。
+
+`ra-names` 启用的模式为对 SLAAC 的 IPv6 的双栈主机给出 DNS 名称。dnsmasq 使用主机的 IPv4 租用获得名字、网络段、MAC 地址，并假设主机同样会具有一个通过 SLAAC 算法获得的同网络段上的 IPv6 地址。会 ping 该地址，若获得了回复，则向 DNS 中为该 IPv6 追加一个 AAAA 记录。注意它仅发生于直连网络，（不会发生于中级 DHCP 上）且若一个主机使用了隐私扩展，则无法起效。`ra-name` 可以与 `ra-stateless` 和 `slaac` 连用。
+
+`ra-advrouter` 启用的模式为在宣告中包含路由器地址，而非前缀。它描述于 RFC3775 section 7.2，并用于 mobile IPv6。在该模式下，会包括一个 interval 选项，其如 RFC3775 section 7.3 中描述的一样。
+
 `off-link` 告诉 dnsmasq 宣告前缀，但不设置 on-link（也即 L）位。
+--
 
 -G, --dhcp-host=[<hwaddr>][,id:<client_id>|*][,set:<tag>][tag:<tag>][,<ipaddr>][,<hostname>][,<lease_time>][,ignore]::
-为 DHCP 服务器指定每主机参数。它允许一个具有特定硬件地址的机器总是分配上相同的主机名、IP 地址、以及租期。在此处设置的 hostname 会覆盖任何由 DHCP 客户端提供的主机名。也可以隐去硬件地址并包含主机名，在此情况下 IP 地址和租期会赋予任何声明该名称的机器。举例来说 `--dhcp-host=00:20:e0:3b:13:af,wap,infinite` 告诉 dnsmasq 给具有硬件地址 `00:20:e0:3b:13:af` 的主机赋予名称 `wap`，并设定 DHCP 租期为无限长。`--dhcp-host=lap,192.168.0.199` 告诉 dnsmasq 总是给主机 `lap` 分配地址 `192.168.0.199`。 +
-用该方法分配的地址不限于 `--dhcp-range` 选项给定的范围，但必须落在某个有效的 dhcp-range 限定的子网中。对于不需要动态分配地址池的子网，在 `--dhcp-range` 中使用 `static` 关键字。 +
-允许使用以 `id:` 为前缀的客户端标识符（IPv6 中称为 client DUID）而非硬件地址来指定主机。因此 `--dhcp-host=id:01:02:03:04,......` 指向具有客户端标识符 01:02:03:04 的主机。也允许用文本方式指定 client ID，比如 `--dhcp-host=id:clientidastext,......` +
-一个单独的 `--dhcp-host` 可以包含一个 IPv4 地址或一个或多个 IPv6 地址，或两者。IPv6 地址必须被方括号包围，因此：`--dhcp-host=laptop,[1234::56]` IPv6 地址仅可以包含主机标识符部分为：`--dhcp-host=laptop,[::56]`，在这种情况下，它们将作为构建 DHCP 范围的通配符存在，会向其中插入合适的合适的网络部分。对于 IPv6，一个地址可以包含一个前缀长度：`--dhcp-host=laptop,[1234::50/126]`，该地址就指定了四个地址，1234::50 至 1234::53。当一个主机展示出一个稳定的名称或硬件 ID，但却具有可变的 DUID 时，它（可以指定多个地址的能力）十分有效，这是由于它允许 dnsmasq 维护静态地址分配的同时，为每个 DUID 分配不同的地址。它常见于链式网络启动，此时链上的每个阶段会轮流获得一个地址。 +
-注意在 IPv6 DHCP 中，硬件地址可能不可用，虽然通常情况下，它用于直连的客户端，或者客户端使用的是支持 RFC6939 的 DHCP 中继。 +
-对于 DHCPv4 来说，特殊的选项 `id:*` 表示忽略任何 client-id，仅使用 MAC 地址。它在一个客户端有时显示 client-id 有时不显示时十分有用。 +
-若名称出现在了 `/etc/hosts` 中，那么相关的地址也可以由 DHCP 租用分配，但仅限于存在与该名称对应的 `--dhcp-host` 选项。在一个 `--dhcp-host` 选项中仅能给出一个主机名，但可以通过 CNAME 指定别名（参见 `--cname`）。 +
-特殊关键字 `ignore` 告诉 dnsmasq 永远不要给一个机器提供 DHCP 租用。机器可以通过硬件地址、client ID 或者主机名指定，比如 `--dhcp-host=00:20:e0:3b:13:af,ignore`。当网络上还有另一个 DHCP 服务器，且部分机器应该使用哪个服务器时很有用。 +
-一旦使用该 `--dhcp-host` 指令，`set:<tag>` 结构就会设置该标签。它可以用于为该主机选择性地发送 DHCP 选项。在 `--dhcp-host` 指令中可设置一个或多个标签（但其它允许 `set:<tag>` 的地方不可以设置多个）。当一个主机匹配上了任何 `--dhcp-host` 指令（或者由 `/etc/ethers` 隐含的），那么就会被设置特殊标签 `known`。它允许通过 `--dhcp-ignore=tag:!known` 将 dnsmasq 配置为忽略未知机器的请求。如果主机仅匹配上一个 `--dhcp-host` 指令，且由于它指定的地址在另一个子网上而不能被使用，那么会设置 `known-othernet` 标签。 +
-`tag:<tag>` 结构过滤要使用的 dhcp-host 指令。被标记的指令优先于未标记的指令。 +
-以太网地址（不能是 client-id）可以有通配符字节，所以，举例来说 `--dhcp-host=00:20:e0:3b:13:*,ignore` 将导致 dnsmasq 忽略一系列硬件地址。注意在命令行中 `*` 需要被转义或者被引号引起，但配置文件中不需要。 +
-硬件地址通常匹配任何网络（ARP）类型，但也可以通过前缀 ARP 类型（十六进制表示）以及 `-` 来指定单独的 ARP 类型。所以 `--dhcp-host=06-00:20:e0:3b:13:af,1.2.3.4` 仅会匹配令牌环硬件地址，这是由于令牌环的 ARP 地址类型为 6。 +
++
+--
+为 DHCP 服务器指定每主机参数。它允许一个具有特定硬件地址的机器总是分配上相同的主机名、IP 地址、以及租期。在此处设置的 hostname 会覆盖任何由 DHCP 客户端提供的主机名。也可以隐去硬件地址并包含主机名，在此情况下 IP 地址和租期会赋予任何声明该名称的机器。举例来说 `--dhcp-host=00:20:e0:3b:13:af,wap,infinite` 告诉 dnsmasq 给具有硬件地址 `00:20:e0:3b:13:af` 的主机赋予名称 `wap`，并设定 DHCP 租期为无限长。`--dhcp-host=lap,192.168.0.199` 告诉 dnsmasq 总是给主机 `lap` 分配地址 `192.168.0.199`。
+
+用该方法分配的地址不限于 `--dhcp-range` 选项给定的范围，但必须落在某个有效的 dhcp-range 限定的子网中。对于不需要动态分配地址池的子网，在 `--dhcp-range` 中使用 `static` 关键字。
+
+允许使用以 `id:` 为前缀的客户端标识符（IPv6 中称为 client DUID）而非硬件地址来指定主机。因此 `--dhcp-host=id:01:02:03:04,......` 指向具有客户端标识符 01:02:03:04 的主机。也允许用文本方式指定 client ID，比如 `--dhcp-host=id:clientidastext,......`
+
+一个单独的 `--dhcp-host` 可以包含一个 IPv4 地址或一个或多个 IPv6 地址，或两者。IPv6 地址必须被方括号包围，因此：`--dhcp-host=laptop,[1234::56]` IPv6 地址仅可以包含主机标识符部分为：`--dhcp-host=laptop,[::56]`，在这种情况下，它们将作为构建 DHCP 范围的通配符存在，会向其中插入合适的合适的网络部分。对于 IPv6，一个地址可以包含一个前缀长度：`--dhcp-host=laptop,[1234::50/126]`，该地址就指定了四个地址，1234::50 至 1234::53。当一个主机展示出一个稳定的名称或硬件 ID，但却具有可变的 DUID 时，它（可以指定多个地址的能力）十分有效，这是由于它允许 dnsmasq 维护静态地址分配的同时，为每个 DUID 分配不同的地址。它常见于链式网络启动，此时链上的每个阶段会轮流获得一个地址。
+
+注意在 IPv6 DHCP 中，硬件地址可能不可用，虽然通常情况下，它用于直连的客户端，或者客户端使用的是支持 RFC6939 的 DHCP 中继。
+
+对于 DHCPv4 来说，特殊的选项 `id:*` 表示忽略任何 client-id，仅使用 MAC 地址。它在一个客户端有时显示 client-id 有时不显示时十分有用。
+
+若名称出现在了 `/etc/hosts` 中，那么相关的地址也可以由 DHCP 租用分配，但仅限于存在与该名称对应的 `--dhcp-host` 选项。在一个 `--dhcp-host` 选项中仅能给出一个主机名，但可以通过 CNAME 指定别名（参见 `--cname`）。
+
+特殊关键字 `ignore` 告诉 dnsmasq 永远不要给一个机器提供 DHCP 租用。机器可以通过硬件地址、client ID 或者主机名指定，比如 `--dhcp-host=00:20:e0:3b:13:af,ignore`。当网络上还有另一个 DHCP 服务器，且部分机器应该使用哪个服务器时很有用。
+
+一旦使用该 `--dhcp-host` 指令，`set:<tag>` 结构就会设置该标签。它可以用于为该主机选择性地发送 DHCP 选项。在 `--dhcp-host` 指令中可设置一个或多个标签（但其它允许 `set:<tag>` 的地方不可以设置多个）。当一个主机匹配上了任何 `--dhcp-host` 指令（或者由 `/etc/ethers` 隐含的），那么就会被设置特殊标签 `known`。它允许通过 `--dhcp-ignore=tag:!known` 将 dnsmasq 配置为忽略未知机器的请求。如果主机仅匹配上一个 `--dhcp-host` 指令，且由于它指定的地址在另一个子网上而不能被使用，那么会设置 `known-othernet` 标签。
+
+`tag:<tag>` 结构过滤要使用的 dhcp-host 指令。被标记的指令优先于未标记的指令。
+
+以太网地址（不能是 client-id）可以有通配符字节，所以，举例来说 `--dhcp-host=00:20:e0:3b:13:*,ignore` 将导致 dnsmasq 忽略一系列硬件地址。注意在命令行中 `*` 需要被转义或者被引号引起，但配置文件中不需要。
+
+硬件地址通常匹配任何网络（ARP）类型，但也可以通过前缀 ARP 类型（十六进制表示）以及 `-` 来指定单独的 ARP 类型。所以 `--dhcp-host=06-00:20:e0:3b:13:af,1.2.3.4` 仅会匹配令牌环硬件地址，这是由于令牌环的 ARP 地址类型为 6。
+
 作为特殊的情况，在 DHCPv4 中，可以包含多个硬件地址。比如 `--dhcp-host=11:22:33:44:55:66,12:34:56:78:90:12,192.168.0.2`。它允许一个 IP 地址与多个硬件地址关联，给 dnsmasq 权限，让它能在其中一个硬件地址请求租用时，弃用另一个硬件地址的租用。要小心这样做很危险，仅在保证任意时间点上仅有一个硬件地址被激活的情况下才是可靠的，而 dnsmasq 无法保证它。举例来说，它可以方便同时具有有线和无线连接的笔记本电脑具有稳定的 IP 地址。
+--
 
 --dhcp-hostsfile=<path>::
 从指定的文件读取 DHCP 主机信息。若给定了一个目录，则读取目录下的全部文件。文件的内容为每行一个主机的信息。每行的格式即为 `--dhcp-host` 的 `=` 右侧的文本。将 DHCP 主机信息存储在该文件的优势是，不用重启 dnsmasq 就可以修改配置：当 dnsmasq 收到 SIGHUP 后就会重读文件。
@@ -414,15 +486,26 @@ IPv6（仅）支持另一类范围。在该情况下，开始地址和额外的�
 为 DHCP 服务器读取 `/etc/ethers` 中关于主机的信息。`/etc/ethers` 的格式是一个硬件地址，跟随一个主机名或者点号四分的 IP 地址。当这些行被 dnsmasq 读取时，它们具有与包含了相同信息的 `--dhcp-host` 选项相同的效应。`/etc/ethers` 在 dnsmasq 收到 SIGHUP 被重读。IPv6 地址不会从 `/etc/ethers` 中获取。
 
 -O, --dhcp-option=[tag:<tag>,[tag:<tag>,]][encap:<opt>,][vi-encap:<enterprise>,][vendor:[<vendor-class>],][<opt>|option:<opt-name>|option6:<opt>|option6:<opt-name>],[<value>[,<value>]]::
-对 DHCP 客户端给出不同的或额外的选项。默认情况下，dnsmasq 会发送一些标准选项至 DHCP 客户端，子网地址和广播地址与 dnsmasq 所运行的主机的设置相同，DNS 服务器和默认路由则设置为 dnsmasq 所运行的主机的地址（等价规则适用于 IPv6）。若设置了域名选项，也会一同发送。该配置允许覆盖这些默认值，或者指定其它选项。要发送的选项，可以以十进制数给出，或者以 `option:<option-name>` 的形式给出。选项号在 RFC2132 以及其后的 RFC 中指定。dnsmasq 了解的 option-name 可以通过 `dnsmasq --help dhcp` 命令获得。举例来说，要设置默认路由至 192.168.4.4，指定 `--dhcp-option=3,192.168.4.4` 或者 `--dhcp-option=option:router,192.158.4.4`，要设置时间服务器的地址为 192.168.0.4，指定 `--dhcp-option=42,192.168.0.4` 或者 `--dhcp-option=ntp-server,192.168.0.4`。特殊地址 `0.0.0.0` 表示 dnsmasq 运行的机器的地址。 +
-允许的数据类型为逗号分隔的点四分 IPv4 地址、方括号 `[]` 包裹 IPv6 地址、十进制数、冒号分隔的十六进制数、以及文本字符串。若给定了可选的标签，那么该选项仅在匹配上全部标签时才发送。 +
-对于 option 119，会对文本参数执行特殊的操作，以符合 RFC3397。以文本或点号四分 IP 地址作为 option 120 的参数时，将依照 RFC3361 处理。点号四分的 IP 地址，其后跟随一个斜线以及网络掩码的长度的，将依照 RFC3442 的规则编码。 +
-IPv6 须向以关键字 `option6:` 定义，其后跟随选项数或选项名。IPv6 选项名称空间与 IPv4 选项名称空间并不相交。选项中的 IPv6 地址必须用方括号包裹，比如 `--dhcp-option=option6:ntp-server,[1234::56]`。对于 IPv6，`[::]` 标识 dnsmasq 运行的机器的全局地址，而 `[fd00:]` 会被 ULA 替代（若存在），`[fe80::]` 被本地链路地址替代。 +
-小心：不会检查所发送的选项的值的数据类型是否正确，若不明智地使用该标识，很容易让 dnsmasq 生成非法的 DHCP 包。当数值为十进制数时，dnsmasq 必须判定数据项的大小。它会同时依照选项数和/或值来检查，但也可以通过附加一个单字符标识来覆盖：`b` 为 1 字节，`s` 为 2 字节，`i` 为 4 字节。它主要用于封装过的供应商类别选项（encapsulated vendor class option）（见下方），此时 dnsmasq 就无法从选项号判断数据大小了。仅由点号和十进制数字组成的选项值会被 dnsmasq 解释为 IP 地址，并以这种方式插入至选项中。要强制字面值字符串，使用双引号。举例来说，要使用 option 66 将 IP 地址的字面值作为 TFTP 服务器的名称发送，则必要使用 `--dhcp-option,66,"1,2,3,4"`。 +
-封装过的供应商类别选项也可以通过 `--dhcp-option` 指定（仅 IPv4）：举例来说 `--dhcp-option=vendor:PEXClient,1,0.0.0.0` 向任何供应商类被匹配为 `PXEClient` 的客户端发送封装过的供应商类别选项 `mftp-address=0.0.0.0`。供应商级别的匹配基于子字符串（参见 `--dhcp-vendorclass` 了解详情）。若 dnsmasq 发送了 vendor-class 选项（option 60），则它优先于来自客户端的选项，来选择要发送的封装过的选项。可以完全隐去供应商类别；`--dhcp-option=vendor:,1,0.0.0.0` 会导致总是发送封装过的选项。 +
-一个选项也可以被其它的选项封装（仅限 IPv4）：举例来说 `--dhcp-option=encap:175,190,iscsi-client0`，将发送 option 175，其中包裹着 option 190。若给出了多个选项，它们被同一个选项号封装，那么它们会被正确包裹进一个封装过的选项中。在同一个 `--dhcp-option` 中 `encap:` 和 `vendor:` 不应该同时指定。 +
-对于封装选项最后的变化为“供应商辨识供应商选项（Vendor-Identifying Vendor Options）”，由 RFC3925 定义。它们如这样标识：`--dhcp-option=vi-encap:2,10,text`。`vi-encap:` 段的数字为用于分辨该选项的 IANA 企业数。在 IPv6 中也支持这种封装样式。 +
++
+--
+对 DHCP 客户端给出不同的或额外的选项。默认情况下，dnsmasq 会发送一些标准选项至 DHCP 客户端，子网地址和广播地址与 dnsmasq 所运行的主机的设置相同，DNS 服务器和默认路由则设置为 dnsmasq 所运行的主机的地址（等价规则适用于 IPv6）。若设置了域名选项，也会一同发送。该配置允许覆盖这些默认值，或者指定其它选项。要发送的选项，可以以十进制数给出，或者以 `option:<option-name>` 的形式给出。选项号在 RFC2132 以及其后的 RFC 中指定。dnsmasq 了解的 option-name 可以通过 `dnsmasq --help dhcp` 命令获得。举例来说，要设置默认路由至 192.168.4.4，指定 `--dhcp-option=3,192.168.4.4` 或者 `--dhcp-option=option:router,192.158.4.4`，要设置时间服务器的地址为 192.168.0.4，指定 `--dhcp-option=42,192.168.0.4` 或者 `--dhcp-option=ntp-server,192.168.0.4`。特殊地址 `0.0.0.0` 表示 dnsmasq 运行的机器的地址。
+
+允许的数据类型为逗号分隔的点四分 IPv4 地址、方括号 `[]` 包裹 IPv6 地址、十进制数、冒号分隔的十六进制数、以及文本字符串。若给定了可选的标签，那么该选项仅在匹配上全部标签时才发送。
+
+对于 option 119，会对文本参数执行特殊的操作，以符合 RFC3397。以文本或点号四分 IP 地址作为 option 120 的参数时，将依照 RFC3361 处理。点号四分的 IP 地址，其后跟随一个斜线以及网络掩码的长度的，将依照 RFC3442 的规则编码。
+
+IPv6 须向以关键字 `option6:` 定义，其后跟随选项数或选项名。IPv6 选项名称空间与 IPv4 选项名称空间并不相交。选项中的 IPv6 地址必须用方括号包裹，比如 `--dhcp-option=option6:ntp-server,[1234::56]`。对于 IPv6，`[::]` 标识 dnsmasq 运行的机器的全局地址，而 `[fd00:]` 会被 ULA 替代（若存在），`[fe80::]` 被本地链路地址替代。
+
+小心：不会检查所发送的选项的值的数据类型是否正确，若不明智地使用该标识，很容易让 dnsmasq 生成非法的 DHCP 包。当数值为十进制数时，dnsmasq 必须判定数据项的大小。它会同时依照选项数和/或值来检查，但也可以通过附加一个单字符标识来覆盖：`b` 为 1 字节，`s` 为 2 字节，`i` 为 4 字节。它主要用于封装过的供应商类别选项（encapsulated vendor class option）（见下方），此时 dnsmasq 就无法从选项号判断数据大小了。仅由点号和十进制数字组成的选项值会被 dnsmasq 解释为 IP 地址，并以这种方式插入至选项中。要强制字面值字符串，使用双引号。举例来说，要使用 option 66 将 IP 地址的字面值作为 TFTP 服务器的名称发送，则必要使用 `--dhcp-option,66,"1,2,3,4"`。
+
+封装过的供应商类别选项也可以通过 `--dhcp-option` 指定（仅 IPv4）：举例来说 `--dhcp-option=vendor:PEXClient,1,0.0.0.0` 向任何供应商类被匹配为 `PXEClient` 的客户端发送封装过的供应商类别选项 `mftp-address=0.0.0.0`。供应商级别的匹配基于子字符串（参见 `--dhcp-vendorclass` 了解详情）。若 dnsmasq 发送了 vendor-class 选项（option 60），则它优先于来自客户端的选项，来选择要发送的封装过的选项。可以完全隐去供应商类别；`--dhcp-option=vendor:,1,0.0.0.0` 会导致总是发送封装过的选项。
+
+一个选项也可以被其它的选项封装（仅限 IPv4）：举例来说 `--dhcp-option=encap:175,190,iscsi-client0`，将发送 option 175，其中包裹着 option 190。若给出了多个选项，它们被同一个选项号封装，那么它们会被正确包裹进一个封装过的选项中。在同一个 `--dhcp-option` 中 `encap:` 和 `vendor:` 不应该同时指定。
+
+对于封装选项最后的变化为“供应商辨识供应商选项（Vendor-Identifying Vendor Options）”，由 RFC3925 定义。它们如这样标识：`--dhcp-option=vi-encap:2,10,text`。`vi-encap:` 段的数字为用于分辨该选项的 IANA 企业数。在 IPv6 中也支持这种封装样式。
+
 在封装样式中，地址 `0.0.0.0` 不会被特殊对待。
+--
 
 --dhcp-option-force=[tag:<tag>,[tag:<tag>,]][encap:<opt>,][vi-encap:<enterprise>,][vendor:[<vendor-class>],]<opt>,[<value>[,<value>]]::
 该选项与 `--dhcp-option` 的工作方式相同，不同之处在于，这里指定的选项永远会被发送出去，即便客户端并没有在参数请求列表中请求它。有时候需要它，比如当发送给 PXELinux 时。
@@ -431,13 +514,20 @@ IPv6 须向以关键字 `option6:` 定义，其后跟随选项数或选项名。
 （仅 IPv4）禁用复用 DHCP servername 和 filename 字段作为额外选项空间。若可行，则 dnsmasq 会将启动服务器和文件名信息从（`--dhcp-boot` 中的）他们自己的字段移入 DHCP 选项中。它为 DHCP 选项提供了额外的空间，同时也有很小的可能会迷惑旧的或损坏的客户端。该标识强制“简单又安全”的行为以在这种情况下防止问题。
 
 --dhcp-relay=<local address>,<server address>[,<interface>]::
-配置 dnsmasq 执行 DHCP 中继。local address 是 dnsmasq 所运行的机器的一个接口分配的一个地址。所有达到哪个接口的 DHCP 请求都会被转发至 server address 所指定的远程 DHCP 服务器上。可以通过指定多个 `--dhcp-relay`，并配置为相同的本地地址和不同的服务器地址，从单个本地地址向多个远程服务器中继。服务地址必须为 IP 字面值，不可以是域名。对于 DHCPv6 的情况，服务器地址可以为 ALL_SERVERS 多播地址 `ff05::1:3`。在这种情况下，必须给出接口，且不能含有通配符，该接口用于将多播导向到达 DHCP 服务器的正确接口。 +
-对于 DHCP 客户端的访问控制与 DHCP 服务器的规则相同，参见 `--interface`、`--except-interface` 等。`--dhcp-relay` 配置中的可选 interface 有一个额外的作用：它控制来自哪个接口服务器回复的 DHCP 回复会被接受。意在用于配置三种接口：一个接受中继、一个连接至 DHCP 服务器，第三个为不信任的网络，通常为宽广的互联网。它用于防止可能由第三个接口接收的欺骗性的回复。 +
-允许 dnsmasq 作为一组接口的 DHCP 服务器，同时作为另一组不相交的接口的中继。注意，虽然能写出看起来可以在一个端口同时运行服务器和中继的配置，但它并不被支持：中继功能会更优先。 +
++
+--
+配置 dnsmasq 执行 DHCP 中继。local address 是 dnsmasq 所运行的机器的一个接口分配的一个地址。所有达到哪个接口的 DHCP 请求都会被转发至 server address 所指定的远程 DHCP 服务器上。可以通过指定多个 `--dhcp-relay`，并配置为相同的本地地址和不同的服务器地址，从单个本地地址向多个远程服务器中继。服务地址必须为 IP 字面值，不可以是域名。对于 DHCPv6 的情况，服务器地址可以为 ALL_SERVERS 多播地址 `ff05::1:3`。在这种情况下，必须给出接口，且不能含有通配符，该接口用于将多播导向到达 DHCP 服务器的正确接口。
+
+对于 DHCP 客户端的访问控制与 DHCP 服务器的规则相同，参见 `--interface`、`--except-interface` 等。`--dhcp-relay` 配置中的可选 interface 有一个额外的作用：它控制来自哪个接口服务器回复的 DHCP 回复会被接受。意在用于配置三种接口：一个接受中继、一个连接至 DHCP 服务器，第三个为不信任的网络，通常为宽广的互联网。它用于防止可能由第三个接口接收的欺骗性的回复。
+
+允许 dnsmasq 作为一组接口的 DHCP 服务器，同时作为另一组不相交的接口的中继。注意，虽然能写出看起来可以在一个端口同时运行服务器和中继的配置，但它并不被支持：中继功能会更优先。
+
 DHCPv4 和 DHCPv6 中继均被支持。但不可以将 DHCPv4 中继至 DHCPv6，反之亦然。
+--
 
 -U, --dhcp-vendorclass=set:<tag>,[enterprise:<IANA-enterprise number>,]<vendor-class>::
-将一个供应商类别字符串映射至一个标签。大多数 DHCP 客户端都会提供一个“供应商类别”，它在一定程度上表示了主机的类型。该选项将供应商类别映射至标签，借此就可以选择性地将 DHCP 选项发送至不同的类别的主机。举例来说：`--dhcp-vendorclass=set:printers,Hewlett-Packard JetDirect` 将允许通过 `--dhcp-option=tag:printers,3,192.168.4.4` 仅为 HP 打印机设置该 DHCP 选项。供应商类别字符串会对客户端提供的供应商类别进行子字符串匹配，来允许模糊匹配。`set:` 前缀为可选的，但为了一致性可以设置。 +
+将一个供应商类别字符串映射至一个标签。大多数 DHCP 客户端都会提供一个“供应商类别”，它在一定程度上表示了主机的类型。该选项将供应商类别映射至标签，借此就可以选择性地将 DHCP 选项发送至不同的类别的主机。举例来说：`--dhcp-vendorclass=set:printers,Hewlett-Packard JetDirect` 将允许通过 `--dhcp-option=tag:printers,3,192.168.4.4` 仅为 HP 打印机设置该 DHCP 选项。供应商类别字符串会对客户端提供的供应商类别进行子字符串匹配，来允许模糊匹配。`set:` 前缀为可选的，但为了一致性可以设置。
++
 注意仅在 IPv6 中，供应商类别使用一个 IANA 分配的企业号作为名称空间。它带来了 `enterprise:` 关键字，并表示仅搜索匹配了指定数字的供应商类别。
 
 -j, --dhcp-userclass=set:<tag>,<user-class>::
@@ -447,8 +537,12 @@ DHCPv4 和 DHCPv6 中继均被支持。但不可以将 DHCPv4 中继至 DHCPv6�
 将一个 MAC 地址映射至一个标签。MAC 地址可以包含通配符。举例来说 `--dhcp-mac=set:3com,01:34:23:*:*:*` 将为任何 MAC 地址匹配该样式的主机设置标签 `3com`。
 
 --dhcp-circuitid=set:<tag>,<circuit-id>, --dhcp-remoteid=set:<tag>,<remote-id>::
-将一个 RFC3046 中继代理选项映射至一个标签。该数据可以由 DHCP 中继代理提供。__circuit-id__ 或 __remote_id__ 通常以分号分隔的十六进制给出，但也可以是一个简单字符串。若 circuit ID 或 agent ID 与某个中继代理提供的值精确匹配上，则设置该标签。 +
++
+--
+将一个 RFC3046 中继代理选项映射至一个标签。该数据可以由 DHCP 中继代理提供。__circuit-id__ 或 __remote_id__ 通常以分号分隔的十六进制给出，但也可以是一个简单字符串。若 circuit ID 或 agent ID 与某个中继代理提供的值精确匹配上，则设置该标签。
+
 `--dhcp-remoteid` 支持 IPv6（`--dhcp-circuitid` 不支持）。
+--
 
 --dhcp-subscrid=set:<tag>,<subscriber-id>::
 （IPv4 或 IPv6）将 RFC3993 subscriber-id relay agent option 映射为标签。
@@ -457,8 +551,12 @@ DHCPv4 和 DHCPv6 中继均被支持。但不可以将 DHCPv4 中继至 DHCPv6�
 （仅 IPv4）一个普通的 DHCP 中继代理仅用于转发与 DHCP 服务器的初始交互的部分。一旦一个客户端已经被配置，则它将于服务器直接通信。若中继代理向 DHCP 包中追加了额外的信息，比如被 `--dhcp-circuitid` 和 `--dhcp-remoteid` 所使用的，则不期望该行为。一个全代理实现可以通过使用 RFC5107 serverid-override 选项，强制 DHCP 服务器使用该代理作为一个全代理，所有的包都会通过它。该选项为不支持 RFC5107 的中继提供了一个执行相同事情的替代方案。总的来说，它会修改通过中继的全部交互的 server-id。若给出了一个 IP 地址列表，那么仅有这些地址通过中继的交互会被影响。
 
 --dhcp-match=set:<tag>,<option number>|option:<option name>|vi-encap:<enterprise>[,<value>]::
-当不给出值时，若客户端发送了指定的 DHCP 选项数或选项名，那么就设置标签。当给出一个值时，仅当发送了该选项，且选项值与给出的值相同时，才设置标签。值可以为 `01:ff:*:02` 这种格式，此时值必须匹配（注意通配符）但所发送的选项的值在其末尾可能会有不匹配的数据。值也可以具有 `--dhcp-option` 中的格式，此时发送的选项就作为一个数组处理，且必须匹配其中的一个元素，因此 `--dhcp-match=set:efi-ia32,option:client-arch,6` 会为 option 93（参见 RFC4578）中记录的 list of architectures 中出现了数字 6 的客户端设置标签 efi-ia32。若值为一个字符串，那么会使用子字符串匹配。 +
++
+--
+当不给出值时，若客户端发送了指定的 DHCP 选项数或选项名，那么就设置标签。当给出一个值时，仅当发送了该选项，且选项值与给出的值相同时，才设置标签。值可以为 `01:ff:*:02` 这种格式，此时值必须匹配（注意通配符）但所发送的选项的值在其末尾可能会有不匹配的数据。值也可以具有 `--dhcp-option` 中的格式，此时发送的选项就作为一个数组处理，且必须匹配其中的一个元素，因此 `--dhcp-match=set:efi-ia32,option:client-arch,6` 会为 option 93（参见 RFC4578）中记录的 list of architectures 中出现了数字 6 的客户端设置标签 efi-ia32。若值为一个字符串，那么会使用子字符串匹配。
+
 特殊格式 `vi-encap:<enterprise number>` 匹配对于特定企业的供应商定义的供应商类别。参见 RFC3925 了解关于这类少见且有趣的怪兽。
+--
 
 --tag-if=set:<tag>[,set:<tag>[,tag:<tag>[,tag:<tag>]]]::
 对标签执行布尔操作。若所有 `set:<tag>` 指定的标签全都被设置（或 `tag!<tag>` 表示该标签未设置），则会设置 `set:<tag>` 指定的标签。若不指定 `tag:<tag>`，那么 `set:<tag>` 会无视条件直接设置。可以指定任意数量、任意顺序的 `set:` 以及 `tag:`。`--tag-if` 行按顺序执行，也就是说，如果在 `tag:<tag>` 中指定的标签由另一个 `--tag-if` 设置，那么设置该标签的行必须先于检验该标签的行。
@@ -485,22 +583,33 @@ dnsmasq 被设置为依照客户端的 MAC 地址的散列值为 DHCP 客户端�
 dnsmasq 会读取客户端发送的（若存在）client identifier 选项（RFC2131）来分辨客户端。它允许为一个主机地多个界面配置相同的 IP 地址。使用该选项禁用 client identifier 的读取，也就是说，永远通过 MAC 地址分辨一个主机。
 
 --pxe-service=[tag:<tag>,]<CSA>,<menu text>[,<basename>|<bootservicetype>][,<server address>|<server_name>]::
-大多数 PEX 启动 ROM 的用法就是简单地允许 PXE 系统获得一个 IP 地址，再下载 `--dhcp-boot` 指定的文件，并执行它。但是当有合适的 DHCP 服务器做支持的话，PXE 系统能执行更加附加的功能。 +
++
+--
+大多数 PEX 启动 ROM 的用法就是简单地允许 PXE 系统获得一个 IP 地址，再下载 `--dhcp-boot` 指定的文件，并执行它。但是当有合适的 DHCP 服务器做支持的话，PXE 系统能执行更加附加的功能。
+
 该选项指定了一个可以出现再 PXE 启动惨淡的启动选项。__CSA__ 是客户端系统类型，仅有正确类型的服务会出现在菜单中。已知的类型有 `x86PC`、`PC98`、`IA64_EFI`、`Alpha`、`Arc_x86`、`Intel_Lean_Client`、`IA32_EFI`、`X86-64_EFI`、`Xscale_EFI`、`BC_EFI`、`ARM32_EFI` 和 `ARM64_EFI`；其它的类型可以通过一个整数指定。在 __menu text__ 之后的参数可以为一个文件名，此时 dnsmasq 将作为启动服务器，并指导 PXE 客户端通过 TFTP 下载文件，该文件要么来自它自己（此时必须设置 `--enable-tftp` 让它可用）若给出了尾部的 __server address/name__，那么文件就可以来自另一个 TFTP 服务器。注意 layer 后缀（通常为 `.0`）由 PXE 提供，因此不需要加入 __basename__ 中。相反的，__basename__ 也可以是一个完整的、具有后缀名的文件名，此时就不会追加 layer 后缀。若给出的是一个整数启动服务类型，而非 basename，那么 PXE 客户端会在网络上搜索一个适于该类型的启动服务。该搜索可以通过广播完成，若提供了 IP 地址或名称，那么也可以指向一个服务器。若不提供启动服务类型和文件名（或者启动服务类型为 `0`）那么菜单条目就会放弃网络启动流程，从而继续从本地介质启动。服务器地址可以给定为一个域名，该域名会在 `/etc/hosts` 中查找。该名称在 `/etc/hosts` 中可关联多个 IP 地址，它们会以 round-robin 的方式被使用。
+--
 
 --pxe-prompt=[tag:<tag>,]<prompt>[,<timeout>]::
-设置该值以在 PXE 启动后显示一个提示。若给出了 __timeout__ 那么在超过该时间后依旧没有键盘输入，会直自动执行第一个可用的菜单选项。若 __timeout__ 为 `0`，那么会立刻执行第一个可用的菜单项。若隐去了 `--pxe-prompt` 那么当菜单中有多个条目时，系统会等待用户的输入，若只有一个则会立刻启动。参见 `--pxe-service` 了解菜单项的详情。 +
++
+--
+设置该值以在 PXE 启动后显示一个提示。若给出了 __timeout__ 那么在超过该时间后依旧没有键盘输入，会直自动执行第一个可用的菜单选项。若 __timeout__ 为 `0`，那么会立刻执行第一个可用的菜单项。若隐去了 `--pxe-prompt` 那么当菜单中有多个条目时，系统会等待用户的输入，若只有一个则会立刻启动。参见 `--pxe-service` 了解菜单项的详情。
+
 dnsmasq 支持 PXE proxy-DHCP，此时网络上的另一个 DHCP 服务器用于分配 IP 地址，dnsmasq 仅提供 `--pxe-prompt` 和 `--pxe-service` 中的信息来允许网络启动。该模式通过 `--dhcp-range` 中的关键字 `proxy` 启用。
+--
 
 --dhcp-pxe-vendor=<vendor>[,...]::
-由 UEFI 和 PXE 的规范可知，PXE 客户端和代理 PXE 服务器之间的 DHCP 包应该在 vendor-class 字段中设置 `PXEClient`。但是少数计算机固件的供应商会自定义地在那个字段中携带不同地标识符。该选项就是用于将这些标识符辨识为有效的 PXE 客户端。比如
 +
+--
+由 UEFI 和 PXE 的规范可知，PXE 客户端和代理 PXE 服务器之间的 DHCP 包应该在 vendor-class 字段中设置 `PXEClient`。但是少数计算机固件的供应商会自定义地在那个字段中携带不同地标识符。该选项就是用于将这些标识符辨识为有效的 PXE 客户端。比如
+
 [source, sh]
 ----
 --dhcp-pxe-vendor=PXEClient,HW-Client
 ----
-+
+
 将让 dnsmasq 也为具有标识符 `HW-Client` 的 PXE 客户端提供代理 PXE 服务。
+--
 
 -X, --dhcp-lease-max=<number>::
 限制 dnsmasq 最大的 DHCP 租用数量。默认值为 1000。该限制用于阻止来自主机的 DoS 攻击，它会创建数以千计的租用，并导致 dnsmasq 进程占用大量的内存。
@@ -533,6 +642,7 @@ dnsmasq 支持 PXE proxy-DHCP，此时网络上的另一个 DHCP 服务器用于
 （仅 IPv6）指定 DHCPv6 服务器会使用的 server persistent UID。该选项通常不被需要，因为 dnsmasq 会在 DUID 首次被需要的时候自动创建它。当给出后，该选项为 dnsmasq 提供创建 DUID-EN 类型的 DUID 所需要的数据。注意，一旦设置，DUID 就会被存储在租用数据库中，所以在 DUID-EN 和自动创建的 DUID 之间的变换需要重新初始化租用数据库。__enterprise-id__ 由 IANA 分配，__uid__ 则是一个十六进制八位元组字符串，它对于特定的设备唯一。
 
 -6 --dhcp-script=<path>::
++
 --
 每当 DHCP 租用被创建、或者旧的租用被销毁、或者 TFTP 文件传送完成，就会执行该选项定义的可执行文件。__path__ 必须为一个绝对路径名，不会执行 PATH 搜索。传递给进程的参数为 `add`、`old` 或 `del`，主机的 MAC 地址（IPv6 为 DUID），IP 地址，以及主机名（若已知）。`add` 表示一个租用被创建，`del` 表示它被销毁，`old` 则是 dnsmasq 启动时，对于一个已存在的租用的提醒，或是对于已存在的租用的 MAC 地址或主机名的修改（若设置了 `--leasefile-ro` 则还会传递租用时长或过期以及 client-id，若设置了 `--script-on-renewal` 则还会传递租用过期）。若 MAC 地址来自非以太网网络类型，它还会前缀网络类型，比如对于令牌环为 `06-01:23:45:67:89:ab`。该进程会以 root 运行（假设 dnsmasq 最开始以 root 运行）即便 dnsmasq 被配置为变换 UID 至一个无特权用户。
 
@@ -594,4 +704,14 @@ DNSMASQ_IAID:::
 
 DNSMASQ_MAC:::
 若知晓，则包含客户端的 MAC 地址。
+
+注意，提供主机名、vendorclass 和 userclass 数据仅出现在 `add` 动作，或者一个主机恢复一个以存在的租用的 `old` 动作中，这是由于这些数据并不会保存在 dnsmasq 租用数据库中。
+
+全部的文件描述符都被关闭，除了 stdin 开启至 /dev/null、stdout 和 stderr 被捕获输出以便 dnsmasq 记录日志。（在 debug 模式下，stdin、stdout、stderr 继承 dnsmasq 的调用者的设置）。
+
+脚本并非并发调用：同时至多运行脚本的一个实例（dnsmasq 会等待脚本的一个实例退出之后再运行下一个）。会修改租用数据库的脚本会被队列，并等待当前的实例运行结束之后才会调用。若该队列允许在脚本运行前、对单个租用的多态修改，那么早先的状态就会被掩盖，仅有当前的租用状态会在脚本最终运行时反射出来。
+
+在 dnsmasq 启动时，全部以存在的租用从自用文件中读取，此时脚本会在每个租用上被调用。过期租用会被调用为 `del`，而其它租用被调用为 `del`。当 dnsmasq 收到 HUP 信号时，脚本会在以存在的租用上调用，且触发 `old` 事件。
+
+有四种额外的动作会作为脚本的第一个参数 `init`、`arp-add`、`arp-del` 和 `tftp`。未来可能会增加更多，因此脚本应该被编写为忽略未知的动作。`init` 在下方的 `--leasefile-ro` 中描述。`tftp` 动作在一个 TFTP 文件传输完成时调用：参数为字节计算的文件大小、文件发送的地址、以及文件的完整名称。`arp-add` 和 `arp-del` 动作仅在启用了 `--script-arp` 时调用。它们会提供 MAC 地址和 IP 地址作为参数。`arp-add` 表示 ARP 或 neighbour table 有新条目，`arp-del` 表示两者的条目减少。
 --
