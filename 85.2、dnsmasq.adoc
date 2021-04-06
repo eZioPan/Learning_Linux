@@ -530,8 +530,68 @@ dnsmasq 支持 PXE proxy-DHCP，此时网络上的另一个 DHCP 服务器用于
 用特定的文件存储 DHCP 租用信息。
 
 --dhcp-duid=<enterprise-id>,<uid>::
-（仅 IPv6）指定 DHCPv6 服务器会使用的 server persistent UID UID。该选项通常不被需要，因为 dnsmasq 会在 DUID 首次被需要的时候自动创建它。当给出后，该选项为 dnsmasq 提供创建 DUID-EN 类型的 DUID 所需要的数据。注意，一旦设置，DUID 就会被存储在租用数据库中，所以在 DUID-EN 和自动创建的 DUID 之间的变换需要重新初始化租用数据库。__enterprise-id__ 由 IANA 分配，__uid__ 则是一个十六进制八位元组字符串，它对于特定的设备唯一。
+（仅 IPv6）指定 DHCPv6 服务器会使用的 server persistent UID。该选项通常不被需要，因为 dnsmasq 会在 DUID 首次被需要的时候自动创建它。当给出后，该选项为 dnsmasq 提供创建 DUID-EN 类型的 DUID 所需要的数据。注意，一旦设置，DUID 就会被存储在租用数据库中，所以在 DUID-EN 和自动创建的 DUID 之间的变换需要重新初始化租用数据库。__enterprise-id__ 由 IANA 分配，__uid__ 则是一个十六进制八位元组字符串，它对于特定的设备唯一。
 
 -6 --dhcp-script=<path>::
-每当 DHCP 租用被创建、或者旧的租用被销毁、或者 TFTP 文件传送完成，就会执行该选项定义的可执行文件。__path__ 必须为一个绝对路径名，不会执行 PATH 搜索。传递给进程的参数为 `add`、`old` 或 `del`，主机的 MAC 地址（IPv6 为 DUID），IP 地址，以及主机名（若已知）。`add` 表示一个租用被创建，`del` 表示它被销毁，`old` 则是 dnsmasq 启动时，对于一个已存在的租用的提醒，或是对于已存在的租用的 MAC 地址或主机名的修改（若设置了 `--leasefile-ro` 则还会传递租用时长或过期以及 client-id，若设置了 `--script-on-renewal` 则还会传递租用过期）。若 MAC 地址来自非以太网网络类型，它还会前缀网络类型，比如对于令牌环为 `06-01:23:45:67:89:ab`。该进程会以 root 运行（假设 dnsmasq 最开始以 root 运行）即便 dnsmasq 被配置为变换 UID 至一个无特权用户。 +
-环境变量继承于 dnsmasq 的调用者，会追加部分或全部的变量 +
+--
+每当 DHCP 租用被创建、或者旧的租用被销毁、或者 TFTP 文件传送完成，就会执行该选项定义的可执行文件。__path__ 必须为一个绝对路径名，不会执行 PATH 搜索。传递给进程的参数为 `add`、`old` 或 `del`，主机的 MAC 地址（IPv6 为 DUID），IP 地址，以及主机名（若已知）。`add` 表示一个租用被创建，`del` 表示它被销毁，`old` 则是 dnsmasq 启动时，对于一个已存在的租用的提醒，或是对于已存在的租用的 MAC 地址或主机名的修改（若设置了 `--leasefile-ro` 则还会传递租用时长或过期以及 client-id，若设置了 `--script-on-renewal` 则还会传递租用过期）。若 MAC 地址来自非以太网网络类型，它还会前缀网络类型，比如对于令牌环为 `06-01:23:45:67:89:ab`。该进程会以 root 运行（假设 dnsmasq 最开始以 root 运行）即便 dnsmasq 被配置为变换 UID 至一个无特权用户。
+
+环境变量继承于 dnsmasq 的调用者，会追加下方的部分或全部的变量
+
+对于 IPv4 和 IPv6：
+
+DNSMASQ_DOMAIN:::
+若知晓主机的全限定域名，则该变量设置为域名的部分。（注意以参数形式传递给脚本的主机名永远不会是全限定的。）
+
+DNSMASQ_SUPPLIED_HOSTNAME:::
+若客户端提供了主机名。
+
+DNSMASQ_USER_CLASS0..DNSMASQ_USER_CLASSn:::
+若客户端提供了 user-classes。
+
+DNSMASQ_LEASE_LENGTH, DNSMASQ_LEASE_EXPIRES, DNSMASQ_TIME_REMAINING:::
+若 dnsmasq 附带了 HAVE_BROKEN_RTC 编译，则租用的长度（以秒计）会存储在 DNSMASQ_LEASE_LENGTH 中，否则租用的过期时间会存储在 DNSMASQ_LEASE_EXPIRES 中。租用过期前的秒数永远会存放在 DNSMASQ_TIME_REMAINING 中。
+
+DNSMASQ_OLD_HOSTNAME:::
+若一个租用原来有一个主机名，但它被移除了，会生成一个关于该租用的新状态的 `old` 事件，比如没有名字，而原先的名称则由环境变量 DNSMASQ_OLD_HOSTNAME 提供。
+
+DNSMASQ_INTERFACE:::
+存储了请求到达的接口的名称；当 dnsmasq 重启时，触发 `old` 行动不会设置它。
+
+DNSMASQ_RELAY_ADDRESS:::
+当 客户端通过 DHCP 中继与 dnsmasq 联络，且知道中继的 IP 地址时会设置它。
+
+DNSMASQ_TAGS:::
+包含所有 DHCP 处理中设置的标签，以空格分隔。
+
+DNSMASQ_LOG_DHCP:::
+若 `--log-dhcp` 生效则设置。
+
+仅针对 IPv4：
+
+DNSMASQ_CLIENT_ID:::
+若主机提供了一个 client-id。
+
+DNSMASQ_CIRCUIT_ID, DNSMASQ_SUBSCRIBER_ID, DNSMASQ_REMOTE_ID:::
+若 DHCP 中继代理设置任何这些选项。
+
+DNSMASQ_VENDOR_CLASS:::
+若客户端提供了 vendor-class。
+
+DNSMASQ_REQUESTED_OPTIONS:::
+若客户端提供了参数请求列表选项，那么该环境变量就包含了该选项的十进制表示的、逗号分隔的字符串形式的表示。
+
+仅 IPv6：
+
+DNSMASQ_VENDOR_CLASS_ID, DNSMASQ_VENDOR_CLASS0..DNSMASQ_VENDOR_CLASSn:::
+若客户端提供了 vendor-class，那么 DNSMASQ_VENDOR_CLASS_ID 就包含了该类别的 IANA enterprise id。其数据保存在 DNSMASQ_VENDOR_CLASS0..DNSMASQ_VENDOR_CLASSn 中。
+
+DNSMASQ_SERVER_DUID:::
+包含了服务器的 DUID：每次调用脚本时都相同。
+
+DNSMASQ_IAID:::
+包含了 租用的 IAID。若租用是临时分配的，则前缀上 `T`。
+
+DNSMASQ_MAC:::
+若知晓，则包含客户端的 MAC 地址。
+--
