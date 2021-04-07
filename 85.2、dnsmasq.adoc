@@ -715,3 +715,15 @@ DNSMASQ_MAC:::
 
 有四种额外的动作会作为脚本的第一个参数 `init`、`arp-add`、`arp-del` 和 `tftp`。未来可能会增加更多，因此脚本应该被编写为忽略未知的动作。`init` 在下方的 `--leasefile-ro` 中描述。`tftp` 动作在一个 TFTP 文件传输完成时调用：参数为字节计算的文件大小、文件发送的地址、以及文件的完整名称。`arp-add` 和 `arp-del` 动作仅在启用了 `--script-arp` 时调用。它们会提供 MAC 地址和 IP 地址作为参数。`arp-add` 表示 ARP 或 neighbour table 有新条目，`arp-del` 表示两者的条目减少。
 --
+
+--dhcp-luascript=<path>::
++
+--
+指定一个 Lua 编写的脚本，当租用创建、销毁或修改时执行。要使用该选项，dnsmasq 必须编译为具有正确的支持。Lua 解释器仅会初始化以此，就在 dnsmasq 启动的时候，因此全局变量在租用事件之间保持一致。Lua 代码必须定义一个 `lease` 函数，可以提供 `init` 和 `shutdown` 函数，他们分别在 dnsmasq 启动和终止时以无参数的方式调用。它也可以提供一个 `tftp` 函数。
+
+`lease` 函数会接收与 `--dhcp-script` 一样详尽的信息。它获得两个参数，第一个为动作，是一个字符串，包含 `add` `old` 或 `del`，第二个是标签和值构成的表。标签大多数对应上面描述的环境变量，举例来说 `domain` 所具有的值与环境变量 `DNSMASQ_DOMAIN` 相同。一些额外的标签会持有作为参数传递给 `--dhcp-script` 的值。它们包括 IPv4 时的 `mac_address`、`ip_address`、`hostname`，以及 IPv6 时的 `client_duid`、`ip_address`、`hostname`。
+
+`tftp` 函数调用的情况与 lease 函数相同，它的表包含标签 `destination_address`、`file_name`、`file_size`。
+
+`arp` 以及 `arp-old` 函数仅当启用 `--script-arp` 时被调用，它的表包含标签 `mac_address`、`client_address`。
+--
