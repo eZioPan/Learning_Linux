@@ -727,3 +727,38 @@ DNSMASQ_MAC:::
 
 `arp` 以及 `arp-old` 函数仅当启用 `--script-arp` 时被调用，它的表包含标签 `mac_address`、`client_address`。
 --
+
+--dhcp-scriptuser::
+指定运行 lease-change 脚本或 Lua 脚本的用户。默认为 root，可用该标识修改为另一个用户。
+
+--script-arp::
+启用 `--dhcp-script` 和 `--dhcp-luascript` 中的 `arp` 和 `arp-old` 函数。
+
+-9, --leasefile-ro::
+完全抑制租用数据库文件的使用。文件不会被创建、读取或写入。修改租用变化脚本的调用方式，以便外部存储的租用数据库可以由该脚本维护。除了 `--dhcp-script` 给出的租用改变脚本被调用的情况之外，在 dnsmasq 启动时，会以 `init` 作为参数调用该脚本。当这样调用时，脚本应该向标准输出（以 dnsmasq 租用文件的格式）写入保存的租用数据库的状态，并以 0 退出码退出。设置该选项同样会强制 在 client-id、租用长度或过期时间改变时调用租用修改脚本。
+
+--script-on-renewal::
+当过期时间修改时，调用 DHCP 脚本，比如租用续租时。
+
+--bridge-interface=<interface>,<alias>[,<alias>]::
++
+--
+将任何来自 __alias__ 接口的 DHCP（v4 或 v6）和 IPv6 Router Solicit 包当作来自 __interface__ 接口的一样。该选项允许 dnsmasq 在不具有地址和未桥接的以太网接口提供 DHCP 和 RA 服务。比如，在一个 OpenStack 电脑主机上，有一个接口是到达 VM 的 TAP 接口，或者在 BSD 平台上的“老式桥接”。每个 __alias__ 的末尾都可以使用一个星号通配符 `*`。
+
+可以通过多个 `--bridge-interface` 选项添加多个别名，因为 `--bridge-interface=int1,alias1,alias2` 全等价于 `--bridge-interface=int1,alias1 --bridge-interface=int1,alias2`
+--
+
+--shared-network=<interface>,<addr>::
+--shared-network=<addr>,<addr>::
++
+--
+DHCP 服务器基于 DHCP 请求到达的网络、以及服务器上在该网络的界面的 IP 配置，决定哪个 DHCP 范围可以用于分配地址。 `shared-network` 选项让可用的子网（也是 DHCP 范围）超越了到达接口的子网。
+
+第一个参数要么是一个接口的名字，或者是配置在本地接口上的一个地址，第二个参数是一个地址，其定义了另一个子网，地址可以从其中分配。
+
+要让它有用，必须有一个合适的 DHCP 范围，让该子网有地址可以分配，且该 DHCP 范围**必须**包含网络掩码。
+
+要使用 shared-network 同样需要对于路由的额外考虑。dnsmasq 无法像通常一样具有判定默认路由的信息，因此默认路由选项（或其它路由）**必须**被配置。用户端必须有一个到服务器的路由：若使用了 two-address 形式的 shared-network，那么它必须为第一个指定的地址。若使用了 interface,address 的形式，那么必须有一个到达配置在接口上的全部地址的路由。
+
+shared-network 的 two-address 格式也可用于 DHCP 中继：第一个地址为中继的地址，第二个地址，同上，指定一个额外的子网，用于分配地址。
+--
