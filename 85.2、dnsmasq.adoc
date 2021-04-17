@@ -775,3 +775,19 @@ shared-network 的 two-address 格式也可用于 DHCP 中继：第一个地址�
 
 --dhcp-fqdn::
 在默认模式下，dnsmasq 会将 DHCP 客户端的未限定名称插入 DNS 中。由于这个原因，名称必须唯一，即便两个具有相同名称的客户端在不同的域名中。如果一个 DHCP 客户端与现有的客户端具有相同的名字，那么该名字就会转移给新的客户端。若设置了 `--dhcp-fqdn`，那么行为修改为：未限定名称将不再置入 DNS 中，仅置入限定名称。两个具有相同的名称的 DHCP 客户端均可以保留它们的名字，只要它们的域部分不同即可（比如全限定名称不同）。要保证全部名称均具有一个域部分，当设置了 `--dhcp-fqdn` 后，至少具有一个未指定地址的 `--domain` 选项。
+
+--dhcp-client-update::
+通常情况下，当给出一个 DHCP 租用时，dnsmasq 会在 FQDN 选项中设置一个标识，告诉客户端不要尝试用它的名字和 IP 地址执行 DDNS 更新。这是由于 名称-IP 对会自动加入 dnsmasq 的 DNS 视野。该标识会抑制那个行为，它常用于，比如说，允许 Windows 客户端更新 Active Directory 服务器。参见 RFC4702 了解详情。
+
+--enable-ra::
+启动 dnsmasq 的 IPv6 路由宣告特性。DHCPv6 不会和 DHCPv4 一样处理整个网络的配置。自治地址创建的路由发现和（可能的）前缀发现由不同的协议处理。当使用 DHCP 时，仅需要它的部分子集，dnsmasq 可以处理它，使用已有的 DHCP 配置提供大多数数据。当 RA 启动时，dnsmasq 会为每个 `--dhcp-range` 分配一个前缀，并将默认路由设置为运行 dnsmasq 的机器的相关的链路本地地址。默认情况下，会设置 `managed address` 位，并重置 `use SLAAC` 位。它可以通过修改每个独立子网的 `--dhcp-range` 的 __mode__ 关键字来改变。RFC6106 DNS 参数会被包含在宣告中。默认情况下，运行 dnsmasq 的机器的相关的链路本地地址会作为递归 DNS 服务器被发送。若提供，DHCPv6 选项 dns-server 和 domain-search 会被用于 DNS 服务器（RDNSS）以及域搜索列表（DNSSL）。
+
+--ra-param=<interface>,[mtu:<integer>|<interface>|off,][high,|low,]<ra-interval>[,<router lifetime>]::
++
+--
+为指定的接口发出 路由宣告设置非默认的值。路由的优先级字段可以从默认的中通过比如 `--ra-param=eth0,high` 修改。路由宣告的间隔可以通过 `--ra-para,=eth0,60` 修改。路由的生命周期可以被修改或设置为零，它允许一个路由器宣告前缀，同时部将自身设置为一个路由，`--ra-param=eth0,0,0`（间隔设置为 0 表示使用默认值）。全部四个参数可以一次性设置，`--ra-param=eth0,mtu:1280,low,60,1200`。
+
+__interface__ 字段可以包含一个通配符。
+
+`mtu:` 参数可以为一个任意的接口名，这种情况下，会使用那个接口的 MTU 值。它常用于（比如）将一个路由的 WAN 接口的 MTU 值宣告至另一个接口上。
+--
