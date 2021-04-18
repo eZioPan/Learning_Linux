@@ -791,3 +791,24 @@ __interface__ 字段可以包含一个通配符。
 
 `mtu:` 参数可以为一个任意的接口名，这种情况下，会使用那个接口的 MTU 值。它常用于（比如）将一个路由的 WAN 接口的 MTU 值宣告至另一个接口上。
 --
+
+--dhcp-reply-delay=[tag:<tag>,]<integer>::
+延迟至少指定的秒数后才发送 `DHCPOFFER` 和 `PROXYDHCP`。它可以用于绕行 PXE 启动固件中无法正常处理立刻返回的回复的 bug。该选项会将（若有）已花费的等待时间（比如执行 ping 检测）计算在内。
+
+--enable-tftp[=<interface>[,<interface>]]::
+启动 TFTP 服务器功能。它仅限用于需要网络启动的客户端。且仅允许读取；支持 tsize 和 blksize 扩展（tsize 仅支持 octet mode）。不提供参数时，提供 TFTP 服务的接口与 DHCP 服务的相同。若指定了一个接口列表，它就定义了那些接口会收到 TFTP 服务。
+
+--tftp-root=<directory>[,<interface>]::
+相对于给定目录查找要通过 TFTP 传输的文件。当它指定时，包含了 `..` 的 TFTP 路径会被拒绝，以阻止客户端移动至指定的根目录之外。允许绝对路劲（路径以 `/`）开头，但它们必须在 `tftp-root` 之下。若给出了可选的 __interface__ 选项，那么 __directory__ 仅用于特定接口的 TFTP 请求。
+
+--tftp-no-fail::
+若指定的 tftp 根目录不可访问，也不要终止启动。
+
+--tftp-unique-root[=ip|mac]::
+在 `tftp-root` 的尾部添加 TFTP 客户端的 IP 或硬件地址作为路径的组成部分。仅当设置了 `--tftp-root` 且目录存在时有效。默认为添加 IP 地址（以标准的点四分格式）。举例来说，若 `--tftp-root` 是 `/tftp`，且客户端 `1.2.3.4` 请求文件 `myfile`，那么等价路径为 `/tftp/1.2.3.4/myfile`，若 `/tftp/1.2.3.4` 不存在，那么路径为 `/tftp/myfile`。若给定 `=mac`，那么会追加 MAC 地址，使用小写的零填充的连字符分隔的数字，比如 01-02-03-04-aa-bb。注意。解析 MAC 地址仅当客户端在本地网络中或向我们获取 DHCP 租用时才可行。
+
+--tftp-secure::
+启用 TFTP 安全模式：不启用它时，任何在通常 unix 访问控制规则下 dnsmasq 进程可读的文件均在 TFTP 下可用。当给出了 `--tftp-secure` 标识，仅有运行 dnsmasq 的用户所拥有的文件才可以被访问。当 dnsmasq 以 root 运行时，使用不同的规则：`--tftp-secure` 不起效，但仅有设置了全局可读位的文件才能被访问。不建议以 root 运行 dnsmasq 的同时启用 TFTP，此时非常不建议不指定 `--tftp-root`。这样做会对网络上的任何主机暴露服务器上的任何全局可读的文件。
+
+--tftp-lowercase::
+将 TFTP 请求中的文件名转换为全小写。它对于来自 Windows 机器的请求很有效，它具有大小写不敏感的文件系统，并对文件名中的大小写采取宽松的对策。注意 dnsmasq 的 tftp 服务器总是将文件名中的 `\` 转换为 `/`。
