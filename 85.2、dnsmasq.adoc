@@ -192,14 +192,14 @@ dnsmasq 将把 syslog 条目发送给 __facility__，默认为 DAEMON，在 debu
 -D, --domain-needed::
 告诉 dnsmasq 不要将直接名称（plain name）——不含点号或者域部分——的 A 或者 AAAA 请求转发给上游名称服务器。若名称不能从 `/etc/hosts` 或者 DHCP 中找到，那么返回回答 not found。
 
--S, --local, --server=[/[<domain>]/[domain/]]<ipaddr>[\#<port>]][@<source-ip>|<interface>[#<port>]]::
++-S, --local, --server=[/[<domain>]/[domain/]]<ipaddr>[#<port>]][@<source-ip>|<interface>[#<port>]]+::
 +
 --
-直接指定上游服务器的 IP 地址。设置该标示并不会抑制读取 `/etc/resolv.conf，要抑制读取，请使用` `--no-resolv`。若给出了一个或多个可选域，那么这些服务器仅用于解析这些域，且这些域也仅由这些服务器解析。它意在用于私有名称服务器：若在你的网络上有一个地址为 192.168.1.1 的名称服务器，其用于处理具有 xxx.interal.thekelleys.org.uk 格式的地址，那么给定标示 `--server=/internal.thekelleys.org.uk/192.168.1.1` 会让全部查询内部机器的请求流向该名称服务器，其他的依旧使用 `/etc/resolv.conf` 中指定的服务器。会关闭对这类私有服务器的 DNSSEC 校验，除非为该域指定了 `--trust-anchor`。若指定了空白的域，`//` 具有特殊的含义——仅为未限定名称，比如名称中不具有点号。可以使用非标准端口作为 IP 地址的组成部分，用 `\#` 分隔。可以指定多个 `--server`，每次指定都需要对应的 __domain__ 或者 __ipaddr__。
+直接指定上游服务器的 IP 地址。设置该标示并不会抑制读取 `/etc/resolv.conf`，要抑制读取，请使用 `--no-resolv`。若给出了一个或多个可选域，那么这些服务器仅用于解析这些域，且这些域也仅由这些服务器解析。它意在用于私有名称服务器：若在你的网络上有一个地址为 192.168.1.1 的名称服务器，其用于处理具有 xxx.interal.thekelleys.org.uk 格式的地址，那么给定标示 `--server=/internal.thekelleys.org.uk/192.168.1.1` 会让全部查询内部机器的请求流向该名称服务器，其他的依旧使用 `/etc/resolv.conf` 中指定的服务器。会关闭对这类私有服务器的 DNSSEC 校验，除非为该域指定了 `--trust-anchor`。若指定了空白的域，`//` 具有特殊的含义——仅为未限定名称，比如名称中不具有点号。可以使用非标准端口作为 IP 地址的组成部分，用 `+#+` 分隔。可以指定多个 `--server`，每次指定都需要对应的 __domain__ 或者 __ipaddr__。
 
 更详细的域会优先于不详细的域，所以 `--server=/google.com/1.2.3.4 --server=/www.google.com/2.3.4.5` 将把 *.google.com 的请求发送至 1.2.3.4，但会单独把 *www.google.com 的请求发送至 2.3.4.5。
 
-特殊的服务器地址 `#` 表示 使用标准服务器，所以 `--server=/google.com/1.2.3.4 --server=/www.google.com/#` 将把 *.google.com 的请求发送至 1.2.3.4，而让 *www.google.com 的请求通常转发。
+特殊的服务器地址 `+#+` 表示 使用标准服务器，所以 `+--server=/google.com/1.2.3.4 --server=/www.google.com/#+` 将把 *.google.com 的请求发送至 1.2.3.4，而让 *www.google.com 的请求通常转发。
 
 也可以指定域而不指定 IP 地址；这告诉 dnsmasq 该域为本地的，它可以从 `/etc/hosts` 和 DHCP 查询地址，但永远不要将该域的查询转发至上游服务器。`--local` 为 `--server` 的同义词，意在明确配置文件中的这种情况。
 
@@ -208,11 +208,11 @@ IPv6 地址可以包含一个 `%interface` 限定 id，比如 fe80::202:a412:451
 可选的在 `@` 之后的字符串告诉 dnsmasq 如何设置到该名称服务器的请求的源。它可以是 IP 地址、一个界面名，或者两者皆有。IP 地址应该属于 dnsmasq 所运行的机器，否则 server 行就会被忽略，并记录日志。若给定了一个接口名，那么发给服务器的请求会强制走所指定的接口；若给定了一个 IP 地址，那么请求的源地址就会设为该地址；若两者皆设置了，那么 IP 地址和接口名均会用于限制发送至服务器的请求。若指定了源地址，那么会忽略任何为该服务器设置的 `query-port` 选项，这是由于可以直接在源地址中指定端口。强制请求走某个端口并非在全部 dnsmasq 支持的平台上可用。
 --
 
---rev-server=<ip-address>/<prefix-len>[,<ipaddr>][\#<port>][@<source-ip>|<interface>[#<port>]]::
++--rev-server=<ip-address>/<prefix-len>[,<ipaddr>][#<port>][@<source-ip>|<interface>[#<port>]]+::
 功能与 `--server` 一样，但提供了语法糖让指定 address-to-name 的请求更简单。举例来说 `--rev-server=1.2.3.0/24,192.168.0.1` 全等于 `--server=3.2.1.in-addr.arpa/192.168.0.1`
 
 -A, --address=/<domain>[/<domain>...]/[<ipaddr>]::
-指定域中的主机对应的 IP 地址。域中的请求永远不会被转发，并永远回复为给定的 IPv4 或 IPv6 地址。要同时为域指定 IPv4 和 IPv6 地址，多次使用 `--adress` 标示。要在单个请求中包含多个 IP 地址，请转而使用 `--addn-hosts=<path>`。注意对于独立（individual）名称，`/etc/hosts` 和 DHCP 租用会覆盖该设置。一个常用的方法是将条目 doubleclick.net 域跳转至更友好的局域网 web 服务器上，来防止顶部广告。域指定与 `--server` 相同，且新增 `/\#/` 表示任意域。因此 `--address=/#/1.2.3.4` 会对无法从 `/etc/hosts` 和 DHCP 中回复的请求直接返回 **1.2.3.4**，而并不会转发至 `--server` 指定的上游服务器。对于 `--server`，一个或多个不具有地址的域将返回 no-such-domain 回答，所以 `--address=/example.com/` 等价于 `--server=/example.com/`，并对 example.exe 以及其子域返回 NXDOMAIN。由 `#` 指定的地址会被翻译为 NULL 地址 **0.0.0.0** 以及等价的 IPv6 地址 **::**，于是 `--address=/example.com/#` 将会对 example.com 以及其子域返回 NULL 地址。这部分是 `--address=/example.com/0.0.0.0` 以及 `--address=/example.com/::` 的语法糖，但因为合并了两者而减少了配置文件的行数。注意 NULL 地址通常与 localhost 的作用相同，因此要注意查找这些名字的客户端最后都容易和自己对话。
+指定域中的主机对应的 IP 地址。域中的请求永远不会被转发，并永远回复为给定的 IPv4 或 IPv6 地址。要同时为域指定 IPv4 和 IPv6 地址，多次使用 `--adress` 标示。要在单个请求中包含多个 IP 地址，请转而使用 `--addn-hosts=<path>`。注意对于独立（individual）名称，`/etc/hosts` 和 DHCP 租用会覆盖该设置。一个常用的方法是将条目 doubleclick.net 域跳转至更友好的局域网 web 服务器上，来防止顶部广告。域指定与 `--server` 相同，且新增 `+/#/+` 表示任意域。因此 `+--address=/#/1.2.3.4+` 会对无法从 `/etc/hosts` 和 DHCP 中回复的请求直接返回 **1.2.3.4**，而并不会转发至 `--server` 指定的上游服务器。对于 `--server`，一个或多个不具有地址的域将返回 no-such-domain 回答，所以 `--address=/example.com/` 等价于 `--server=/example.com/`，并对 example.exe 以及其子域返回 NXDOMAIN。由 `+#+` 指定的地址会被翻译为 NULL 地址 **0.0.0.0** 以及等价的 IPv6 地址 **::**，于是 `+--address=/example.com/#+` 将会对 example.com 以及其子域返回 NULL 地址。这部分是 `--address=/example.com/0.0.0.0` 以及 `--address=/example.com/::` 的语法糖，但因为合并了两者而减少了配置文件的行数。注意 NULL 地址通常与 localhost 的作用相同，因此要注意查找这些名字的客户端最后都容易和自己对话。
 
 --ipset=/<domain>[/<domain>...]/<ipset>[,<ipset>...]::
 将一个或多个请求的域所解析出来的 IP 地址放入指定的 Netfilter IP set 中。若给出了多个 setname，那么会在每个 set 中放置它们，但也会受到 IP set 的限制（IPv4 地址不能放在 IPv6 IP set 中，反之亦然）。域和子域的配置方法同 `--address`。这些 IP sets 必须预先存在。参见 **ipset(8)** 了解更多详情。
@@ -253,9 +253,12 @@ IPv6 地址可以包含一个 `%interface` 限定 id，比如 fe80::202:a412:451
 返回一个 RFC6844 定义的 CAA DNS 记录。
 
 --cname=<cname>,[<cname>,]<target>[,<TTL>]::
++
+--
 返回一个 CNAME 记录，它指出 <cname> 实际为 <target>。对于 target 有明显的限制；它必须是 dnsmasq 所知的 DNS 记录，而非来自上游服务器的记录。cname 必须唯一，但允许多个 cname 指向同一个 target。实际上也支持在同一行中将多个 cname 指向同一个 target，如：`--cname=cnam1,cname2,cname3,target`
 
 若给定了 time-to-live，那么覆盖默认值，默认值一般为 0 或者 `--local-ttl` 的值。值为正整数，并以秒作为 time-to-live 的单位。
+--
 
 --dns-rr=<name>,<RR-number>,[<hex data>]::
 返回一个任意的 DNS 资源记录。数字为记录的类型（它总是在 C_IN 类别中）。记录的值由十六进制数据给出，格式可以为 01:23:45 或 01 23 45 或 012345 或混用上述格式。
@@ -766,7 +769,7 @@ shared-network 的 two-address 格式也可用于 DHCP 中继：第一个地址�
 -s, --domain=<domain>[,<address range>[,local]]::
 +
 --
-为 DHCP 服务器指定 DNS 域。域可以不加限定地给出（不附加 IP 范围）或限定 IP 范围。它有两个作用；首先它会导致 DHCP 向任何请求了域的主机回复该域，其它它设置了由 DHCP 所配置的主机可声明的合法的域。其用意在于，限制主机名，于是在 LAN 上的不可信主机不可以通过 DHCP 传播它的名字，比如 microsoft.com 并捕获本不属于它的流量。若不给出域后缀，那么任何具有域部分（比如有一个点号）的 DHCP 主机名均不会被允许，并被记录下来。若给定了后缀，那么允许主机名具有域的部分，但要保证域的部分域后缀匹配。额外的，当设置了一个后缀，那么不具有域部分的主机名会添加一个可选的域部分。比如，在我的网络上，我可以设置 `--domain=thekelleys.org.uk`，并具有一个 DHCP 主机名为 `laptop` 的机器。那么向 `dnsmasq` 查询 `laptop` 和 `laptop.thekelleys.org.uk` 均可获得那台机器的 IP 地址。若域给出为 `#` 那么域就从 /etc/resolv.conf 中首个 `search` 指令（或等价对象）中读取。
+为 DHCP 服务器指定 DNS 域。域可以不加限定地给出（不附加 IP 范围）或限定 IP 范围。它有两个作用；首先它会导致 DHCP 向任何请求了域的主机回复该域，其它它设置了由 DHCP 所配置的主机可声明的合法的域。其用意在于，限制主机名，于是在 LAN 上的不可信主机不可以通过 DHCP 传播它的名字，比如 microsoft.com 并捕获本不属于它的流量。若不给出域后缀，那么任何具有域部分（比如有一个点号）的 DHCP 主机名均不会被允许，并被记录下来。若给定了后缀，那么允许主机名具有域的部分，但要保证域的部分域后缀匹配。额外的，当设置了一个后缀，那么不具有域部分的主机名会添加一个可选的域部分。比如，在我的网络上，我可以设置 `--domain=thekelleys.org.uk`，并具有一个 DHCP 主机名为 `laptop` 的机器。那么向 `dnsmasq` 查询 `laptop` 和 `laptop.thekelleys.org.uk` 均可获得那台机器的 IP 地址。若域给出为 `+#+` 那么域就从 /etc/resolv.conf 中首个 `search` 指令（或等价对象）中读取。
 
 地址范围可以是如下形式 <ip address>,<ip address> 或 <ip address>/<netmask> 或仅为一个单独的 <ip address>。参见 `--dhcp-fqdn`，它会改变具有域的 dnsmasq 的行为。
 
@@ -839,4 +842,4 @@ TFTP 在连接起始阶段会监听一个总所周知的端口（69），同时�
 
 == 配置文件
 
-在启动时，若 `/etc/dnsmasq.conf` 存在，则 dnsmasq 会读取它（在 FreeBSD 上，文件为 `/usr/local/etc/dnsmasq.conf`）(请先参阅 `--conf-file` 和 `--conf-dir` 选项)。该文件的格式为每行一个选项，与 xref:_选项[] 节详细描述的长选项相同，但不包含前序的 `--`。以 `#` 开头的行被认为是注释并被忽略。对于仅能指定一次的选项，配置文件覆盖命令行。可以在配置文件中使用引号：在引号 `"` 之间的 `,`、`:`、`.`、`#` 不具有特殊含义，允许下面的转义字符：`\\` `\"` `\t` `\e` `\b` `\r` `\n`。后者分别表示制表符、退出、退格、返回、和新行。
+在启动时，若 `/etc/dnsmasq.conf` 存在，则 dnsmasq 会读取它（在 FreeBSD 上，文件为 `/usr/local/etc/dnsmasq.conf`）(请先参阅 `--conf-file` 和 `--conf-dir` 选项)。该文件的格式为每行一个选项，与 xref:_选项[] 节详细描述的长选项相同，但不包含前序的 `--`。以 `+#+` 开头的行被认为是注释并被忽略。对于仅能指定一次的选项，配置文件覆盖命令行。可以在配置文件中使用引号：在引号 `"` 之间的 `,`、`:`、`.`、`+#+` 不具有特殊含义，允许下面的转义字符：`\\` `\"` `\t` `\e` `\b` `\r` `\n`。后者分别表示制表符、退出、退格、返回、和新行。
