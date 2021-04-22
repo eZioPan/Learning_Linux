@@ -843,3 +843,35 @@ TFTP 在连接起始阶段会监听一个总所周知的端口（69），同时�
 == 配置文件
 
 在启动时，若 `/etc/dnsmasq.conf` 存在，则 dnsmasq 会读取它（在 FreeBSD 上，文件为 `/usr/local/etc/dnsmasq.conf`）(请先参阅 `--conf-file` 和 `--conf-dir` 选项)。该文件的格式为每行一个选项，与 xref:_选项[] 节详细描述的长选项相同，但不包含前序的 `--`。以 `+#+` 开头的行被认为是注释并被忽略。对于仅能指定一次的选项，配置文件覆盖命令行。可以在配置文件中使用引号：在引号 `"` 之间的 `,`、`:`、`.`、`+#+` 不具有特殊含义，允许下面的转义字符：`\\`、`\"`、`\t`、`\e`、`\b`、`\r`、`\n`。后者分别表示制表符、退出、退格、返回、和新行。
+
+== 备注
+
+--
+当收到 SIGHUP 时，dnsmasq 清除它的缓存，并重读 `/etc/hosts` `/etc/ethers`，以及任何 `--dhcp-hostsfile`、`--dhcp-hostsdir`、`--dhcp-optsfile`、`--dhcp-optsdir`、`--addn-hosts`、`--hostsdir`。DHCP 租用变化脚本对全部已存在 DHCP 租用执行。如果设置了 `--no-poll`，那么收到 SIGHUP 后还会重读 `/etc/resolv.conf`。SIGHUP **不会**重读配置文件。
+
+当收到 SIGUSR1 时，dnsmasq 向系统日志中写入统计数据。它记录缓存大小、为了给新名称腾空间而不得不在租用过期前就从缓存中移除的名称的数量、以及已插入缓存的名称的总数量。同时也会给出缓存命中和未命中的数量、以及回答的权威请求的数量。对于每个上游服务器，它给出所发送的请求的数量，以及触发了错误的数量。在 `--no-daemon` 模式，或者启用了全日志（`--log-queries`）时，会生成一份完整的缓存的内容的 dump。
+
+缓存统计同样在 DNS 中可用，它会作为 CHAOS 类别和域绑定的 TXT 类型的 DNS 请求的回复。域名为 `cachesize.bind`、`insertions.bind`、`evictions.bind`、`misses.bind`、`hits.bind`、`auth.bind`、`servers.bind`。用命令行请求它的样例，以 `dig` 工具可以为：
+
+[source, sh]
+----
+dig +short chaos txt cachesize.bind
+----
+
+当 dnsmasq 收到 SIGUSR2 且它直接将日志写入一个文件时（参见 `--log-facility`），dnsmasq 将会关闭并重开日志文件。注意在这个操作中，dnsmasq 将不会以 root 运行。当它首次创建日志文件时，dnsmasq 会修改文件的所有权至它运行的非 root 用户上。日志轮替（logrotate）应该配置为在发送 SIGUSR2 前，创建一个新的日志文件，其所有权应该匹配现有的文件。若 TCP DNS 请求正在进行，旧的日志文件将在负责处理 TCP 请求的子进程中保持开启，并可能继续对其写入。有一个 150 秒的限制，在该限制之后，所有已存在的 TCP 进程均会超时：鉴于该原因，将刚轮替的日志文件立刻执行日志文件压缩并不明智。要使用日志轮替，需要的选项为 `create` 和 `delaycompress`。
+--
+
+{empty} +
+{empty}
+
+--
+dnsmasq 是一个 DNS 请求转发器：它并不适用于递归地回答任意起始于根服务器的请求，相反它适用于转发这类请求至一个完全递归的上游 DNS 服务器，通常该服务器由 ISP 提供。默认情况下，dnsmasq 读取 `/etc/resolv.conf` 来发现它应该适用的上游名称服务器的 IP 地址，这是由于该信息通常存放在那里。除非适用了 `--no-poll`，否则 dnsmasq 会检查 `/etc/resolv.conf`（若使用了 `--resolv-file` 则为任何等价物）的修改时间，若改变则重读它。这允许 DNS 服务器可以动态地由 PPP 或 DHCP 设置，因为这两种协议均提供该信息。缺少 `/etc/resolv.conf` 并不被视为错误，这是因为在 PPP 连接存在前，它可能还未被创建。dnsmasq 会持续检查 `/etc/resolv.conf` 的创建。dnsmasq 可以被告知检查多个 resolv.conf 文件。这在笔记本上很有用，此时可能会同时使用 PPP 和 DHCP：dnsmasq 可以被设置为同时拉取 `/etc/ppp/resolv.conf` 和 `/etc/dhcpc/resolv.conf`，并使用两者中最后修改的内容，以提供在 DNS 服务器间的动态切换。
+
+上游服务器也可以通过命令行或在配置文件中指定。这些服务器指定可以额外地设置一个域名，用来告诉 dnsmasq 在那个特定的域中仅使用该服务器来查找名称。
+
+要配置 dnsmasq 作为其所在主机的缓存器，在 `/etc/resolv.conf` 中写入 `nameserver 127.0.0.1` 强制让本地进程向 dnsmasq 发送请求。接着，要么通过 `--server` 选项直接为 dnsmasq 指定上游服务器，要么将它们的地址放在另一个文件中，比如 `/etc/resolv.dnsmasq`，并以 `--resolv-file /etc/resolv.dnsmasq` 选项运行 dnsmasq。第二种技术允许通过 PPP 或 DHCP 动态更新服务器地址。
+
+在 `/etc/hosts` 中的地址将掩蔽（shadow）上游 DNS 中相同名称的不同地址，因此 `/etc/hosts` 中的 `mycompany.com 1.2.3.4` 将保证对 `mycompany.com` 的请求总是返回 `1.2.3.4`，即便请求上游 DNS 会返回一个不同的地址。它有一个例外：若上游 DNS 具有一个指向被掩蔽的名称的 CNAME，那么通过 dnsmasq 查找 CNAME 将获得 CNAME 所指向的未掩蔽的地址。要绕行，将 CNAME 也加入 `/etc/hots` 以便 CNAME 也被掩蔽。
+
+标签系统按如下运行：对于每个 DHCP 请求，dnsmasq 从包含了 set:<tag> 的激活的配置行中收集一组有效的标签，这些行包括用于分配地址的 `--dhcp-range`，任何匹配上的 `--dhcp-host`（若匹配上 `--dhcp-host` 还会追加 `known` 或 `known-othernet`），对于 BOOTP 请求会设置 `bootp` 标签，还会为请求设置到达的网络接口的名字的标签。
+--
