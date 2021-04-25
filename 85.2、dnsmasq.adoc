@@ -288,7 +288,7 @@ V4 映射的 IPv6 地址，其表现为 ::ffff:1.2.3.4，会被特殊处理，�
 --
 指定哪些包应该被加入 dumpfile。其参数应该为要被 dump 的包的类型的 bitmask 的 OR 操作后的值：可以以 0x 作为前缀的十六进制值标识。每当一个包被记录入 dumpfile，dnsmasq 均记录包的序列号、以及它的类型的 mask。当前的类型为：
 
-[cols=2]
+[cols="15,~"]
 |===
 |0x0001
 |来自客户端的 DNS 请求
@@ -874,4 +874,147 @@ dnsmasq 是一个 DNS 请求转发器：它并不适用于递归地回答任意�
 在 `/etc/hosts` 中的地址将掩蔽（shadow）上游 DNS 中相同名称的不同地址，因此 `/etc/hosts` 中的 `mycompany.com 1.2.3.4` 将保证对 `mycompany.com` 的请求总是返回 `1.2.3.4`，即便请求上游 DNS 会返回一个不同的地址。它有一个例外：若上游 DNS 具有一个指向被掩蔽的名称的 CNAME，那么通过 dnsmasq 查找 CNAME 将获得 CNAME 所指向的未掩蔽的地址。要绕行，将 CNAME 也加入 `/etc/hots` 以便 CNAME 也被掩蔽。
 
 标签系统按如下运行：对于每个 DHCP 请求，dnsmasq 从包含了 set:<tag> 的激活的配置行中收集一组有效的标签，这些行包括用于分配地址的 `--dhcp-range`，任何匹配上的 `--dhcp-host`（若匹配上 `--dhcp-host` 还会追加 `known` 或 `known-othernet`），对于 BOOTP 请求会设置 `bootp` 标签，还会为请求设置到达的网络接口的名字的标签。
+
+任何包含了一个或多个 tag:<tag> 结构的配置行，将仅在前序设置了标签且标签都匹配时才有效。一般为 `--dhcp-option`。只要匹配了**全部**的标签，那么具有标签的 `--dhcp-option` 就比不具有的优先级要高。标签上具有 `!` 前缀的表示否定，因此 `--dhcp-option=tag:!purpule,3,1,2,3,4` 将在标签 purple 不属于有效标签时发送。（若在命令行而非配置文件中使用，切记转义 `!` 字符，因为它是 shell 的元字符）
+
+在选择 `--dhcp-options` 的过程中，相对于其它标签 `--dhcp-range` 上的标签优先级更低，因此 `--dhcp-range=set:interface1,...... --dhcp-host=set:myhost,..... --dhcp-option=tag:interface1,option:nis-domain,domain1 --dhcp-option=tag:myhost,option:nis-domain,domain2` 将为在范围中的主机设置 NIS-domain 至 domain1，且将特定主机设置为 domain2。
+
+注意对于 `--dhcp-range` tag:<tag> 和 set:<tag> 均被允许，这样可以基于（比如）`--dhcp-host` 来限制要使用的范围，并基于选择的范围影响所发送的选项。
+
+这个系统源自于一个先前的版本，为了向前兼容，可以用 `net:` 替代 `tag:`，且 `set:` 可以被忽略（除了在 `--dhcp-host` 中，`net:` 可以替代 `set:`）。出于相同的原因，`+#+` 可以替代 `!` 表示**非**。
 --
+
+== 权威（服务器）配置
+
+配置 dnsmasq 作为一个权威 DNS 服务器是复杂的，这是由于它需要外部的 DNS 服务器提供委托（delegation）。我们将详细解释三个难度递增的情景。这些情景的前提条件为全球可达的 IP 地址，一个指向该地址的 A 或 AAAA 记录，以及一个可以执行 zone 委托的外部 DNS 服务器。对于该解释的第一个部分，我们将称全球可达的地址的 A（或 AAAA）记录为 server.example.com，而 dnsmasq 管理的 zone 为 our.zone.com。
+
+最简单的配置由两条 dnsmasq 配置组成；比如
+
+[source]
+----
+--auth-server=server.example.com,eth0
+--auth-zone=our.zone.com,1.2.3.0/24
+----
+
+且外部 DNS 具有如下两条记录
+
+[source]
+----
+server.example.com       A    192.0.43.10
+our.zone.com            NS    server.example.com
+----
+
+其中 `eth0` 为 dnsmasq 监听的外部网络接口，其具有（全球可达的）地址 `192.0.43.10`。
+
+注意外部 IP 地址可能为动态的（比如由 ISP 通过 DHCP 或 PPP 分配的）。若如此，则一条 A 记录必须通过比如常见的动态 DNS 系统链接至该动态分配的地址上。
+
+一个更加复杂，但实际有用的配置为，全局可达的 IP 地址的地址记录出现在 dnsmasq 所服务的权威 zone 中，通常该记录在根节点上。现在我们有
+
+[source]
+----
+--auth-server=our.zone.com,eth0
+--auth-zone=our.zone.com,1.2.3.0/24
+----
+
+[source]
+----
+our.zone.com             A    1.2.3.4
+our.zone.com            NS    our.zone.com
+----
+
+our.zone.com 的 A 记录就成为了 glue record，它解决了一个先有鸡还是先有蛋的问题：当 our.zone.com 的名称服务器的 A 记录处在该 zone 里时，我们可以通过该记录查找到该名称服务器的 IP 地址。注意这是该条记录唯一的职责：由于 dnsmasq 对 our.zone.com 具有权威性，它也必须提供该条记录。若外部地址是静态的，那么它就可以通过一条 `/etc/hots` 中的条目或者 `--host-record` 完成。
+
+[source]
+----
+--auth-server=our.zone.com,eth0
+--host-record=our.zone.com,1.2.3.4
+--auth-zone=our.zone.com,1.2.3.0/24
+----
+
+若外部地址是动态的，那么与 our.zone.com 关联的地址则必须有相关联的网络接口的地址派生出来。它通过 `--interface-name` 完成。比如：
+
+[source]
+----
+--auth-server=our.zone.com,eth0
+--interface-name=our.zone.com,eth0
+--auth-zone=our.zone.com,1.2.3.0/24,eth0
+----
+
+（`--auth-zone` 的参数 `eth0` 将包含了 eth0 动态地址的子网加入 zone 中，如此 `--interface-name` 在外部请求中返回该地址。）
+
+我们最后的配置建立在上面的内容上，同时也加入了一个次级 DNS 服务器。这是另一个 DNS 服务器，它会通过 zone transfer 学习 zone 的 DNS 数据，一旦主要服务器不可用，则作为备用服务器出现。配置次级服务器超出了本手册的范围，但所需的额外的 dnsmasq 配置则很简单：
+
+[source]
+----
+--auth-sec-servers=secondary.myisp.com
+----
+
+以及
+
+[source]
+----
+our.zone.com           NS    secondary.myisp.com
+----
+
+添加 `auth-sec-server` 会启动 dnsmasq 中的 zone transfer，以允许次级服务器收集 DNS 数据。若你希望限制该数据至特定的主机，则
+
+[source]
+----
+--auth-peer=<IP address of secondary>
+----
+
+将实现它。
+
+在 `--auth-zone` 语句中给出了子网后，dnsmasq 就会作为该子网关联的 in-addr.arpa 和 ip6.arpa 域的权威服务器，因此反向（地址至名称）查找可以简单地用一个合适的 NS 记录配置好，比如在这个案例中，我们允许 1.2.3.0/24 地址。
+
+[source]
+----
+3.2.1.in-addr.arpa  NS    our.zone.com
+----
+
+注意，到目前为止，reverse（in-addr.arpa 和 ip6.arpa）zone 并不能执行 zone transfer，因此为次级服务器配置反向查找毫无意义。
+
+当 dnsmasq 配置为一台权威服务器，那么下面的数据用于生成权威域。
+
+`--mx-host`、`--srv-host`、`--dns-rr`、`--txt-record`、`--naptr-record`、`--caa-record` 只要记录的名称在该权威域中。
+
+`--cname` 只要记录的的名称在权威域中。若 CNAME 的目标是限定的，那么它将以权威 zone 的名称作为限定名。（仅有）以该中方法使用的 CNAME 可以使用通配符，如同：
+
+[source]
+----
+--cname=*.example.com,default.example.com
+----
+
+来自 `/etc/hosts`（以及 `-addn-hosts`）的 IPv4 和 IPv6 地址、`--host-record` 以及 `--interface-name` 提供的地址落入 `--auth-zone` 指定的子网之一。
+
+DHCP 租用地址，只要地址落入 `--auth-zone` 指定的子网之一。（若使用了依靠动态分配给网络接口的地址的构建的 DHCP 范围，那么应该使用通过一个网络接口的动态地址定义子网的 `--auth-zone` 形式，来保证该条件被满足。）
+
+在默认模式中，DHCP 租用具有非限定名称，且可能使用 `--domain` 构建起限定性名称，那么权威 zone 里的名称由非限定名称以及 zone 的域构成。它有可能等于 `--domain` 所指定的，也有可能不等于。若设置了 `--dhcp-fqdn`，那么会使用域 DHCP 租用关联的全限定名称，且必须与 zone 的域匹配。
+
+== 退出码
+
+[cols="12,~"]
+|===
+
+| 0
+| dnsmasq 成功 fork 至后台，或当后台运行未启用时正常退出
+
+| 1
+| 检测出配置文件问题
+
+| 2
+| 出现网络访问问题（地址被占用、无权限使用特权端口）
+
+| 3
+| 出现文件系统操作问题（丢失文件/目录、权限）
+
+| 4
+| 内存分配错误
+
+| 5
+| 其它杂项错误
+
+| 11 或更大
+| 来自租用脚本进程 `init` 调用的非零返回码。由 dnsmasq 返回的返回码为脚本返回码 +10
+
+|===
