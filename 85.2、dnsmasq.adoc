@@ -1,5 +1,6 @@
 = DNSMASQ
 :resolv_conf_man5: xref:85.1、resolv.conf.adoc[resolv.conf(5)]
+:dnsmasq_man_en: link:https://thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html
 
 [NOTE]
 ====
@@ -1018,3 +1019,37 @@ DHCP 租用地址，只要地址落入 `--auth-zone` 指定的子网之一。（
 | 来自租用脚本进程 `init` 调用的非零返回码。由 dnsmasq 返回的返回码为脚本返回码 +10
 
 |===
+
+== 限制
+
+参见 {dnsmasq_man_en}#lbAJ[LIMITS]
+
+== 国际化
+
+{dnsmasq_man_en}#lbAK[INTERNATIONALISATION]
+
+== 文件
+
+/etc/dnsmasq.conf
+
+/usr/local/etc/dnsmasq.conf
+
+/etc/resolv.conf /var/run/dnsmasq/resolv.conf /etc/ppp/resolv.conf /etc/dhcpc/resolv.conf
+
+/etc/hosts
+
+/etc/ethers
+
+/var/lib/misc/dnsmasq.leases
+
+/var/db/dnsmasq.leases
+
+/var/run/dnsmasq.pid
+
+== 参见
+
+{dnsmasq_man_en}#lbAM[SEE ALSO]
+
+== 作者
+
+{dnsmasq_man_en}#lbAN[AUTHOR]
