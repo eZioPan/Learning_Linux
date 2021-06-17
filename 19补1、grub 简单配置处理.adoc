@@ -1,0 +1,140 @@
+= Grub 简单配置处理
+:experimental:
+
+:invoking_grub_mkconfig: link:https://www.gnu.org/software/grub/manual/grub/html_node/Invoking-grub_002dmkconfig.html#Invoking-grub_002dmkconfigp[Invoking grub-mkconfig]
+:booting: link:https://www.gnu.org/software/grub/manual/grub/html_node/Booting.html#Booting[Booting]
+:shell_link_scripting: link:https://www.gnu.org/software/grub/manual/grub/html_node/Shell_002dlike-scripting.html#Shell_002dlike-scripting[Shell-like scripting]
+:environment_block: link:https://www.gnu.org/software/grub/manual/grub/html_node/Environment-block.html#Environment-block[Environment block]
+:vendor_power_on_keys: link:https://www.gnu.org/software/grub/manual/grub/html_node/Vendor-power_002don-keys.html#Vendor-power_002don-keys[Vendor power-on keys]
+:serial: link:https://www.gnu.org/software/grub/manual/grub/html_node/serial.html#serial[serial]
+
+
+[NOTE]
+====
+本文译自：GNU 关于 GRUB 的官方文档 +
+link:https://www.gnu.org/software/grub/manual/grub/html_node/Simple-configuration.html#Simple-configuration[6.1 Simple configuration handling]
+====
+
+大多数情况下，均可使用程序 `grub-mkconfig`（参见 {invoking_grub_mkconfig}）生成 `grub.cfg`。它适用于升级一个分发版的情况，它会自动发现可用的内核，并尝试为它们生成菜单条目。
+
+`grub-mkconfig` 的确有些限制。虽然可以通过编辑 `/etc/grub.d/40_custom` 或创建 `/etc/grub/custom.cfg` 向列表追加额外的自定义菜单条目，若要修改菜单条目的顺序，或者修改它们的标题则可能需要对 `/etc/grub.d` 下的脚本文件进行复杂的修改。这可能在未来有所改变。在目前的情况下，我们鼓励那些认为直接书写 `grub.cfg` 更简单的人按照他们的意思去做（参见 {booting} 以及 {shell_link_scripting}），此时也要同时禁用任何分发版本提供的系统自动运行 `grub-mkconfig`。
+
+文件 `/etc/default/grub` 控制 `grub-mkconfig` 的操作。它源于一个 shell 脚本，因此它必须是一个有效的 POSIX shell 输入；通常，它仅为一系列 `KEY=value` 行，但如果值包含空格或其它特殊字符，则它必须被引号包裹。举例来说：
+
+[source, sh]
+----
+GRUB_TERMINAL_INPUT="console serial"
+----
+
+`/etc/default/grub` 中有效的键如下所示：
+
+GRUB_DEFAULT::
++
+--
+默认的菜单条目。它可以为一个数字，此时它指向生成的菜单条目的地 N 个条目（以 0 开头的），或者菜单条目的标题，或者特殊字符串 `saved`。若你希望指定在不少菜单条目之后的一个为默认条目，那么 id 值就比较有用。
+
+举例来说，如果你有：
+
+[source, sh]
+----
+menuentry 'Example GNU/Linux distribution' --class gnu-linux --id example-gnu-linux {
+	...
+}
+----
+
+那么你可以这样使它变为默认：
+
+[source, sh]
+----
+GRUB_DEFAULT=example-gnu-linux
+----
+
+以前它的文档被记录为使用条目标题。虽然它依旧可用，但是它不被推荐，这是由于标题通常包含不稳定的设备名，且可能被翻译过。
+
+若将该值设置为 `saved`，那么默认菜单条目将来自 `GRUB_SAVDEFAULT` 或 `grub-set-default` 所保存的值。它依赖于环境块，可能不适用于全部的环境下（参见 {environment_block}）。
+
+默认值为 `0`。
+--
+
+GRUB_SAVEDEFAULT::
+若该选项设置为 `true`，那么在选择了一个条目之后，将它作为下次运行 GRUB 时的新默认值。仅在设置了 `GRUB_DEFAULT=saved` 时有用；它会单独作为一个选项，是因为 `GRUB_DEFAULT=saved` 在不与该选项连用、与 `grub-set-default` 连用时也十分有用。默认情况下不做设置。它依赖于环境块，可能不适用于全部的环境下（参见 {environment_block}）。
+
+
+GRUB_TIMEOUT::
++
+--
+在显示菜单后的指定秒数之后，启动默认的条目，除非接收到任意按键。默认值为 `5`。设置为 `0` 则立即执行启动，而不显示菜单，设置为 `-1` 则永久等待。
+
+若 `GRUB_TIMEOUT_STYLE` 设置为 `countdown` 或者 `hidden`，则在显示菜单前倒数。
+--
+
+GRUB_TIMEOUT_STYLE::
++
+--
+若该值未设置或设置为 `menu`，那么 GRUB 将显示菜单，接着等待 `GRUB_TIMEOUT` 设置的超时后，启动默认条目。按任意键就可中断倒计时。
+
+若该选项设置为 `countdown` 或 `hidden`，那么在显示菜单前，GRUB 就会等待 `GRUB_TIMEOUT` 设置的超时。若按了 kbd:[ESC] 或 kbd:[F4]，或者在此期间按住了 kbd:[Shift]，则会显示菜单，并等待输入。若按下了与某个菜单条目关联的快捷键，则会立刻启动该条目。若超时结束之前未发生上述任何情况，则启动默认条目。在 `countdown` 条件下，它将会显示一个单行提示来显示剩余的时间。
+--
+
+GRUB_DEFAULT_BUTTON::
+GRUB_TIMEOUT_BUTTON::
+GRUB_TIMEOUT_STYLE_BUTTON::
+GRUB_BUTTON_CMOS_ADDRESS::
+不含 `_BUTTON` 后缀的变量的变体，用于支持特定制造商的电源按钮。参见 {vendor_power_on_keys}
+
+GRUB_DISTRIBUTOR::
+由 GRUB 的分发者设置他们的识别名。它用于生成更加详细的菜单条目标题。
+
+GRUB_TERMINAL_INPUT::
++
+--
+选择终端输入设备。此处你可以选择多个设备，以空格分开。
+
+有效的终端输入名称依平台不同而不同，但可以包括 `console`（原生平台控制台）、`serial`（串行终端）、`serial_<port>`（显式指定端口的串行终端）、`at_keyboard`（PC AT 键盘）、`usb_keyboard`（使用 HID Boot Protocol 的 USB 键盘，当固件不处理它们时使用）。
+
+默认为使用平台的原生终端输入。
+--
+
+GRUB_TERMINAL_OUTPUT::
++
+--
+选择终端输出设备。此处你可以选择多个设备，以逗号分开。
+
+有效的终端输出名依平台不同而不同，但可以包括 `console`（原生平台控制台）、`serial`（串行终端）、`serial_<port>`（显式指定端口的串行终端） `gfxterm`（图形模式输出）、`vga_text`（VGA 文字输出）、`mda_text`（MDA 文字输出）、`morse`（使用系统蜂鸣器的摩尔斯电码）、`spkmodem`（使用系统蜂鸣器的简单数据协议）。
+
+当没有串行端口可用时，`spkmodem` 就十分有用。连接发送端系统（也就是 GRUB 运行的系统）的输出至接收系统（通常为开发者的机器）的线路输入。在接收系统上从 `util/spkmodem-recv.c` 编译出 `spkmodem-recv` 并运行：
+
+[source, sh]
+----
+parecord --channels=1 --rate=48000 --format=s16le | ./spkmodem-recv
+----
+
+默认为使用平台的原生终端输出。
+--
+
+GRUB_TERMINAL::
+若设置了该选项，则覆盖 `GRUB_TERMINAL_INPUT` 和 `GRUB_TERMINAL_OUTPUT` 至相同的值。
+
+GRUB_SERIAL_COMMAND::
+当使用串行控制台时用于配置串行端口的命令。参见 {serial}。默认值为 `serial`。
+
+GRUB_CMDLINE_LINUX::
+要向菜单条目的 Linux 内核传递的命令行参数。
+
+GRUB_CMDLINE_LINUX_DEFAULT::
+除非 `GRUB_DISABLE_RECOVERY` 设置为 `true`，否则每个 Linux 内核都会生成两个菜单条目：一个默认的条目和一个恢复模式的条目。该选项罗列了仅赋予默认菜单条目的命令行参数，它们会被追加至 `GRUB_CMDLINE_LINUX` 之后。
+
+GRUB_CMDLINE_NETBSD::
+GRUB_CMDLINE_NETBSD_DEFAULT::
+同 `GRUB_CMDLINE_LINUX` 和 `GRUB_CMDLINE_LINUX_DEFAULT`，但针对 NetBSD。
+
+GRUB_CMDLINE_GNUMACH::
+同 `GRUB_CMDLINE_LINUX`，但针对 Mach。
+
+GRUB_CMDLINE_XEN::
+GRUB_CMDLINE_XEN_DEFAULT::
+对于全部的对应的常规条目，这些选项的值将传递给 Xen hypervisor Xen 菜单条目。
+
+GRUB_CMDLINE_LINUX_XEN_REPLACE::
+GRUB_CMDLINE_LINUX_XEN_REPLACE_DEFAULT::
+对于 Linux 和 Xen 菜单条目，这些选项的值将替换 `GRUB_CMDLINE_LINUX` 和 `GRUB_CMDLINE_LINUX_DEFAULT`。

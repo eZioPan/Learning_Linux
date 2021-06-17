@@ -2,7 +2,7 @@
 
 [NOTE]
 ====
-本文译自 https://thekelleys.org.uk/dnsmasq/docs/setup.html
+本文译自 link:https://thekelleys.org.uk/dnsmasq/docs/setup.html[]
 ====
 
 == 安装
