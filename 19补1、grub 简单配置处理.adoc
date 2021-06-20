@@ -7,6 +7,12 @@
 :environment_block: link:https://www.gnu.org/software/grub/manual/grub/html_node/Environment-block.html#Environment-block[Environment block]
 :vendor_power_on_keys: link:https://www.gnu.org/software/grub/manual/grub/html_node/Vendor-power_002don-keys.html#Vendor-power_002don-keys[Vendor power-on keys]
 :serial: link:https://www.gnu.org/software/grub/manual/grub/html_node/serial.html#serial[serial]
+:gfxmode: link:https://www.gnu.org/software/grub/manual/grub/html_node/gfxmode.html#gfxmode[gfxmode]
+:gfxpayload: link:https://www.gnu.org/software/grub/manual/grub/html_node/gfxpayload.html#gfxpayload[gfxpayload]
+:fallback: link:https://www.gnu.org/software/grub/manual/grub/html_node/fallback.html#fallback[fallback]
+:default: link:https://www.gnu.org/software/grub/manual/grub/html_node/default.html#default[default]
+:play: link:https://www.gnu.org/software/grub/manual/grub/html_node/play.html#play[play]
+:badram: link:https://www.gnu.org/software/grub/manual/grub/html_node/badram.html#badram[badram]
 
 
 [NOTE]
@@ -138,3 +144,98 @@ GRUB_CMDLINE_XEN_DEFAULT::
 GRUB_CMDLINE_LINUX_XEN_REPLACE::
 GRUB_CMDLINE_LINUX_XEN_REPLACE_DEFAULT::
 对于 Linux 和 Xen 菜单条目，这些选项的值将替换 `GRUB_CMDLINE_LINUX` 和 `GRUB_CMDLINE_LINUX_DEFAULT`。
+
+GRUB_EARLY_INITRD_LINUX_CUSTOM::
+GRUB_EARLY_INITRD_LINUX_STOCK::
++
+--
+空格分隔的要从 `/boot` 读取的早期 initrd 镜像的列表。它包含了诸如 CPU 微码、固件、ACPI 表、加密密钥等等。这些早期镜像会按照声明的顺序载入，且这些镜像会在实际工作的 initrd 镜像之前载入。
+
+`GRUB_EARLY_INITRD_LINUX_STOCK` 用于你的分发版本声明由分发版本声明的镜像。它不应该在不清楚后果的情况下进行修改。它们将会首先被载入。
+
+`GRUB_EARLY_INITRD_LINUX_CUSTOM` 用于你自定义创建的镜像。
+
+默认的附带镜像如下所示，虽然它们也会被你的分发版本覆盖：
+
+[source]
+----
+intel-uc.img intel-ucode.img amd-uc.img amd-ucode.img early_ucode.cpio microcode.cpio
+----
+--
+
+GRUB_DISABLE_LINUX_UUID::
+通常情况下，`grub-mkconfig` 将生成使用 Linux 内核的根文件系统的 UUID 的菜单条目，使用 `root=UUID=...` 内核参数。这通常更可靠，但有些时候却不适用。要禁用 UUID，设置该值为 `true`。
+
+GRUB_DISABLE_LINUX_PARTUUID::
++
+--
+若 `grub-mkconfig` 不能通过它的 UUID 确定根文件系统，`grub-mkconfig` 可以使用包含了文件系统的分区的 UUID 确定 Linux 内核的根文件系统，使用 `root=PARTUUID=...` 内核参数。它的可靠性低于使用文件系统的 UUID，但高于使用 Linux 设备名。
+
+当 `GRUB_DISABLE_LINUX_PARTUUID` 设置为 `false`，Linux 内核版本必须设置为 2.6.37（对于使用 MSDOC 分区的系统则为 3.10）或更新的版本。该选项默认为 `true`。要启用分区 UUID 的使用，将该选项设置为 `false`。
+--
+
+GRUB_DISABLE_RECOVERY::
+若该选项设置为 `true`，禁用生成恢复模式的菜单条目。
+
+GRUB_DISBALE_UUID::
+通常情况下，`grub-mkconfig` 将会生成使用 UUID 来确定各类文件系统以查找文件的菜单条目。这通常更可靠，但有些情况下不适用。要关闭 UUID 的适用，设置该选项至 `true`。设置该选项为 `true`，会同时设置 `GRUB_DISABLE_LINUX_UUID` 以及 `GRUB_DISABLE_LINUX_PARTUUID` 至 `true`，除非它们被显式地设置为了 `false`。
+
+GRUB_VIDEO_BACKEND::
++
+--
+若要求了图形化视频的支持，要么是由于使用了 `gfxterm` 图形化终端，或者设置了 `GRUB_GFXPAYLOAD_LINUX`，那么 `grub-mkconfig` 通常会载入全部可用的 GRUB 视频驱动，并使用最适合于你硬件的那一个。若由于某种原因你需要覆盖该它，则你可以设置该选项。
+
+在 `grub-install` 运行后，可用的视频驱动均会罗列在 `/boot/grub/video.lst`。
+--
+
+GRUB_GFXMODE::
+设置 `gfxterm` 图形终端的分辨率。注意，你仅能使用你显卡通过 VESA BIOS Extensions（VBE）支持的模式，因此举例来说，原生 LCD 面板的分辨率可能并不可用。默认值为 `auto`，它会尝试选择一个偏好的分辨率。参见 {gfxmode}。
+
+GRUB_BACKGROUND::
+为 `gfxterm` 图形终端设置一个要使用的背景图片。该选项的值必须为在启动时 GRUB 就可以读取的一个文件，且必须以 `.png`、`.tga`、`.jpg` 或 `.jpeg` 结尾。若必须则将图片缩放以适应屏幕。
+
+GRUB_THEME::
+设置 `gfxterm` 图形终端要使用的主题。
+
+GRUB_GFXPAYLOAD_LINUX::
++
+--
+设置为 `text` 强制 Linux 内核以通常的文字模式启动，设置为 `keep` 则保留 `GRUB_GFXMODE` 设置的图形模式，设置为 `__width__x__height__[x__depth__]` 则指定为特定的图形模式，或者由逗号或分号分隔的这些值组成的列表，以逐一尝试它们。参见 {gfxpayload}。
+
+鉴于你的内核、你的分发版本、你的图形卡以及月相，注意使用该选项可能会导致 GNU/Linux 经受各种显示问题，特别是在启动序列的前期。若你遇到问题，将该选项设置为 `text`，GRUB 会告诉 Linux 以普通文字模式启动。
+--
+
+
+GRUB_DISABLE_OS_PROBER::
+`grub-mkconfig` 有一个特性，是使用外的 `os-prober` 程序去发现安装在相同机器上的其它操作系统，并为它们生成合适的菜单条目。该选项默认关闭，因为自动且无声的执行 `os-prober`，并基于该数据生成启动条目，是潜在地攻击向量（attack vector）。设置该选项至 `false` 来启动 `grub-mkconfig` 命令的该特性。
+
+GRUB_OS_PROBER_SKIP_LIST::
+由一系列空格分隔的文件系统的 FS UUID 组成的列表，在该列表中的文件系统均会从 os-prober 的输出中忽略。对于 EFI chainloader，它为 <UUID>@<EFI FILE>。
+
+GRUB_DISABLE_SUBMENU::
+通常情况下，`grub-mkconfig` 会为最高版本数的内核生成顶级菜单条目，并将其它找到的内核和额外的恢复模式菜单条目放置在次级菜单中。对于 `os-prober` 返回的条目，首个条目将会放置在顶级，而其它的则放置在次级菜单中。若该选项设置为 `true`，将转而生成所有条目均在顶层的平铺菜单。修改该选项将同时要求修改以存在的 `GRUB_DEFAULT` 值、`fallback`（参见 {fallback}） 以及 `default`（参见 {default}） 环境变量，以及使用 `grub-set-default` 保存的默认条目，和与 `grub-reboot` 连用的值。
+
+GRUB_ENABLE_CRYPTODISK::
+若设置为 `y`，`grub-mkconfig` 以及 `grub-install` 将会检查加密盘，并为了在启动时能访问它们而生成额外的命令。注意在这种情况下，无人值守的启动是不可能的，因为 GRUB 会等待用于解锁加密容器的密码。
+
+GRUB_INIT_TUNE::
+当 GRUB 启动时，在喇叭中播放一个声音。它在用户无法看到屏幕时十分有用。该选项的值会直接传递给 {play}。
+
+GRUB_BADRAM::
+若设置了该选项，GRUB 会触发 {badram} 命令来过滤特 RAM 中的特定部分。
+
+GRUB_PRELOAD_MODULES::
+该选项可以设置为一系列空格分隔的 GRUB 模块名的列表。在 `grub.cfg` 的起始处，每个模块会尽可能早地载入。
+
+下面的选项出于已有配置的兼容性考虑而仍被接受，但有更好的替代：
+
+GRUB_HIDDEN_TIMEOUT::
+__略__
+
+GRUB_HIDDEN_TIMEOUT_QUIT::
+__略__
+
+GRUB_HIDDEN_TIMEOUT_BUTTON::
+__略__
+
+对于更详细的自定义 `grub-mkconfig` 的输出，你可以直接编辑 `/etc/grub.d` 的脚本。`/etc/grub.d/40_custom` 是特别有用的用于添加完整的自定义菜单条目；仅需在该文件中键入你希望添加的自定义条目，保证至少不要修改前两行。
