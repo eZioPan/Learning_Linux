@@ -170,3 +170,21 @@ PVE 的防火墙可以在三个位置设置，分别为
 对于虚拟机和容器来说
 
 menu:Datacenter[__hostname__ > __VMID/CTID__ > Network] 下的网络接口，依照所要加入的网桥和 VLAN 的不同，分别设置 `Bridge` 和 `VLAN Tag`
+
+== 修改 Linux Guest 虚拟机的屏幕分辨率
+
+在使用 Ubuntu 虚拟机时，发现虚拟屏幕的长宽比一直处于 4:3 的比例下，看着非常难受，这里提供一种比较简单的操作方法，进行快速调整
+
+. 修改 `/etc/default/grub`
+.. 将 `GRUB_TIMEOUT_STYLE=hidden` 改成 `GRUB_TIMEOUT_STYLE=menu`，以显示 GRUB 菜单界面
+.. 将 `GRUB_TIMEOUT=0` 改成 `GRUB_TIMEOUT=5`，让 GRUB 菜单有 5 秒的延时
+.. 在 `GRBU_CMDLINE_LINUX_DEFAULT` 的末尾添加 `nomodeset` （原因未知，可能是某些冲突导致不能使用 kernel mode setting）
+
+. 使用 `update-grub` 命令，以更新 `grub.cfg` 文件
+
+. 重启，即可看到 GRUB 菜单
+.. 选择 `UEFI Firmware Settings` -> `Device Manager` -> `OVMF Platform Configuration` -> `Change Prefered`
+.. 修改合适的屏幕分辨率
+.. 选择 `Commit Changes and Exit`
+.. 接着按 ESC 键返回上一级，选择 `Continue` 继续启动
+.. 在启动完成之后，关闭虚拟机，并再次重启虚拟机，就可以使用修改后的分辨率
