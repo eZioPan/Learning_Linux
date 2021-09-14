@@ -1,0 +1,23 @@
+= gdisk
+
+== 名称
+
+gdisk - 交互式 GUID 分区表（GPT）操纵器
+
+== 描述
+
+GPT fdisk（也即 **gdisk**）是一个文字模式下的、菜单驱动的、用来创建和修改分区表的程序。它会自动将一个旧样式的主引导记录（MBR）分区表或存储了不含 MBR 承载分区的 BSD 磁盘标签转换为更新的全局唯一标识符（GUID）分区表（GPT）格式，或载入一个 GUID 分区表。当与 `-l` 命令行参数连用时，该程序会显示当前的分区表并退出。
+
+GPT fdisk 操作主要作用于 GPT 头和分区表；但是，当需要时，它可以也会生成一个新的保护性 MBR。（任何在保护性 MBR 中的启动载入器均不会被扰乱。）若你已经创建了一个不平常的保护性 MBR，比如由 **gptsync** 或 **gdisk** 自己的 hybird MBR 特性创建的 hybrid MBR，那么它就不应该被大多数常规操作扰乱。一些高级的数据恢复操作要求你明白主数据和备份数据之间的区别，以及 GPT 头和分区表之间的差异。要了解 MBR 和 GPT 之间的比较，以及 GPT 术语和结构，参阅扩展 **gdisk** 文档 link:http://www.rodsbooks.com/gdisk[] 或参阅维基百科。
+
+**gdisk** 程序使用了一个与 Linux 的 **fdisk** 相似的用户界面，但 **gdisk** 修改 GPT 分区。它也有能力将 MBR 分区或 BSD 磁盘标签转换为 GPT 分区。与原始的 **fdisk** 程序类似，直到你明确要求写入修改之前，**gdisk** 都不会修改磁盘结构，因此如果你犯了一个错误，那么你可以用 ‘q’ 选项退出程序，且不会对你的分区做任何修改。
+
+通常情况下，**gdisk** 操作于磁盘设备文件，比如 Linux 下的 [.underline]#/dev/sda# 或 [.underline]#/dev/hda#，Mac OS X 下的 [.underline]#/dev/disk0#，或 FreeBSD 下的 [.underline]#/dev/ad0# 或 [.underline]#/dev/da0#。该程序也可以操作于磁盘镜像文件，它们可以是整个磁盘的拷贝（比如由 **dd** 生成）或由 QEMU 或 VMWARE 等模拟器使用的 raw disk image。注意仅支持 [.underline]#raw# 磁盘镜像；**gdisk** 不可作用于压缩或其它高级磁盘镜像格式。
+
+MBR 分区系统使用 磁柱/磁头/扇区（CHS）寻址和逻辑块寻址（LBA）的组合。前者又旧又局限。GPT 弃用了 CHS 寻址，并排他地使用 64 bit LBA 模式。因此，GPT 数据结构，也包含 **gdisk**，不在需要处理 CHS geometries、以及由它带来的各种问题。**fdisk** 的用户会注意到 **gdisk** 缺少于 CHS geometries 相关的选项和限制。
+
+要获得最佳结果，无论何时，你都应该使用一个 OS 特定的分区表程序。举例来说，创建 Mac OS X 分区要使用 Mac OS X 磁盘工具程序，而 Linux 分区上应该使用 Linux **gdisk** 或 GNU Parted 程序。
+
+在启动时，**gdisk** 会尝试确定磁盘上使用的分区类型。若找到了有效的 GPT 数据，**gdisk** 会使用它。若 **gdisk** 找到了一个有效的 MBR 或 BSD 磁盘标签，但没有找到 GPT 数据，它会尝试将 MBR 或磁盘标签转换至 GPT 格式。（BSD 磁盘标签有可能具有无法使用的首个 和/或 最后的分区，因此它们与 GPT 数据重叠。）GPT fdisk 可以分辨，但无法使用 Apple Partition Map（APM）磁盘中的数据，这类磁盘用于基于 680x0 或 PowerPC 的 Macintoshes。当以 'w' 选项退出时，**gdisk** 以 GPT 替换 MBR 或磁盘标签。[.underline]#该操作具有潜在危险！# 你的系统可能无法启动，若磁盘使用无法识别的类型码，那么分区类型码可能损毁。启动问题则极有可能发生在多重启动不能正确识别 GPT 的操作系统上。若你失误地在 MBR 磁盘上启动了 **gdisk**，你可以通过使用 'q' 选项安全地退出程序，而不执行任何修改。
+
+若原始的 MBR 使用了逻辑分区，那么 MBR 至 GPT 转换会留下至少一个分区数间隔。这些间隔并无危害，若你喜欢，你也可以通过 's' 选项消除它们。（如此操作可能需要你更新你的 [.underline]#/etc/fstab# 文件）。
