@@ -223,3 +223,53 @@ z::
 打印菜单。该选项（或任意无法识别的条目）会显示菜单选项的摘要。
 
 在很多情况下，当你输入数据时，你可以按回车键选项默认选项。当仅有一个可能的选项时，**gdisk** 通常会掠过整个提示过程。
+
+== BUGS
+
+已知的 bug 和限制包括：
+
+* 该程序仅能在 Linux、BreeBSD、Mac OS X 和 Windows 上成功编译。对于 Linux 而言，x86-64(64-bit)、x86(32-bit)，以及 PowerPC(32-bit) 已被测试过，其中 x68-64 则是被测试最多的。在 FreeBSD 下，32-bit(x86) 和 64-bit(x86-64) 被测试。Mac OS X 和 Windows 下仅有 32 比特的版本被作者测试过，虽然我也听过 64 位的版本被成功的编译。
+
+* FreeBSD 版本的程序无法在磁盘被挂载的时候写入变动至分区表。（相同的问题存在于很多其他的 FreeBSD 攻击，比如 **gpt**、**fdisk** 和 **dd**）可以通过在 shell 提示符中输入 **sysctl.kern.geom.debugflags=16** 来克服。
+
+* 'p' 命令中用来显示分区的起始和终止扇区数的字段使用了 14 个字符的宽度。也就是说它限制在了 45 PiB。在更大的磁盘上，显示列将会无法对齐。
+
+* 在 Windows 的版本中，分区名字段仅支持 ASCII 字符。若存在一个分区使用非 ASCII UTF-16 字符，它们很有可能在 'i' 和 'p' 菜单选项中无法正常显示；但是，它们应该在读取和保存分区时被保留。对于 Linux、FreeBSD、以及 OS X 则支持 UTF-16 分区名。
+
+* 在自 MBR 格式的转换过程中，该程序仅能载入至多 128 分区（4 个主分区以及 124 个逻辑分区）。该限制可以通过修改 [.underline]#basicmbr.h# 源码文件的 [.underline]#define MAX_MBR_PARTS# 行，并重编译来被提升；但是，该修改会要求使用大于普通的分区表。（选择 128 分区的限制是因为大多数分区表的尺寸支持的分区数为 128.）
+
+* 转换 MBR 分区的时候，有时会由于在磁盘开始或（更常见的）末尾的空间不足而导致转换失败。修改分区表大小（通过专家菜单的 's' 选项）有时可以克服该问题；但是，在极其特殊的情况下，可能需要首先使用 GNU Parted 或相似的工具调整分区大小之后，再使用 **gdisk** 执行转换。
+
+* MBR 转换仅在磁盘具有正确的 LBA 分区描述符时才会成功。这些描述符应该存在于任何大于 8 GiB 的磁盘上，或任何小于该大小的、但格式它的工具并非非常陈旧的软件的磁盘上。
+
+* BSD 磁盘标签支持可能会创建首个和/或末尾分区与 GPT 数据结构重叠。这有时可以通过调整分区表大小来容忍，但在非常极端的情况下，受影响的分区可能需要被 删除。
+
+* 由于 BSD 磁盘标签结构的自然而然的高度可变性，从它而来的转换可能并不可靠——分区可能会被丢弃、转换导致与其它分区重叠、或转换导致不正确的起止值。谨慎使用该特性！
+
+* 在转换 MBR 或 BSD 磁盘标签之后的启动可能会被扰乱。有时重新安装启动器会修正这个问题，但其它时候你可能需要切换启动器。但在基于 EFI 的平台上，直到 Windows 7 的 Windows 都不支持从 GPT 磁盘启动。创建一个 hybrid MBR（使用恢复和转换菜单的 'h' 选项），或在这种情况下使用 MBR 而放弃 GPT 可能是你唯一的选项。
+
+== 作者
+
+主要作者：Roderick W. Smith (rodsmith@rodsbooks.com)
+
+贡献者：
+
+* Yves Blusseau (1otnwmz02@sneakemail.com)
+* David Hubbard (david.c.hubbard@gmail.com)
+* Justin Maggard (justin.maggard@netgear.com)
+* Dwight Schauer (dschauer@gmail.com)
+* Florian Zumbiehl (florz@florz.de)
+
+== 参见
+
+cfdisk (8), cgdisk (8), fdisk (8), mkfs (8), parted (8), sfdisk (8) sgdisk (8) fixparts (8)
+
+link:http://en.wikipedia.org/wiki/GUID_Partition_Table[]
+
+link:http://developer.apple.com/technotes/tn2006/tn2166.html[]
+
+link:http://www.rodsbooks.com/gdisk/[]
+
+== 可用性
+
+**gdisk** 命令是 [.underline]#GPT fdisk# 包的一部分，且来自于 Rod Smith。
