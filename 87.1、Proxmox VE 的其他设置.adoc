@@ -188,3 +188,21 @@ menu:Datacenter[__hostname__ > __VMID/CTID__ > Network] 下的网络接口，依
 .. 选择 `Commit Changes and Exit`
 .. 接着按 ESC 键返回上一级，选择 `Continue` 继续启动
 .. 在启动完成之后，关闭虚拟机，并再次重启虚拟机，就可以使用修改后的分辨率
+
+== 扩展 Linux Guest 虚拟的磁盘容量
+
+主要矛盾点：在现实生活中，物理磁盘的大小几乎是不能改变的，在创建 GPT 的时候，整个物理磁盘的大小就被记录在 GPT 中。但是在虚拟机中，允许扩大磁盘的大小，就导致 GPT 记录的磁盘大小和实际的磁盘大小并不相同，而添加了额外的操作
+
+. 在 PVE 中扩展磁盘
+. 用 gdisk 的 v 命令检查磁盘，并按照指示通过 x 命令 和 e 命令检查 gpt 表
+. 通过 m 返回主模式，d 删除分区，n 新建分区
+. 写入分区表
+. [手动执行 partprobe 更新内核数据]
+. 若使用了 lvm 则执行下面的操作，否则跳过
+.. 检查并扩展 PV
+... pvdisplay
+... pvresize /dev/<partition>
+.. 检查并扩展 lv
+... lvdisplay
+... lvextend -l +100%FREE /dev/<vg_name>/<lv_name>
+. 扩展文件系统的大小 xfs_growfs <挂载点> 或 resize2fs /dev/<vg_name>/<lv_name>
