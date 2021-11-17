@@ -86,7 +86,7 @@ PVE 的防火墙可以在三个位置设置，分别为
 
 ==== `Firewall` 侧边栏
 
-将上述各种形式生成的内容组合成防火墙过滤规则，，并管理其启用与否
+将上述各种形式生成的内容组合成防火墙过滤规则，并管理其启用与否
 
 ==== `Options` 侧边栏
 
@@ -164,7 +164,7 @@ PVE 的防火墙可以在三个位置设置，分别为
 +
 [TIP]
 ====
-有关防火墙的配置参阅 xref:_防火墙firewall_设置[]
+有关防火墙的配置参阅 <<防火墙/Firewall 设置>>
 ====
 
 对于虚拟机和容器来说
@@ -172,6 +172,11 @@ PVE 的防火墙可以在三个位置设置，分别为
 menu:Datacenter[__hostname__ > __VMID/CTID__ > Network] 下的网络接口，依照所要加入的网桥和 VLAN 的不同，分别设置 `Bridge` 和 `VLAN Tag`
 
 == 修改 Linux Guest 虚拟机的屏幕分辨率
+
+[IMPORTANT]
+====
+以下操作均在 Linux Guest 虚拟机下执行，**切莫**修改 Host 系统上的任何配置
+====
 
 在使用 Ubuntu 虚拟机时，发现虚拟屏幕的长宽比一直处于 4:3 的比例下，看着非常难受，这里提供一种比较简单的操作方法，进行快速调整
 
@@ -193,16 +198,18 @@ menu:Datacenter[__hostname__ > __VMID/CTID__ > Network] 下的网络接口，依
 
 主要矛盾点：在现实生活中，物理磁盘的大小几乎是不能改变的，在创建 GPT 的时候，整个物理磁盘的大小就被记录在 GPT 中。但是在虚拟机中，允许扩大磁盘的大小，就导致 GPT 记录的磁盘大小和实际的磁盘大小并不相同，而添加了额外的操作
 
-. 在 PVE 中扩展磁盘
-. 用 gdisk 的 v 命令检查磁盘，并按照指示通过 x 命令 和 e 命令检查 gpt 表
-. 通过 m 返回主模式，d 删除分区，n 新建分区
-. 写入分区表
-. [手动执行 partprobe 更新内核数据]
-. 若使用了 lvm 则执行下面的操作，否则跳过
-.. 检查并扩展 PV
-... pvdisplay
-... pvresize /dev/<partition>
-.. 检查并扩展 lv
-... lvdisplay
-... lvextend -l +100%FREE /dev/<vg_name>/<lv_name>
-. 扩展文件系统的大小 xfs_growfs <挂载点> 或 resize2fs /dev/<vg_name>/<lv_name>
+. PVE Host 系统中进行的操作
+.. 在 PVE 中扩展磁盘
+. Linux Guest 主机中进行的操作
+.. 用 gdisk 的 v 命令检查磁盘，并按照指示通过 x 命令 和 e 命令检查 gpt 表
+.. 通过 m 返回主模式，d 删除分区，n 新建分区
+.. 写入分区表
+.. [手动执行 partprobe 更新内核数据]
+.. 若使用了 lvm 则执行下面的操作，否则跳过
+... 检查并扩展 PV
+.... pvdisplay
+.... pvresize /dev/<partition>
+... 检查并扩展 lv
+.... lvdisplay
+.... lvextend -l +100%FREE /dev/<vg_name>/<lv_name>
+.. 扩展文件系统的大小 xfs_growfs <挂载点> 或 resize2fs /dev/<vg_name>/<lv_name>
