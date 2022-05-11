@@ -51,7 +51,7 @@ RSA 的算法特殊的地方就在于：
 
 HTTPS::
 超文本传输安全协议，一种使用了 TLS 的传输协议，网址中以 `https://` 开头的网站一般可以认为启用的 HTTPS。 +
-这写网站通过 TLS 和相关的协议向浏览器证明自己的身份。
+这些网站通过 TLS 和相关的协议向浏览器证明自己的身份。
 
 TLS::
 传输层安全协议，一种用于网络数据传输中保证数据安全（不泄密、不被篡改）的协议。其底层算法包含了 RSA 算法。
@@ -148,7 +148,7 @@ openssl req -config my_rootCA.cnf -new -key my_rootCA.prikey -out my_rootCA.csr
 ----
 // 虽然检查证书请求理论上不需要配置文件
 // 但 OpenSSL 工具集似乎需要一个可以正常读取的配置文件才能运行该命令
-openssl req -config my_rootCA.cnf -in my_rootCA.prikey -noout -text
+openssl req -config my_rootCA.cnf -in my_rootCA.csr -noout -text
 ----
 
 . 书写证书签名配置文件 +
