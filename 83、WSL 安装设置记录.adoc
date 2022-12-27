@@ -1,0 +1,164 @@
+= WSL 安装&设置记录
+
+== 可选的预备工作
+
+安装 link:https://aka.ms/terminal[Windows Terminal] 以及 link:https://code.visualstudio.com/[VSCode]
+
+== WSL 的安装
+
+[IMPORTANT]
+====
+安装时执行手动安装的步骤，不要使用 `wsl --install`
+====
+
+官方的手动安装说明文档： link:https://learn.microsoft.com/en-us/windows/wsl/install-manual[Manual installation steps for older versions of WSL]
+
+=== 开启必要的 Windows 组件
+
+. Windows 设置 -> 应用 -> 程可选功能 -> 更多 Windows 功能
+. 在“Windows 功能”中勾选
+.. “适用于 Linux 的 Windows 子系统”
+.. 虚拟机平台
+. 确认，等待系统安装，并重启 Windows
+
+=== 手动下载 WSL 更新包
+
+从上面提到的官方文档网址中，找到 link:https://learn.microsoft.com/en-us/windows/wsl/install-manual#step-4---download-the-linux-kernel-update-package[Step 4 - Download the Linux kernel update package]，下载 link:https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_x64.msi[WSL2 Linux kernel update package for x64 machines] 并安装
+
+=== 再次更新 WSL 至最新的版本
+
+安装完成后，在 powershell 中执行下面的命令，以将 WSL 更新到最新
+
+[source, powershell]
+----
+wsl --update
+----
+
+== Host 主机的基础设置
+
+在 powershell 中执行下面的操作，让 WSL 以 WSL2 的方式运行
+
+[source, powershell]
+----
+wsl --set-default-version 2
+----
+
+== 手动导入 Guest 系统
+
+=== 下载 lxc 镜像
+
+从 link:https://mirrors4.tuna.tsinghua.edu.cn/help/lxc-images/[清华大学镜像站 lxc-images] 中可以获得我们需要的 rootfs 文件
+
+这里以 Fedora 37 镜像举例，找到如下目录 images/fedora/37/amd64/default/ 找到最新的时间点目录，找到其中的 rootfs.tar.xz 文件，并下载。
+
+之后需要解压 `rootfs.tar.xz` 文件得到 `rootfs.tar` 文件（可以使用 7-zip 解压 .xz 文件）。
+
+=== 通过命令行将 rootfs.xz 导入为 WSL Guset
+
+执行下面的 powershell 命令
+
+[source, powershell]
+----
+wsl --import <自定 WSL Guest 名称> <目标虚拟磁盘位置> <rootfs.tar 路径>
+----
+
+比如
+
+[source, powershell]
+----
+wsl --import fedora X:\wsl\fedora ~\Downloads\rootfs.tar
+----
+
+== 首次启动 Guest 系统
+
+重启 Windows Terminal，并在下拉列表中选择刚刚安装的 Guest 系统
+
+稍等片刻，就可以看到 Windows Terminal 出现 bash 提示符，文件管理器左侧下方也出现了 `Linux` 网络位置。
+
+=== 初步配置 Guest 系统
+
+我们还可以额外为 Guest 系统配置 WSL 相关的配置文件，以获得“更好”的体验。
+
+创建 `/etc/wsl.conf` 文件：
+
+[source, conf]
+./etc/wsl.conf
+----
+[boot]
+systemd = true # 启用 systemd 支持
+
+[interop]
+enabled = false # 关闭从 Guest 启动 Host 的进程的功能
+appendWindowsPath = false # 禁用将 Host 的 PATH 环境变量解析为 Guest 的 PATH
+
+# 如果你在 Guest 中创建了常用的 Linux 用户，则这里可以设置 WSL 启动时默认登陆的账户
+[user]
+default = <创建的用户名>
+----
+
+之后，我们在 powershell 中强制关闭 WSL
+
+[source, powershell]
+----
+wsl --shutdown
+----
+
+=== 启用 systemd 之后需要的额外配置
+
+WSL 并没有通过 DHCP 给出 ip 地址，因此，我们可以关闭 systemd-networkd
+
+[source, sh]
+----
+systemctl disable systemd-networkd
+----
+
+vEthernet (WSL) 提供了 DNS 服务，但是 +
+systemd-resolved 可以正常运行，但是 nss-resolve 似乎不能正确运行，于是还是关闭 systemd-resolved 比较好
+
+[source, sh]
+----
+systemctl disable systemd-resolved
+----
+
+最后，重启 Guest 系统
+
+[source, sh]
+----
+reboot
+----
+
+到此为止，Guest 系统就能在启用了 systemd 之后正常联网了
+
+== 其它小问题的解决
+
+=== 从 Guest 系统访问 Host 提供的网络服务
+
+修改“高级安全 Windows Defender 防火墙”的配置
+
+首先是启用 入站规则 中的 虚拟机监控(回显请求 - ICMPv4-In)
+
+接着，对于 Guest 要访问的 Host 网络服务，关闭边缘遍历，将该服务的“配置文件”包含“公用”，并将其作用域的远程地址限制在 172.16.0.0/12
+
+=== fedora 镜像默认无 man 帮助文件
+
+如下注释 /etc/dnf/dnf.conf 中的下面这行
+
+[source, conf]
+./etc/dnf/dnf.conf
+----
+# tsflags=nodocs
+----
+
+安装 man
+
+[source, sh]
+----
+dnf install man
+----
+
+之后，我们可能需要重新安装所有的包，以补全所有的帮助文件
+
+[source, sh]
+----
+dnf repoquery --installed | sudo  xargs dnf reinstall -y
+----
