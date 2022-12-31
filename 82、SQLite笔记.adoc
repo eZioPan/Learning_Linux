@@ -1,4 +1,5 @@
 = SQLite 笔记
+:source-language: SQL
 
 == 特点
 
@@ -19,9 +20,14 @@ link:https://www.sqlite.org/download.html[]
 对于命令行工具特有的语法，我们使用“命令（command）”来表述 +
 对于通用的 SQL 语法，我们使用“语句（statement）”来表述。
 
-=== 常见的 sqlite3 命令（command）
+== 常见的 sqlite3 命令（command）
 
-[cols="^.^1m,^.^2,2a"]
+[IMPORTANT]
+====
+与 SQL 语句不同，sqlite3 命令**禁止**以分号 `;` 结尾，否则分号会作为命令的一部分被读取
+====
+
+[cols="^.^1m,^.^2,.^2a"]
 .打开、关闭、读取、写入
 |===
 | sqlite3 命令 | 含义 | 备注
@@ -38,7 +44,8 @@ link:https://www.sqlite.org/download.html[]
 | 将一个数据库作为 main 数据库打开
 | 等价于在命令行中运行 +
 `sqilte3.exe <数据库文件>` +
-注意，以这种方式打开的数据库，不可以被 `DETACH DATABASE` 关闭
+注意，以这种方式打开的数据库，不可以被 `DETACH DATABASE` 关闭 +
+但可以使用 `.open ""` 关闭，不过这样所有已经 `ATTACH` 的数据库也会被一同关闭。
 
 d| `.backup [数据库名] <保存路径>` +
 以及 +
@@ -52,7 +59,7 @@ d| `.backup [数据库名] <保存路径>` +
 |===
 
 
-[cols="^.^1m,^.^2,2a"]
+[cols="^.^1m,^.^2,.^2a"]
 .枚举相关的命令
 |===
 | sqlite3 命令 | 含义 | 备注
@@ -80,7 +87,7 @@ d| `.backup [数据库名] <保存路径>` +
 
 | .fullschema
 | 罗列全部的表架构，包含特殊的表 sqlite_stat
-|
+| 特别注意，这个命令仅对 main 数据库有效
 
 | .indexes [表名]
 | 显示特定表的索引
@@ -92,7 +99,7 @@ d| `.backup [数据库名] <保存路径>` +
 ----
 |===
 
-[cols="^.^1m,^.^2,2a"]
+[cols="^.^1m,^.^2,.^2a"]
 .修改输出模式
 |===
 | sqlite3 命令 | 含义 | 备注
@@ -107,7 +114,7 @@ d| `.backup [数据库名] <保存路径>` +
 |
 |===
 
-[cols="^.^1m,^.^2,2a"]
+[cols="^.^1m,^.^2,.^2a"]
 .输出重定向
 |===
 | sqlite3 命令 | 含义 | 备注
@@ -122,20 +129,297 @@ d| `.backup [数据库名] <保存路径>` +
 |
 |===
 
-=== 常见的 SQL 的语句（statement）
+== 常见的 SQL 的语句（statement）
 
-[cols="^.^1m,^.^2,2a"]
-.常见的 SQL 的语句（statement）
-|===
-| SQL 语句 | 含义 | 备注
+[IMPORTANT]
+====
+注释语句，以井号 `#` 开头
 
-3+d| **一个完整的 SQL 语句必须以分号 `;` 结尾**
+除了注释语句，其它的 SQL 语句**必须**以分号 `;` 结尾
+====
 
-| ATTACH DATABASE "<数据库文件>" AS <名称>
-| 在同一个 sqlite3 会话中再打开一个数据库
-| 特别注意 **数据库文件名必须使用引号包裹** +
+=== ATTACH 语句
+
+[source]
+----
+ATTACH DATABASE "<数据库文件>" AS <名称>;
+----
+
+在同一个 sqlite3 会话中再打开一个数据库
+
+如果 <数据库文件名> 为空（`""`），则在**内存中**创建一个数据库。
+
+特别注意 **数据库文件名必须使用引号包裹**
+
 `AS` 后跟随的 <名称>，是当前 sqlite3 会话中该数据库的代指。
 
-| DETACH DATABASE <数据库文件>
-| 关闭一个已经打开的数据库
+=== DETACH 语句
+
+[source]
+----
+DETACH DATABASE <数据库文件>;
+----
+
+关闭一个已经打开的数据库
+
+=== SELECT 语句
+
+[source]
+----
+SELECT ...
+----
+
+与其说 `SELECT` 是选择语句，不如说 `SELECT` 是打印语句，比如说，
+
+[source]
+----
+SELECT 1+1;
+----
+
+就可以计算 1+1 的结果。
+
+`SELECT` 主要用于查询数据库内容，最常见的语法是
+
+[source]
+----
+SELECT <键名1>[,<键名2>...] FROM <表名>;
+SELECT * FROM <表名>; # 显示一个表中所有的列的值
+----
+
+比如说，
+
+[source]
+----
+SELECT id, name FROM people;
+----
+
+就可以用来从 people 这个表中获取 id 键和 name 键的值。
+
+[IMPORTANT]
+====
+如果指定的键名表中不存在，则 sqlite3 会返回错误
+
+因此在实际的使用中，我们也应该避免随意地使用星号 `*` 作为键名地匹配， +
+而是明确指出要访问的键，防止获得不匹配的键
+====
+
+除了基础的 `SELECT` 语句语法，`SELECT` 还支持追加其它更加复杂的语句，因此说 `SELECT` 是最复杂的 SQL 语句也不为过。
+
+它支持追加的语句还包含
+
+* xref:_order_by_语句[`ORDER BY`] 用于排序结果
+* xref:_distinct_语句[`DISTINCT`] 仅返回互不相同的值
+* xref:_where_语句[`WHERE`] 预先筛选值
+* xref:_limit_offset_语句[`LIMIT OFFSET`] 限制返回行的数量
+* xref:_inner_join_语句[`INNER JOIN`] 或 xref:_left_join_语句[`LEFT JOIN`] 使用 join 从多个表中获得数据
+* xref:_group_by_语句[`GROUP BY`]  将返回值编组，并对每个组进行统计
+* xref:_having_语句[`HAVING`] 以过滤组
+
+=== ORDER BY 语句
+
+[source]
+----
+SELECT ...
+FROM ...
+ORDER BY
+    <键名1> [ASC], # 正序
+    [<键名2> DESC], # 逆序
+    [<键名3> NULLS LAST]; # 将空值移动至最后
+----
+
+排序语句，用来排序 `SELECT` 的结果，指定键名，以及对应的升序/降序模式， +
+如果排序结果中有多行的值相同，则可指定更多的键名以作为 n 次排序。
+
+比如
+
+[source]
+----
+SELECT
+    name,
+    milliseconds,
+    albumid
+FROM
+    tracks
+ORDER BY
+    albumid ASC;
+----
+
+
+=== DISTINCT 语句
+
+[source]
+----
+SELECT DISTINCT <键名1>[, <键名2> ...]
+FROM <表名>
+----
+
+对于指定的键名，仅返回互不相同的值 +
+若指定了多个键名，则多个键名对应的值必须全部相同，才会被认为是“相同的值”。
+
+对于 NULL，所有的 NULL 都会被认为是相同的。
+
+比如
+
+[source]
+----
+# 查看有多少不同国家、不同城市的客户，
+# 只有同时具有相同的城市名和国家名，才会被认为是相同的
+SELECT DISTINCT
+    city,
+    country
+FROM
+    customers
+ORDER BY
+    country,
+    city;
+----
+
+
+=== WHERE 语句
+
+[source]
+----
+SELECT
+    ...
+FROM
+    ...
+WHERE
+    <搜索条件>;
+----
+
+预先筛选值
+
+[NOTE]
+====
+除了 `SELECT` 语句，`WHERE` 还可以用于 `UPDATE` 和 `DELETE` 语句中
+====
+
+sqlite3 执行具有 `WHERE` 语句的 `SELECT` 语句遵循以下步骤
+
+. 从 `FROM` 语句获取表
+. 依照 `WHERE` 语句筛选表的内容
+. 依照 `SELECT` 语句构成最终的结果
+
+其中 <搜索条件> 语句为以下的形式
+
+[source]
+----
+<左表达式> <比较操作符> <右表达式>
+----
+
+<搜索条件> 语句举例
+
+[source]
+----
+WHERE column_1 = 100; # 某列为某值
+
+WHERE column_2 IN (1,2,3); # 某列在某集合中
+
+WHERE column_3 LIKE 'An%'; # 某列可匹配某样式
+
+WHERE column_4 BETWEEN 10 AND 20; # 某列在某两个值之间
+----
+
+
+[cols="^1m, ^1"]
+.SQLite 的比较操作符
 |===
+| 操作符 | 含义
+
+| =
+| 等于
+
+d| `<>` 或 `!=`
+| 不等于
+
+| <
+| 小于
+
+| >
+| 大于
+
+| <=
+| 小于等于
+
+| >=
+| 大于等于
+|===
+
+[IMPORTANT]
+====
+SQLite 不提供布尔值，因此，`1` 表示真，`0` 表示假。
+
+SQLite 逻辑操作符会返回三种值 `1`、`0` 或者 `NULL`。
+====
+
+[cols="^1m, ^3, ^1"]
+.SQLite 的逻辑操作符
+|===
+| 操作符 | 含义 | 简单记忆
+
+| ALL
+| 当且仅当所有表达式为 `1` 时，返回 `1`
+| 全部
+
+| ANY
+| 当任意一个表达式为 `1` 时，返回 `1`
+| 任意
+
+| AND
+| 当且仅当两个表达式均为 `1` 时，返回 `1`，否则返回 `0`
+| 且
+
+| OR
+| 若两个表达式中有一个为 `1` 时，就返回 `1`
+| 或
+
+| NOT
+| 对返回的结果取反
+| 取反
+
+| BETWEEN .. AND ..
+| 当值处于某两个值（含）之间时，返回 `1`
+| range()
+
+| EXISTS
+| 当自搜索包含任何列，就返回 `1`
+| 存在
+
+| LIKE
+| 若能匹配样式
+| glob
+|===
+
+=== LIMIT 语句
+
+[TIP]
+====
+总的来说过，总是应该在排序（`ORDER BY`）之后，再限制输出长度和位置（`LIMIT`）
+====
+
+[source]
+----
+SELECT
+    ...
+FROM
+    ...
+LIMIT <行数>; # 将返回的行数限制为 <行数>
+----
+
+[source]
+----
+SELECT
+    ...
+FROM
+    ...
+LIMIT <行数> OFFSET <偏移行数>; # 从结果头偏移指定行后，限制返回的行数
+----
+
+[source]
+----
+SELECT
+    ...
+FROM
+    ...
+LIMIT <偏移行数>, <限制行数> # 上面的 LIMIT ... OFFSET ... 的简写形式
+----
