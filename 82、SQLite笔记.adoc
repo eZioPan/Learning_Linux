@@ -227,6 +227,13 @@ ORDER BY
     [<键名3> NULLS LAST]; # 将空值移动至最后
 ----
 
+[IMPORTANT]
+====
+如果一个 SQL 语句中同时包含 `WHERE` 和 `ORDER BY`
+
+那么先写 `WHERE` 再写 `ORDER BY`
+====
+
 排序语句，用来排序 `SELECT` 的结果，指定键名，以及对应的升序/降序模式， +
 如果排序结果中有多行的值相同，则可指定更多的键名以作为 n 次排序。
 
@@ -338,7 +345,7 @@ d| `<>` 或 `!=`
 | >
 | 大于
 
-| <=
+| \<=
 | 小于等于
 
 | >=
@@ -422,4 +429,119 @@ SELECT
 FROM
     ...
 LIMIT <偏移行数>, <限制行数> # 上面的 LIMIT ... OFFSET ... 的简写形式
+----
+
+=== BETWEEN 语句
+
+****
+`BETWEEN` 是 `WHERE` 的子语句，必须在 `WHERE` 中使用。
+****
+
+[source]
+----
+<键名> [NOT] BETWEEN <最低值> AND <最高值>;
+----
+
+筛选值在（或不在）某个范围之间。
+
+可用于 `SELECT` / `DELETE` / `UPDATE` / `REPLACE` 
+
+[IMPORTANT]
+====
+`BETWEEN` 所选定的范围是包含最低值和最高值本身的
+
+由于 `BETWEEN` 是包含端值的，因此 `NOT BETWEEN` 就不包含端值了
+====
+
+[NOTE]
+====
+`BETWEEN` 可以产生的范围，除了数值范围之外，还可以接受日期/时间范围
+====
+
+[source]
+.案例
+----
+# 从 tracks 表中筛选 TrackId 在 10 到 20 之间的 track，
+# 并显示它们的 TrackId、名称以及作家
+SELECT
+    TrackId, Name, Composer
+FROM tracks
+WHERE
+    TrackId BETWEEN 10 and 20;
+----
+
+=== IN 语句
+
+****
+`IN` 是 `WHERE` 的子语句，必须在 `WHERE` 中使用。
+****
+
+[source]
+----
+<键名> [NOT] IN (<枚举值1>[, <枚举值2> ...]);
+----
+
+用一系列枚举值筛选数据
+
+[source]
+----
+# 从 customs 表中查找国家为 Canada 和 Spain 的客户的名字和国籍
+SELECT
+    FirstName,LastName,Country
+FROM customers
+WHERE
+    Country IN ("Canada", "Spain") # 特别注意这里的双引号
+ORDER BY
+    Country;
+----
+
+上面的操作等价于
+
+[source]
+----
+# 从 customs 表中查找国家为 Canada 和 Spain 的客户的名字和国籍
+# 但是使用 IS 和 OR 语法
+SELECT
+    FirstName,LastName,Country
+FROM customers
+WHERE
+    Country IS "Canada" OR Country IS "Spain" # IS 也可以用等号 = 代替
+ORDER BY
+    Country;
+----
+
+使用嵌套查找返回特定的数据
+
+[source]
+----
+# 查找 Queen 乐队唱过的歌
+# 使用了两次子查找的返回值
+
+# 这里有一个值的学习的地方，案例数据库中
+# 不同的表之间是用各种 Id 关联上的，而非直接用值关联上
+# 这样就让各种数据“解耦和”了。
+
+# 最后通过 AlbumId 筛选出唱过的歌曲
+SELECT
+    Name
+FROM
+    tracks
+WHERE 
+    # 再通过 ArtistId，从 albums 表中找到属于他们的 AlbumId
+    AlbumId IN (
+        SELECT
+            AlbumId
+        FROM
+            albums 
+        WHERE
+            # 先从 artists 表中找到 Queen 乐队的 ArtistId
+            ArtistId IN (
+                SELECT
+                    ArtistId
+                FROM
+                    artists
+                WHERE
+                    Name IS "Queen"
+            )
+    );
 ----
