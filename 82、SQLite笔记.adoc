@@ -32,20 +32,26 @@ link:https://www.sqlite.org/download.html[]
 |===
 | sqlite3 命令 | 含义 | 备注
 
-| .help
-| 打印所有**命令**的简短帮助
+| .help [匹配文本]
+| 打印含有匹配文本的**命令**的帮助
+| 若不指定匹配文本，则打印所有命令的简短帮助
+
+| .version
+| 显示当前 sqlite3 的版本，以及附带组件的版本
 |
 
 | .quit
 | 关闭 `sqlite3.exe` 交互
 |
 
-| .open <数据库文件>
-| 将一个数据库作为 main 数据库打开
+| .open [选项] <数据库文件>
+| 将一个数据库作为 main 数据库打开 +
+常用选项 +
+`--readonly` 以只读方式打开数据库
 | 等价于在命令行中运行 +
 `sqilte3.exe <数据库文件>` +
 注意，以这种方式打开的数据库，不可以被 `DETACH DATABASE` 关闭 +
-但可以使用 `.open ""` 关闭，不过这样所有已经 `ATTACH` 的数据库也会被一同关闭。
+但可以使用 `.open ''` 关闭，不过这样所有已经 `ATTACH` 的数据库也会被一同关闭。
 
 d| `.backup [数据库名] <保存路径>` +
 以及 +
@@ -78,7 +84,7 @@ d| `.backup [数据库名] <保存路径>` +
 [source, sqlite3]
 .罗列以 es 作为表名结尾的表
 ----
-.table "%es"
+.table '%es'
 ----
 
 | .schema [表名]
@@ -95,7 +101,7 @@ d| `.backup [数据库名] <保存路径>` +
 [source, sqlite3]
 .罗列以 es 作为表名结尾的索引
 ----
-.indexes "%es"
+.indexes '%es'
 ----
 |===
 
@@ -138,18 +144,21 @@ d| `.backup [数据库名] <保存路径>` +
 多行注释语句，以 `/*` 开头，以 `*/` 结尾
 
 除了注释语句，其它的 SQL 语句**必须**以分号 `;` 结尾
+
+字符串字面量用单引号 `'` 引用， +
+若一个双引号包裹的字符串不匹配任何标识符，那么它也会被当作字符串字面量来处理
 ====
 
 === ATTACH 语句
 
 [source]
 ----
-ATTACH DATABASE "<数据库文件>" AS <名称>;
+ATTACH DATABASE '<数据库文件>'' AS <名称>;
 ----
 
 在同一个 sqlite3 会话中再打开一个数据库
 
-如果 <数据库文件名> 为空（`""`），则在**内存中**创建一个数据库。
+如果 <数据库文件名> 为空（`''`），则在**内存中**创建一个数据库。
 
 特别注意 **数据库文件名必须使用引号包裹**
 
@@ -505,7 +514,7 @@ SELECT
     FirstName,LastName,Country
 FROM customers
 WHERE
-    Country IN ("Canada", "Spain") # 特别注意这里的双引号
+    Country IN ('Canada', 'Spain') # 特别注意这里的双引号
 ORDER BY
     Country;
 ----
@@ -524,7 +533,7 @@ SELECT
 FROM
     customers
 WHERE
-    Country IS "Canada" OR Country IS "Spain" # IS 也可以用等号 = 代替
+    Country IS 'Canada' OR Country IS 'Spain' # IS 也可以用等号 = 代替
 ORDER BY
     Country;
 ----
@@ -562,7 +571,7 @@ WHERE
                 FROM
                     artists
                 WHERE
-                    Name IS "Queen"
+                    Name IS 'Queen'
             )
     );
 ----
@@ -609,7 +618,7 @@ PRAGMA case_sensitive_like = true;
 [source]
 ----
 --- 匹配 share 列中，值为 10% 的行
-share LIKE "10\%"" ESCAPE "\";
+share LIKE '10\%' ESCAPE '\';
 ----
 
 === GLOB 语句
@@ -756,18 +765,24 @@ LIMIT
 ** 左外合并（`LEFT OUTER JOIN`） +
 即便左侧的表（`FROM` 语句跟随的表）的值无法与任何右侧的表（`LEFT OUTER JOIN` 语句跟随的表）的值匹配，也一同保留下来， +
 此时右侧表的值填充为 `NULL`
-** 【SQLite3 不支持】右外合并（`RIGHT OUTER JOIN`） +
+** 右外合并（`RIGHT OUTER JOIN`） +
 即便右侧的表（`RIGHT OUTER JOIN` 语句跟随的表）的值无法与任何左侧的表（`FROM` 语句跟随的表）的值匹配，也一同保留下来， +
 此时左侧表的值填充为 `NULL`
-** 【SQLite3 不支持】全外合并（`FULL OUTER JOIN`） +
+** 全外合并（`FULL OUTER JOIN`） +
 保留两侧表中任何不匹配的行，对无值的部分填充 `NULL`
+
+[NOTE]
+====
+上述内容中的“左侧表格”为 `FROM` 语句引入的表格； +
+上述内容中的“右侧表格”为各种 `JOIN` 语句引入的表格
+====
 
 上面的四种合并方式有如下的简写关系
 
 * `INNER JOIN` -> `JOIN`
 * `LEFT OUTER JOIN` -> `LEFT JOIN`
-* 【SQLite3 不支持】 `RIGHT OUTER JOIN` -> `RIGHT JOIN`
-* 【SQLite3 不支持】 `FULL OUTER JOIN` -> `FULL JOIN`
+* `RIGHT OUTER JOIN` -> `RIGHT JOIN`
+* `FULL OUTER JOIN` -> `FULL JOIN`
 
 除了上述的匹配型合并，还有一种交叉合并（`CROSS JOIN`）
 
@@ -785,7 +800,7 @@ LIMIT
 */
 
 -- 如果你之前有打开任何数据库
--- .open ""
+-- .open ''
 
 -- 创建临时的年列表
 CREATE TEMPORARY TABLE Year(
@@ -805,7 +820,7 @@ CREATE TEMPORARY TABLE Month(
 INSERT INTO
     Month(Month)
 VALUES
-    ("Jan"), ("Feb"), ("Mar"), ("Apr"), ("May"), ("Jun"), ("Jul"), ("Aug"), ("Sep"), ("Oct"),("Dec"),("Nov");
+    ('Jan'), ('Feb'), ('Mar'), ('Apr'), ('May'), ('Jun'), ('Jul'), ('Aug'), ('Sep'), ('Oct'),('Dec'),('Nov');
 
 -- 创建最终月历
 CREATE TABLE Calendar(
