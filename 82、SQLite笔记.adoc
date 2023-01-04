@@ -838,3 +838,87 @@ FROM
 CROSS JOIN
     Month;
 ----
+
+在 JOIN 的用法中，有一种比较特殊的用法，被称为自结合（self-join）， +
+若一个表格的某一列的值会指向该表格的另一列，那么自结合就有作用
+
+[source]
+.从职员表中提取上下级关系
+----
+/*
+employees 表中，有两个列，
+一个是 EmployeeId，也就是每个员工的 Id，
+另一个是 ReportsTo，是该行员工需要汇报的员工的 Id（上级），
+这样我们就可以通过自结合，列举出每个员工的上下级关系
+*/
+
+-- 由于是自结合，因此使用临时表名是必然的
+SELECT
+-- 双竖线表示文本串联，这里表示的是生成一个人的全名
+-- 这里用 AS 重命名一下表头
+    m.FirstName || ' ' || m.LastName AS 'Manager',
+    r.FirstName || ' ' || r.LastName AS 'Reporter'
+FROM
+    employees r
+-- 由于有些人没有报告对象（比如顶层管理人员不需要向其他人报告）
+-- 这里用 LEFT JOIN，保留全体 EmployeeId，当 ReportsTo 空缺时，填充 NULL
+LEFT JOIN
+    employees m
+    ON
+        m.EmployeeId = r.ReportsTo
+ORDER BY
+    -- 排序是在新表生成之后执行的，
+    -- 因此这里的列名应该是 AS 后指定的名称
+    Manager;
+----
+
+=== GROUP BY 语法
+
+按照指定的条件，将多行打组，并“压缩”为一行，
+
+默认情况下，“压缩”的方式为仅取每组的第一行的值，比如
+
+[source]
+.在 GROUP BY 下 SELECT 的默认行为
+----
+SELECT
+    TrackId, Name
+FROM
+    tracks
+GROUP BY
+    AlbumId;
+----
+
+就把每个专辑的第一首歌的编号和歌名显示了出来。
+
+看起来实在是没啥意义。
+
+所以，一旦使用了 `GROUP BY`，通常情况下，还会使用一些 SQL 提供的函数进行“统计”操作。
+
+[source]
+.将 GROUP BY 与统计函数结合使用
+----
+/*
+显示了一个专辑的专辑 Id、专辑名、专辑中歌曲的数量、以及歌曲的名称
+*/
+
+SELECT
+    AlbumId,
+    albums.Title AS 'Album Title',
+    -- COUNT() 函数，用来统计一个组中符合条件的行的数量
+    -- COUNT(*) 则直接统计一个组中所有行的数量
+    COUNT(*) AS 'Track Count',
+    -- GROUP_CONCAT() 函数，将一个组中每一行的指定列合并为一个值
+    -- 下方的用法说的是，将 Name 列的值合并，而且使用回车作为每个值的间隔
+    -- 注意，回车不能使用 \n 表示，可以实际在单引号中敲入一个回车，或者使用 x'0a'（回车的 ASCII），或者 char(10)
+    GROUP_CONCAT(Name, x'0a') AS 'Track Title'
+FROM
+    tracks
+INNER JOIN
+    albums
+        USING(AlbumId)
+-- 以 AlbumId 作为打组依据
+GROUP BY
+    AlbumId
+LIMIT 20;
+----
