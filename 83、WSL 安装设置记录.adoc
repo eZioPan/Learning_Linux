@@ -112,14 +112,6 @@ WSL 并没有通过 DHCP 给出 ip 地址，因此，我们可以关闭 systemd-
 systemctl disable systemd-networkd
 ----
 
-vEthernet (WSL) 提供了 DNS 服务，但是 +
-systemd-resolved 可以正常运行，但是 nss-resolve 似乎不能正确运行，于是还是关闭 systemd-resolved 比较好
-
-[source, sh]
-----
-systemctl disable systemd-resolved
-----
-
 最后，重启 Guest 系统
 
 [source, sh]
@@ -160,5 +152,5 @@ dnf install man
 
 [source, sh]
 ----
-dnf repoquery --installed | sudo  xargs dnf reinstall -y
+dnf repoquery --installed | sudo xargs dnf reinstall -y
 ----
