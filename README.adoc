@@ -14,7 +14,7 @@ Linux 学习笔记，最初基于 **鸟哥的 Linux 私房菜 第四版** https:
 
 == 当前活跃编写内容
 
-DNS 以及 dnsmasq，第 85 章
+SQLite，第 82 章
 
 == 部分参考的文章来源列表
 
@@ -22,6 +22,9 @@ DNS 以及 dnsmasq，第 85 章
 
 * 主线流程
 ** 鸟哥的 Linux 私房菜 第四版（CentOS7） https://linux.vbird.org/linux_basic/centos7/
+
+* SQLite
+** 82、SQLite笔记 学习自 https://www.sqlitetutorial.net/
 
 * C 语言
 ** 21补1、C 库相关 翻译自 http://www.zipcon.net/~swhite/docs/computers/languages/c_programming_libraries.html
@@ -49,6 +52,5 @@ DNS 以及 dnsmasq，第 85 章
 ** https://www.man7.org/linux/man-pages/index.html 上提供的各种 man page
 ** Proxmox VE 的官方帮助文档 https://pve.proxmox.com/wiki/Main_Page
 ** systemd 相关内容来自 freedesktop.org https://www.freedesktop.org/software/systemd/man/
-
 
 __未完待续__
