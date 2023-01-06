@@ -20,6 +20,14 @@ link:https://www.sqlite.org/download.html[]
 对于命令行工具特有的语法，我们使用“命令（command）”来表述 +
 对于通用的 SQL 语法，我们使用“语句（statement）”来表述。
 
+[NOTE]
+====
+就语法特点来说，SQL 更像是一种表达式， +
+它的一个完整的操作是一次性完成的，因此一个操作的所有步骤也是在一条语句中完成的。
+
+这并不表示 SQL 不能执行复杂的操作，相反，通过复杂的（嵌套）SQL 语句，我们可以实现任意的操作。
+====
+
 == 常见的 sqlite3 命令（command）
 
 [IMPORTANT]
@@ -73,6 +81,7 @@ d| `.backup [数据库名] <保存路径>` +
 | .databases
 | 显示当前打开的/连接的数据库
 | 会显示数据库的名称、文件名、以及读写权限
+
 [TIP]
 ====
 在使用 `ATTACH DATABASE` 语句之后会很有用
@@ -81,6 +90,7 @@ d| `.backup [数据库名] <保存路径>` +
 | .tables [表名]
 | 罗列匹配上的表的名称
 | 若不指定表名，则罗列全部的表
+
 [source, sqlite3]
 .罗列以 es 作为表名结尾的表
 ----
@@ -98,6 +108,7 @@ d| `.backup [数据库名] <保存路径>` +
 | .indexes [表名]
 | 显示特定表的索引
 | 若不指定表名，则显示全部的索引
+
 [source, sqlite3]
 .罗列以 es 作为表名结尾的索引
 ----
@@ -977,7 +988,7 @@ HAVING
 
 === UNION 语法
 
-将来自多个表的行合并为一个表
+将来自两个表的行合并为一个表（并集）
 
 [source]
 ----
@@ -1029,4 +1040,55 @@ ORDER BY
     "Type",
     FirstName,
     LastName;
+----
+
+=== EXCEPT 语句
+
+类似 `UNION` 语句，但求取的是第一个查询和第二个查询的差集
+
+[IMPORTANT]
+====
+仅当第一个查询的某一行的**所有列**完全匹配第二查询的某一行的**所有列**时，才会被移除
+====
+
+[source]
+.EXCEPT 基础语法
+----
+/*
+查询有哪些艺术家没有出过专辑
+*/
+
+SELECT
+    ArtistId,
+    Name
+FROM
+    artists
+WHERE
+    ArtistId IN (
+        -- 由于 EXCEPT 是全匹配的，
+        -- 因此这里只能筛选 ArtistId 这列
+        -- 与艺术家名的匹配只能放到外侧实现了
+        SELECT
+            ArtistId
+        FROM
+            artists
+        EXCEPT
+        SELECT
+            ArtistId
+        FROM
+            albums
+    );
+----
+
+=== INTERSECT 语句
+
+类似 `EXCEPT` 语句，但求的是两个查询的交集
+
+=== EXIST 语句
+
+返回一个子查找是否返回了任何行
+
+[source]
+----
+[NOT] EXIST(子查找)
 ----
