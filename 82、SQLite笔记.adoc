@@ -35,7 +35,7 @@ link:https://www.sqlite.org/download.html[]
 与 SQL 语句不同，sqlite3 命令**禁止**以分号 `;` 结尾，否则分号会作为命令的一部分被读取
 ====
 
-[cols="^.^1m,^.^2,.^2a"]
+[cols="^.^1m,^.^2,.^4a"]
 .打开、关闭、读取、写入
 |===
 | sqlite3 命令 | 含义 | 备注
@@ -73,7 +73,7 @@ d| `.backup [数据库名] <保存路径>` +
 |===
 
 
-[cols="^.^1m,^.^2,.^2a"]
+[cols="^.^1m,^.^2,.^4a"]
 .枚举相关的命令
 |===
 | sqlite3 命令 | 含义 | 备注
@@ -116,22 +116,38 @@ d| `.backup [数据库名] <保存路径>` +
 ----
 |===
 
-[cols="^.^1m,^.^2,.^2a"]
+[cols="^.^1m,^.^2,.^4a"]
 .修改输出模式
 |===
 | sqlite3 命令 | 含义 | 备注
 
 | .mode [显示模式]
 | 设置输出的显示模式
-| 没有参数时，输出当前的显示模式 +
+| 没有参数时，输出当前的显示模式，并将额外参数还原为默认值 +
 要获得所有支持的模式，可以随便用一个字符当参数，看看输出的报错即可
+
+[NOTE]
+====
+在 `column`、`table`、`box` 等模式下可能会出现输出未占用全部的窗口但出现了换行的问题 +
+此时可以使用附加参数 `--wrap` 扩展总显示宽度 +
+eg.
+[source]
+------
+# 将总换行宽度从默认值（60）修改为 100
+.mode column --wrap 100
+------
+====
 
 | .header <on\|off>
 | 打开或关闭表头的显示
 |
+
+| .width <第 1 列宽度> <第 2 列宽度> <第 3 列宽度>
+| 设置每列的宽度
+|
 |===
 
-[cols="^.^1m,^.^2,.^2a"]
+[cols="^.^1m,^.^2,.^4a"]
 .输出重定向
 |===
 | sqlite3 命令 | 含义 | 备注
@@ -1091,4 +1107,68 @@ WHERE
 [source]
 ----
 [NOT] EXIST(子查找)
+----
+
+=== CASE 语句
+
+`CASE` 语句相当于程序语言中的 switch 和 if-else 语句
+
+你几乎可以在任何语句中插入 `CASE` 语句，比如 `WHERE`、`ORDER BY`、`HAVING`、`SELECT`、`UPDATE`、`DELETE` 中都可以使用 `CASE` 语句。
+
+[source]
+.等价于 switch 语句的 CASE 语句
+----
+CASE <要枚举的列名>
+    WHEN <值1>
+        THEN <返回值1>
+    WHEN <值2>
+        THEN <返回值2>
+    ...
+    ELSE <返回值n>
+END
+----
+
+[source]
+.等价于 if-else 语句的 CASE 语句
+----
+CASE
+    WHEN <返回 0 或 1 的表达式>
+        THEN <返回值1>
+    WHEN <返回 0 或 1 的表达式>
+        THEN <返回值2>
+    ...
+    ELSE <返回值n>
+END
+----
+
+[source]
+.CASE 当作 if-else 的用法
+----
+/*
+统计每个专辑中的歌曲的总长度，并以 1 分钟和 5 分钟为界，
+将专辑标记为 短、中、长三类
+*/
+
+SELECT
+    albums.AlbumId AS 'AlbumId',
+    -- 偷懒写法，
+    -- 如果一张专辑的总长度超过 23h59min59s
+    -- 它就会出错
+    time(SUM(Milliseconds/1000), 'unixepoch') AS 'Duration',
+    CASE
+        WHEN SUM(Milliseconds) < 10*60*1000
+            THEN 'short'
+        WHEN SUM(Milliseconds) BETWEEN 1*60*1000 AND 50*60*1000
+            THEN 'medium'
+        ELSE 'long'
+    END,
+    Title
+FROM
+    tracks
+INNER JOIN
+    albums USING(AlbumId)
+GROUP BY
+    albums.AlbumId
+ORDER BY
+    SUM(Milliseconds) DESC;
 ----
