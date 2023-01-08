@@ -1,0 +1,64 @@
+= CASE 语句
+:source-language: SQL
+
+`CASE` 语句相当于程序语言中的 switch 和 if-else 语句
+
+你几乎可以在任何语句中插入 `CASE` 语句，比如 `WHERE`、`ORDER BY`、`HAVING`、`SELECT`、`UPDATE`、`DELETE` 中都可以使用 `CASE` 语句。
+
+[source]
+.等价于 switch 语句的 CASE 语句
+----
+CASE <要枚举的列名>
+    WHEN <值1>
+        THEN <返回值1>
+    WHEN <值2>
+        THEN <返回值2>
+    ...
+    ELSE <返回值n>
+END
+----
+
+[source]
+.等价于 if-else 语句的 CASE 语句
+----
+CASE
+    WHEN <返回 0 或 1 的表达式>
+        THEN <返回值1>
+    WHEN <返回 0 或 1 的表达式>
+        THEN <返回值2>
+    ...
+    ELSE <返回值n>
+END
+----
+
+[source]
+.CASE 当作 if-else 的用法
+----
+/*
+统计每个专辑中的歌曲的总长度，并以 1 分钟和 5 分钟为界，
+将专辑标记为 短、中、长三类
+*/
+
+SELECT
+    albums.AlbumId AS 'AlbumId',
+    -- 偷懒写法，
+    -- 如果一张专辑的总长度超过 23h59min59s
+    -- 它就会出错
+    time(SUM(Milliseconds/1000), 'unixepoch') AS 'Duration',
+    CASE
+        WHEN SUM(Milliseconds) < 10*60*1000
+            THEN 'short'
+        WHEN SUM(Milliseconds) BETWEEN 1*60*1000 AND 50*60*1000
+            THEN 'medium'
+        ELSE 'long'
+    END,
+    Title
+FROM
+    tracks
+INNER JOIN
+    albums USING(AlbumId)
+GROUP BY
+    albums.AlbumId
+ORDER BY
+    SUM(Milliseconds) DESC;
+----

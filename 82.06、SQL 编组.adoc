@@ -1,0 +1,102 @@
+= SQL 编组
+:source-language: SQL
+
+== GROUP BY 语法
+
+按照指定的条件，将多行打组，并“压缩”为一行，
+
+默认情况下，“压缩”的方式为仅取每组的第一行的值，比如
+
+[source]
+.在 GROUP BY 下 SELECT 的默认行为
+----
+SELECT
+    TrackId, Name
+FROM
+    tracks
+GROUP BY
+    AlbumId;
+----
+
+就把每个专辑的第一首歌的编号和歌名显示了出来。
+
+看起来实在是没啥意义。
+
+所以，一旦使用了 `GROUP BY`，通常情况下，还会使用一些 SQL 提供的函数进行“统计”操作。
+
+[source]
+.将 GROUP BY 与统计函数结合使用
+----
+/*
+显示了一个专辑的专辑 Id、专辑名、专辑中歌曲的数量、以及歌曲的名称
+*/
+
+SELECT
+    AlbumId,
+    albums.Title AS 'Album Title',
+    -- COUNT() 函数，用来统计一个组中符合条件的行的数量
+    -- COUNT(*) 则直接统计一个组中所有行的数量
+    COUNT(*) AS 'Track Count',
+    -- GROUP_CONCAT() 函数，将一个组中每一行的指定列合并为一个值
+    -- 下方的用法说的是，将 Name 列的值合并，而且使用回车作为每个值的间隔
+    -- 注意，回车不能使用 \n 表示，可以实际在单引号中敲入一个回车，或者使用 x'0a'（回车的 ASCII），或者 char(10)
+    GROUP_CONCAT(Name, x'0a') AS 'Track Title'
+FROM
+    tracks
+INNER JOIN
+    albums
+        USING(AlbumId)
+-- 以 AlbumId 作为打组依据
+GROUP BY
+    AlbumId
+LIMIT 20;
+----
+
+[source]
+.双打组
+----
+/*
+以国家和城市将客户打组
+*/
+SELECT
+    Country,
+    City,
+    GROUP_CONCAT(FirstName || ' ' || LastName, x'0a') AS "Name"
+FROM
+    customers
+-- 双打组，
+--- Country 和 City 均相同的行才会被归类在一组里
+GROUP BY
+    Country,
+    City;
+----
+
+== HAVING 语句
+
+对组进行筛选
+
+[source]
+.HAVING 语句的基本语法
+----
+/*
+接着上面的例子，从结果中筛选单专辑中含有的歌曲数量介于 5 和 10 之间的专辑
+*/
+
+SELECT
+    AlbumId,
+    albums.Title AS 'Album Title',
+    COUNT(*) AS 'Track Count',
+    GROUP_CONCAT(Name, x'0a') AS 'Track Title'
+FROM
+    tracks
+INNER JOIN
+    albums
+        USING(AlbumId)
+GROUP BY
+    AlbumId
+HAVING
+    -- 特别注意，由于这里的列标识符含有空格，因此必须使用双引号包裹
+    -- 特别注意，不可以使用单引号，单引号表示的是字符串字面量，
+    -- 使用单引号不会报任何错误，但会导致筛选错误
+    "Track Count" BETWEEN 5 AND 10;
+----

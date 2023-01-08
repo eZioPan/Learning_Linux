@@ -1,0 +1,200 @@
+= JOIN 语句
+:source-language: SQL
+
+从两个或更多的表中查找数据
+
+由于 JOIN 有多个关联的语法，这里我们直接以案例讲解
+
+[source]
+.基础 INNER JOIN 语句
+----
+/*
+由于 albums 表中的艺术家是用 ArtistId 表示的，
+虽然它便于管理，但只打印 AristId 并不适合人类的观察
+我们希望在打印专辑名的时候，同时打印艺术家的名称，
+于是，我们可以使用 INNER JOIN 从两个表中抽取所需的值
+*/
+
+SELECT
+    -- 由于 ArtistId 这个键名在 albums 和 artists 表中均出现了，
+    -- 因此这里需要明确指出显示的是哪个表里的 ArtistId
+    AlbumId, Title, Name, albums.ArtistId
+FROM
+    albums
+-- INNER JOIN <要结合的表名>
+INNER JOIN artists
+    -- ON <筛选依据>
+    -- 用来设置一个匹配依据，当第一个表的指定列的值与第二个表的指定列的值匹配时，才将这两个行列举为一个
+    -- 下面说的是：若 artists 表中的一行的 ArtistId 值与 albums 表中的一行的  ArtistId 值相同时，将两者和为一行
+    ON artists.ArtistId = albums.ArtistId
+ORDER BY
+    artists.ArtistId,
+    albums.AlbumId
+LIMIT
+    20;
+----
+
+[source]
+.表格的临时名称
+----
+/*
+由于要 join 的两个表的名称会反复出现，
+因此我们可以为表设置一个临时的名称，方便指代
+*/
+
+SELECT
+    AlbumId, Title, Name, r.ArtistId
+FROM
+    -- 这里我们手动定义 albums 表的临时名称为 l
+    albums l
+-- 这里我们手动定义 artists 表的临时名称为 r
+INNER JOIN artists r
+    ON r.ArtistId = l.ArtistId
+ORDER BY
+    r.ArtistId,
+    l.AlbumId
+LIMIT
+    20;
+----
+
+[source]
+.同键名匹配的简写
+----
+/*
+由于我们要匹配的键的键名是相同的（ArtistId），
+于是匹配规则还可以如下简写
+*/
+
+SELECT
+    AlbumId, Title, Name, r.ArtistId
+FROM
+    albums l
+-- 使用 USING() 表示我们要匹配的是
+INNER JOIN artists r USING(ArtistId)
+ORDER BY
+    r.ArtistId,
+    l.AlbumId
+LIMIT
+    20;
+----
+
+内合并（`INNER JOIN`）与外合并（`OUTER JOIN`）
+
+我们在匹配两个表的时候，并不能保证两个表的指定键的所有值刚好是完全匹配的， +
+举例来说，比如一张专辑可能没有记录艺术家，或者一个艺术家目前还没有创建任何一张专辑， +
+对于这种情况，SQL 语句支持以下几种合并方案：
+
+* 内合并（`INNER JOIN`） +
+也是 `JOIN` 的默认形式，仅返回能匹配的行，而丢弃两张表种任何无匹配的行 +
+简单理解，其表示两个表的交集
+* 外合并（`OUTER JOIN`） +
+等价于某种非交集的操作
+** 左外合并（`LEFT OUTER JOIN`） +
+即便左侧的表（`FROM` 语句跟随的表）的值无法与任何右侧的表（`LEFT OUTER JOIN` 语句跟随的表）的值匹配，也一同保留下来， +
+此时右侧表的值填充为 `NULL`
+** 右外合并（`RIGHT OUTER JOIN`） +
+即便右侧的表（`RIGHT OUTER JOIN` 语句跟随的表）的值无法与任何左侧的表（`FROM` 语句跟随的表）的值匹配，也一同保留下来， +
+此时左侧表的值填充为 `NULL`
+** 全外合并（`FULL OUTER JOIN`） +
+保留两侧表中任何不匹配的行，对无值的部分填充 `NULL`
+
+[NOTE]
+====
+上述内容中的“左侧表格”为 `FROM` 语句引入的表格； +
+上述内容中的“右侧表格”为各种 `JOIN` 语句引入的表格
+====
+
+上面的四种合并方式有如下的简写关系
+
+* `INNER JOIN` -> `JOIN`
+* `LEFT OUTER JOIN` -> `LEFT JOIN`
+* `RIGHT OUTER JOIN` -> `RIGHT JOIN`
+* `FULL OUTER JOIN` -> `FULL JOIN`
+
+除了上述的匹配型合并，还有一种交叉合并（`CROSS JOIN`）
+
+交叉合并不进行任何匹配过程，直接将左侧的每一行与右侧的每一个行进行合并
+
+假设左侧有 N 行，而右侧有 M 行，则生成的新表格有 N*M 行
+
+[source]
+.生成两年的月历
+----
+/*
+注意我们会通过 `TEMPORARY` 语法创建临时的表，
+它等价于在内存中创建名为 `temp` 的数据库，然后将所有被标记为临时的表放在这个数据库中，
+这样，读写这个数据库不会有磁盘 IO 操作，而且退出这个 sqlite 会话后，表的内容会一同丢弃。
+*/
+
+-- 如果你之前有打开任何数据库
+-- .open ''
+
+-- 创建临时的年列表
+CREATE TEMPORARY TABLE Year(
+    Year INTEGER
+);
+
+INSERT INTO
+    Year(Year)
+VALUES
+    (2023),(2024);
+
+-- 创建临时的月列表
+CREATE TEMPORARY TABLE Month(
+    Month TEXT
+);
+
+INSERT INTO
+    Month(Month)
+VALUES
+    ('Jan'), ('Feb'), ('Mar'), ('Apr'), ('May'), ('Jun'), ('Jul'), ('Aug'), ('Sep'), ('Oct'),('Dec'),('Nov');
+
+-- 创建最终月历
+CREATE TABLE Calendar(
+    Year INTEGER,
+    Month TEXT
+);
+
+-- 使用 CROSS JOIN 生成月历表
+INSERT INTO
+    Calendar(Year, Month)
+SELECT
+    *
+FROM
+    Year
+CROSS JOIN
+    Month;
+----
+
+在 JOIN 的用法中，有一种比较特殊的用法，被称为自结合（self-join）， +
+若一个表格的某一列的值会指向该表格的另一列，那么自结合就有作用
+
+[source]
+.从职员表中提取上下级关系
+----
+/*
+employees 表中，有两个列，
+一个是 EmployeeId，也就是每个员工的 Id，
+另一个是 ReportsTo，是该行员工需要汇报的员工的 Id（上级），
+这样我们就可以通过自结合，列举出每个员工的上下级关系
+*/
+
+-- 由于是自结合，因此使用临时表名是必然的
+SELECT
+-- 双竖线表示文本串联，这里表示的是生成一个人的全名
+-- 这里用 AS 重命名一下表头
+    m.FirstName || ' ' || m.LastName AS 'Manager',
+    r.FirstName || ' ' || r.LastName AS 'Reporter'
+FROM
+    employees r
+-- 由于有些人没有报告对象（比如顶层管理人员不需要向其他人报告）
+-- 这里用 LEFT JOIN，保留全体 EmployeeId，当 ReportsTo 空缺时，填充 NULL
+LEFT JOIN
+    employees m
+    ON
+        m.EmployeeId = r.ReportsTo
+ORDER BY
+    -- 排序是在新表生成之后执行的，
+    -- 因此这里的列名应该是 AS 后指定的名称
+    Manager;
+----

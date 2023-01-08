@@ -1,0 +1,38 @@
+= ORDER BY 语句
+:source-language: SQL
+
+[source]
+----
+SELECT
+    ...
+FROM
+    ...
+ORDER BY
+    <键名1> [ASC], -- 正序
+    [<键名2> DESC], -- 逆序
+    [<键名3> NULLS LAST]; -- 将空值移动至最后
+----
+
+[IMPORTANT]
+====
+如果一个 SQL 语句中同时包含 `WHERE` 和 `ORDER BY`
+
+那么先写 `WHERE` 再写 `ORDER BY`
+====
+
+排序语句，用来排序 `SELECT` 的结果，指定键名，以及对应的升序/降序模式， +
+如果排序结果中有多行的值相同，则可指定更多的键名以作为 n 次排序。
+
+比如
+
+[source]
+----
+SELECT
+    name,
+    milliseconds,
+    albumid
+FROM
+    tracks
+ORDER BY
+    albumid ASC;
+----

@@ -1,0 +1,100 @@
+= SQL 集合操作
+:source-language: SQL
+
+== UNION 语法
+
+将来自两个表的行合并为一个表（并集）
+
+[source]
+----
+<查询1>
+UNION [ALL]
+<查询2>
+...;
+----
+
+`UNION` 会执行行去重，而 `UNOIN ALL` 不会
+
+要成功执行 `UNION` 操作，被合并的两个表必须具有以下特征：
+
+* 所有查询返回的表的列数必须相同
+* 两个返回的表的对应的列的数据类型应该是相互兼容的
+
+`UNION` 操作还有如下特点：
+
+* 第一个查询的列名称确定了合并的表的列名称
+* `GROUP BY` 和 `HAVING` 是针对每个查询施加的，而非对合并的结果施加
+* `ORDER BY` 是对合并的结果施加的，而非针对每个查询施加的
+
+[source]
+.UNION 的基础语法
+----
+/*
+将客户和雇员的姓名合并在一个表里，并分别为他们附注人员类别
+*/
+
+SELECT
+    FirstName,
+    LastName,
+    -- 如果我们要对某个列填充一个值
+    -- 直接再 SELECT 中输入这个值就好了
+    -- 记得用单引号包裹起来
+    'Employee' AS Type
+FROM
+    employees
+UNION
+SELECT
+    FirstName,
+    LastName,
+    'Customer'
+FROM
+    customers
+ORDER BY
+    -- 由于 Type 是关键字，这里我们必须用双引号将其包裹
+    -- 表明这里是列的名称，并非关键字
+    "Type",
+    FirstName,
+    LastName;
+----
+
+== EXCEPT 语句
+
+类似 `UNION` 语句，但求取的是第一个查询和第二个查询的差集
+
+[IMPORTANT]
+====
+仅当第一个查询的某一行的**所有列**完全匹配第二查询的某一行的**所有列**时，才会被移除
+====
+
+[source]
+.EXCEPT 基础语法
+----
+/*
+查询有哪些艺术家没有出过专辑
+*/
+
+SELECT
+    ArtistId,
+    Name
+FROM
+    artists
+WHERE
+    ArtistId IN (
+        -- 由于 EXCEPT 是全匹配的，
+        -- 因此这里只能筛选 ArtistId 这列
+        -- 与艺术家名的匹配只能放到外侧实现了
+        SELECT
+            ArtistId
+        FROM
+            artists
+        EXCEPT
+        SELECT
+            ArtistId
+        FROM
+            albums
+    );
+----
+
+== INTERSECT 语句
+
+类似 `EXCEPT` 语句，但求的是两个查询的交集

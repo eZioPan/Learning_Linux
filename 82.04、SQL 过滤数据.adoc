@@ -1,0 +1,407 @@
+= SQL 过滤数据
+:source-language: SQL
+
+== DISTINCT 语句
+
+[source]
+----
+SELECT DISTINCT <键名1>[, <键名2> ...]
+FROM <表名>
+----
+
+对于指定的键名，仅返回互不相同的值 +
+若指定了多个键名，则多个键名对应的值必须全部相同，才会被认为是“相同的值”。
+
+对于 NULL，所有的 NULL 都会被认为是相同的。
+
+比如
+
+[source]
+----
+/*
+查看有多少不同国家、不同城市的客户，
+只有同时具有相同的城市名和国家名，才会被认为是相同的
+*/
+
+SELECT DISTINCT
+    city,
+    country
+FROM
+    customers
+ORDER BY
+    country,
+    city;
+----
+
+== WHERE 语句
+
+[source]
+----
+SELECT
+    ...
+FROM
+    ...
+WHERE
+    <搜索条件>;
+----
+
+预先筛选值
+
+[NOTE]
+====
+除了 `SELECT` 语句，`WHERE` 还可以用于 `UPDATE` 和 `DELETE` 语句中
+====
+
+sqlite3 执行具有 `WHERE` 语句的 `SELECT` 语句遵循以下步骤
+
+. 从 `FROM` 语句获取表
+. 依照 `WHERE` 语句筛选表的内容
+. 依照 `SELECT` 语句构成最终的结果
+
+其中 <搜索条件> 语句为以下的形式
+
+[source]
+----
+<左表达式> <比较操作符> <右表达式>
+----
+
+<搜索条件> 语句举例
+
+[source]
+----
+-- 某列为某值
+WHERE column_1 = 100;
+
+-- 某列在某集合中
+WHERE column_2 IN (1,2,3);
+
+-- 某列可匹配某样式
+WHERE column_3 LIKE 'An%';
+
+-- 某列在某两个值之间
+WHERE column_4 BETWEEN 10 AND 20;
+----
+
+[cols="^1m, ^1"]
+.SQLite 的比较操作符
+|===
+| 操作符 | 含义
+
+| =
+| 等于
+
+d| `<>` 或 `!=`
+| 不等于
+
+| <
+| 小于
+
+| >
+| 大于
+
+| \<=
+| 小于等于
+
+| >=
+| 大于等于
+|===
+
+[IMPORTANT]
+====
+SQLite 不提供布尔值，因此，`1` 表示真，`0` 表示假。
+
+SQLite 逻辑操作符会返回三种值 `1`、`0` 或者 `NULL`。
+====
+
+[cols="^1m, ^3, ^1"]
+.SQLite 的逻辑操作符
+|===
+| 操作符 | 含义 | 简单记忆
+
+| ALL
+| 当且仅当所有表达式为 `1` 时，返回 `1`
+| 全部
+
+| ANY
+| 当任意一个表达式为 `1` 时，返回 `1`
+| 任意
+
+| AND
+| 当且仅当两个表达式均为 `1` 时，返回 `1`，否则返回 `0`
+| 且
+
+| OR
+| 若两个表达式中有一个为 `1` 时，就返回 `1`
+| 或
+
+| NOT
+| 对返回的结果取反
+| 取反
+
+| BETWEEN .. AND ..
+| 当值处于某两个值（含）之间时，返回 `1`
+| range()
+
+| EXISTS
+| 当自搜索包含任何列，就返回 `1`
+| 存在
+
+| LIKE
+| 若能匹配样式
+| glob
+|===
+
+== LIMIT 语句
+
+[TIP]
+====
+总的来说过，总是应该在排序（`ORDER BY`）之后，再限制输出长度和位置（`LIMIT`）
+====
+
+[source]
+----
+SELECT
+    ...
+FROM
+    ...
+LIMIT <行数>; #-- 将返回的行数限制为 <行数>
+----
+
+[source]
+----
+SELECT
+    ...
+FROM
+    ...
+LIMIT <行数> OFFSET <偏移行数>; -- 从结果头偏移指定行后，限制返回的行数
+----
+
+[source]
+----
+SELECT
+    ...
+FROM
+    ...
+LIMIT <偏移行数>, <限制行数> -- 上面的 LIMIT ... OFFSET ... 的简写形式
+----
+
+== BETWEEN 语句
+
+****
+`BETWEEN` 是 `WHERE` 的子语句，必须在 `WHERE` 中使用。
+****
+
+[source]
+----
+<键名> [NOT] BETWEEN <最低值> AND <最高值>;
+----
+
+筛选值在（或不在）某个范围之间。
+
+可用于 `SELECT` / `DELETE` / `UPDATE` / `REPLACE`
+
+[IMPORTANT]
+====
+`BETWEEN` 所选定的范围是包含最低值和最高值本身的
+
+由于 `BETWEEN` 是包含端值的，因此 `NOT BETWEEN` 就不包含端值了
+====
+
+[NOTE]
+====
+`BETWEEN` 可以产生的范围，除了数值范围之外，还可以接受日期/时间范围
+====
+
+[source]
+.案例
+----
+/*
+从 tracks 表中筛选 TrackId 在 10 到 20 之间的 track，
+并显示它们的 TrackId、名称以及作家
+*/
+
+SELECT
+    TrackId, Name, Composer
+FROM
+    tracks
+WHERE
+    TrackId BETWEEN 10 and 20;
+----
+
+== IN 语句
+
+****
+`IN` 是 `WHERE` 的子语句，必须在 `WHERE` 中使用。
+****
+
+[source]
+----
+<键名> [NOT] IN (<枚举值1>[, <枚举值2> ...]);
+----
+
+用一系列枚举值筛选数据
+
+[source]
+----
+-- 从 customs 表中查找国家为 Canada 和 Spain 的客户的名字和国籍
+SELECT
+    FirstName,LastName,Country
+FROM customers
+WHERE
+    Country IN ('Canada', 'Spain') # 特别注意这里的双引号
+ORDER BY
+    Country;
+----
+
+上面的操作等价于
+
+[source]
+----
+/*
+从 customs 表中查找国家为 Canada 和 Spain 的客户的名字和国籍
+但是使用 IS 和 OR 语法
+*/
+
+SELECT
+    FirstName,LastName,Country
+FROM
+    customers
+WHERE
+    Country IS 'Canada' OR Country IS 'Spain' # IS 也可以用等号 = 代替
+ORDER BY
+    Country;
+----
+
+使用嵌套查找返回特定的数据
+
+[source]
+----
+/*
+查找 Queen 乐队唱过的歌
+使用了两次子查找的返回值
+
+这里有一个值的学习的地方，案例数据库中
+不同的表之间是用各种 Id 关联上的，而非直接用值关联上
+这样就让各种数据“解耦和”了。
+*/
+
+-- 最后通过 AlbumId 筛选出唱过的歌曲
+SELECT
+    Name
+FROM
+    tracks
+WHERE
+    -- 再通过 ArtistId，从 albums 表中找到属于他们的 AlbumId
+    AlbumId IN (
+        SELECT
+            AlbumId
+        FROM
+            albums
+        WHERE
+            -- 先从 artists 表中找到 Queen 乐队的 ArtistId
+            ArtistId IN (
+                SELECT
+                    ArtistId
+                FROM
+                    artists
+                WHERE
+                    Name IS 'Queen'
+            )
+    );
+----
+
+== LIKE 语句
+
+****
+`LIKE` 是 `WHERE` 的子语句，必须在 `WHERE` 中使用。
+****
+
+[source]
+----
+<键名> LIKE <样式> [ESCAPE <指定的转义字符>]
+----
+
+`LIKE` 也可以用于 `UPDATE`、`DELETE` 等语句中
+
+<样式> 支持两种模糊搜索符号
+
+* 百分号 `%`，表示具有零个或多个字符的字符串
+* 下划线 `_`，表示一个字符
+
+与正则表达式不同，`LIKE` 语句是全匹配的， +
+也就是说 `s%` 表示的是以 s 开头的值， +
+比如 `s`、`so`、`sea` 都可以被匹配，但 `mass` 无法匹配上； +
+`%es` 则表示以 `es` 结尾的值， +
+比如 `es`、`likes`、`goes` 都可以被匹配，但 `especial` 就无法匹配上；
+要匹配 `likes` 和 `especial`，可以使用 `%es%` 来表示。
+
+[IMPORTANT]
+====
+默认情况下，`LIKE` 语句对于 ASCII 是大小写不敏感的，也就是说 `LIKE a` 和 `LIKE A` 是等价的。
+
+如果要让 `LIKE` 语句大小写敏感，需要使用下方的 `PRAGMA` 语句进行设置
+
+[source]
+------
+PRAGMA case_sensitive_like = true;
+------
+====
+
+有时候，你可能需要匹配百分号字符 `%` 自身，以及下划线字符 `_` 自身，此时需要追加 `ESCAPE` 语句来指定一个转义字符。比如，
+
+[source]
+----
+--- 匹配 share 列中，值为 10% 的行
+share LIKE '10\%' ESCAPE '\';
+----
+
+== GLOB 语句
+
+[NOTE]
+====
+还是用 `REGEXP` 语法比较好
+====
+
+****
+`GLOB` 是 `WHERE` 的子语句，必须在 `WHERE` 中使用。
+****
+
+[source]
+----
+<键名> GLOB <样式>
+----
+
+支持 UNIX GLOB 语法
+
+== REGEXP 语句
+
+****
+`REGEXP` 是 `WHERE` 的子语句，必须在 `WHERE` 中使用。
+****
+
+[source]
+----
+<键名> REGEXP <样式>
+----
+
+使用正则表达式筛选值
+
+[NOTE]
+====
+由于此处的正则表达式仅用于查找，而非替换 +
+因此不支持向前查找 `(?\<=...)` 以及向后查找 `(?=...)`
+====
+
+== IS NULL 语句
+
+[source]
+----
+<键名>|<其它表达式> IS [NOT] NULL
+----
+
+判定一个值是否为空
+
+[IMPORTANT]
+====
+在 `IS` 判定中 `NULL IS NULL` 为假
+====

@@ -1,0 +1,53 @@
+= SELECT 语句
+:source-language: SQL
+
+[source]
+----
+SELECT ...
+----
+
+与其说 `SELECT` 是选择语句，不如说 `SELECT` 是打印语句，比如说，
+
+[source]
+----
+SELECT 1+1;
+----
+
+就可以计算 1+1 的结果。
+
+`SELECT` 主要用于查询数据库内容，最常见的语法是
+
+[source]
+----
+SELECT <键名1>[,<键名2>...] FROM <表名>;
+SELECT * FROM <表名>; -- 显示一个表中所有的列的值
+----
+
+比如说，
+
+[source]
+----
+SELECT id, name FROM people;
+----
+
+就可以用来从 people 这个表中获取 id 键和 name 键的值。
+
+[IMPORTANT]
+====
+如果指定的键名表中不存在，则 sqlite3 会返回错误
+
+因此在实际的使用中，我们也应该避免随意地使用星号 `*` 作为键名地匹配， +
+而是明确指出要访问的键，防止获得不匹配的键
+====
+
+除了基础的 `SELECT` 语句语法，`SELECT` 还支持追加其它更加复杂的语句，因此说 `SELECT` 是最复杂的 SQL 语句也不为过。
+
+它支持追加的语句还包含
+
+* `ORDER BY` 用于排序结果
+* `DISTINCT` 仅返回互不相同的值
+* `WHERE` 预先筛选值
+* `LIMIT OFFSET` 限制返回行的数量
+* `INNER JOIN`或 `LEFT JOIN` 使用 join 从多个表中获得数据
+* `GROUP BY` 将返回值编组，并对每个组进行统计
+* `HAVING` 以过滤组
