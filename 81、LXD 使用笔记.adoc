@@ -1,0 +1,312 @@
+= LXD 使用笔记
+
+[NOTE]
+====
+由于 LXC 和 LXD 目前与 Ubuntu 的适配度最高，因此所有的操作均在 Ubuntu 下完成
+====
+
+== 在 WSL2 上安装 LXD
+
+在 WSL2 上使用 LXD 有以下几个问题
+
+. lxd 需要 systemd 支持，因此 Ubuntu 必须以 systemd 作为 init 程序
+. lxd 通过 snapcraft.io 发布，也就是说要安装 lxd 先得安装 snapd
+. snapcraft.io 没有镜像源，因此下载速度很慢
+. 要保证 lxd 容器的隔离，需要启用 AppArmor，但是 apparmor 需要内核支持，而 Windows 官方给出的内核不支持 AppArmor
+
+=== 找到支持 AppArmor 的 WSL2 内核
+
+根据我的测试，使用 link:https://github.com/microsoft/WSL[WSL2 官方仓库] 开启 AppArmor 内核编译选项，并重新编译，并不能正确在 Ubuntu 下检测到 AppArmor
+
+依照 link:https://github.com/microsoft/WSL/issues/8709#issuecomment-1213217997[#8709] 的说法，link:https://github.com/diddlesnaps/WSL2-Linux-Kernel[] 提供了 AppArmor 的支持
+
+于是从上面的仓库中下载编译好的内核，在 Windows `%USERPROFILE%\.wslconfig` 添加/修改如下内容
+
+[source, conf]
+.%USERPROFILE%\.wslconfig
+----
+[wsl2]
+kernel = <下载的 kernel 的路径>
+----
+
+=== 对 Ubuntu 进行初步的配置
+
+==== 【可选】安装 bash-completion
+
+[source, bash]
+----
+apt install bash-completion
+----
+
+手动创建配置目录
+
+[source]
+----
+mkdir /etc/bash_completion.d
+----
+
+==== 以 systemd 的方式启动 Ubuntu
+
+创建 /etc/wsl.conf 文件
+
+[source, conf]
+.wsl.conf
+----
+[boot]
+# 必要，启用 systemd 所必须的配置
+systemd = true
+
+# 如果你不需要访问 Windows 上的文件
+[automount]
+enabled = false
+
+# 如果你不需要调用 Windows 上的程序
+[interop]
+enabled = false
+appendWindowsPath = false
+----
+
+关闭 WSL，以便以 systemd 方式运行 Ubunut
+
+在 Windows 的 Powershell 中执行
+
+[source, powershell]
+----
+wsl --shutdown
+----
+
+=== 安装并配置 Snapd
+
+==== 安装 snapd
+
+[NOTE]
+====
+注意，是 `snap**d**` 不是 `snap`
+====
+
+[source]
+----
+apt install snapd
+----
+
+安装 snapd 的同时，会安装 AppArmor；关于 Apparmor，我们需要做一些额外的配置
+
+==== 配置 AppArmor
+
+虽然我们使用的内核已经支持了 AppArmor，但由于是在 WSL 中运行的 Ubuntu，因此 `securityfs` 这个重要的组件没有被自动挂载，这里我们需要写一个 service，让其可以自动挂载 +
+依照 link:https://github.com/microsoft/WSL/issues/8840#issuecomment-1254524930[#8840] 的说法，创建 `/etc/systemd/system/mount_securityfs.service`
+
+[source, service]
+./etc/systemd/system/mount_securityfs.service
+----
+[Unit]
+Description=Kernel Security File System
+DefaultDependencies=no
+Before=sysinit.target
+Before=apparmor.service
+ConditionSecurity=apparmor
+ConditionPathIsMountPoint=!/sys/kernel/security
+
+[Service]
+Type=oneshot
+ExecStart=/bin/mount -t securityfs -o nosuid,nodev,noexec securityfs /sys/kernel/security
+
+[Install]
+WantedBy=sysinit.target
+----
+
+并启用它
+
+[source, bash]
+----
+systemctl daemon-reload
+systemctl enable --now mount_securityfs.service
+systemctl restart apparmor.service
+----
+
+=== 通过 Snap 安装 LXD
+
+目前，snapcraft.io 还没有任何的镜像源，因此下载 snap 包可能会非常慢，因此在下载前可以配置代理，以提速
+
+[NOTE]
+====
+snapd 是运行在后台的服务，因此通过 bash 的环境变量是无法影响到 snapd 的
+====
+
+[source, bash]
+----
+# 如果 snapd 还没有启动，则手动启动一下
+# systemctl start snapd.service
+
+# 代理的 IP 地址是 Windows 的 vEthernet (WSL) 的地址
+snap set system proxy.https="<代理地址>"
+----
+
+接着安装 lxd
+
+[source]
+----
+snap install lxd
+----
+
+初次安装时，snap 会额外下载 snapd 和 core 包，请耐心等待
+
+安装完成后，系统中会多出一些 systemd unit，与 lxd 相关的均以 snap.lxd 开头
+
+== LXD 的初始配置
+
+[NOTE]
+====
+下面要介绍的配置方法为全手动配置的方法。 +
+麻烦，但能了解 lxd 的一些概念，并接触 lxc 的常用命令。 +
+如果想快速配置一个初始环境，请直接使用 `lxd init` 命令。
+====
+
+=== 创建存储池
+
+存储池是 lxd 托管的各个容器（container）的数据的存储中心。除非额外挂载外部的磁盘/文件，每个容器的文件都存储在某个存储池中。
+
+上面的话暗含了两个要点，第一，在没有额外挂载的情况下，某一时刻，一个容器的数据能且仅能存储在一个存储池中；第二，一个存储池中可以存储多个容器的数据。
+
+让我们实际创建一个存储池
+
+[source, bash]
+----
+# 创建一个名为 main_storage，格式为 btrfs，容量为 8GiB 的存储池
+lxc storage create main_storage btrfs size=8GiB
+
+# 罗列 lxd 中所有的存储池
+lxc storage list
+
+# 查看 main_storage 的详细信息
+lxc storage show main_storage
+----
+
+=== 创建虚拟网络接口
+
+容器需要联网，或者不同容器之间需要通过网络通信，那么我们就可以创建虚拟网络接口来实现
+
+[source, bash]
+----
+# 创建一个名为 main_bridge 的网桥
+# 设置网桥的 IPv4 地址，该地址会作为 DHCP 和 DNS 服务器的地址
+# 允许 IPv4 NAT，让容器可以访问外部
+# 启用 DHCP 服务器
+# 设置 DHCP 服务器发放地址的范围
+# 禁用 IPv6
+# 禁用 IPv6 NAT
+lxc network create main_bridge --type bridge \
+ipv4.address=10.0.0.1/24 \
+ipv4.nat=true \
+ipv4.dhcp=true \
+ipv4.dhcp.ranges=10.0.0.100-10.0.0.200 \
+ipv6.address=none \
+ipv6.nat=false
+
+# 罗列 lxd 中所有的网络界面
+# 注意，这个命令还会罗列可以被 LXD 使用，但不被 LXD 管理的操作系统提供的网络接口
+lxc network list
+
+# 显示 main_bridge 的详细信息
+lxc network show main_bridge
+----
+
+=== 修改默认 profile
+
+Profile 相当于创建容器时的配置信息，LXD 自带一个不可删除的 profile，其名为 default
+
+这里我们需要将上面创建的存储池和虚拟网络接口关联至 `default` profile 中，这样在每次**创建**容器时，都会使用这套默认配置
+
+[source, bash]
+----
+# 在 default profile 中的 device 条目下，
+# 创建名为 default_pool 的条目（该名称仅用于在 profile 中辨识用）
+# 创建的设备为磁盘 disk
+# 挂载路径为根目录 /（path=/ 使用存储池的固定写法）
+# 使用的存储池为 main_storage（pool=main_storage）
+lxc profile device add default default_pool disk path=/ pool=main_storage
+
+# 在 default profile 中的 device 条目下，
+# 创建名为 default_nic 的条目（该名称仅用于在 profile 中辨识用）
+# 创建的设备为网卡 nic
+# 网卡在容器中的名称为 eth0（name=eth0）
+# 网卡的类型为已桥接，表示该网卡将连接至一个已有的网桥上（nictype=bridged）
+# 已有的网桥的名称为 main_bridge（parent=main_bridge）
+lxc profile device add default default_nic nic name=eth0 nictype=bridged parent=main_bridge
+----
+
+=== 开启/禁用 image 的自动更新
+
+[source, bash]
+----
+# 禁用 image 自动更新
+lxc config set images.auto_update_interval 0
+# 启用 image 自动更新
+lxc config unset images.auto_update_interval
+----
+
+=== 配置远程仓库镜像
+
+鉴于网络原因，默认的远程仓库很慢，不过清华大学的镜像源提供了 lxc image 的镜像，我们可以配置一下
+
+[source, bash]
+----
+# 参考 https://mirrors.tuna.tsinghua.edu.cn/help/lxc-images/ 的方案
+# 添加 tuna-images 源
+lxc remote add tuna-images https://mirrors.tuna.tsinghua.edu.cn/lxc-images --protocol=simplestreams --public
+
+# 查看一下 tuna-images 中具有的 images
+lxc image list tuna-images:
+----
+
+== LXD 的简易使用
+
+=== 从远程下载一个镜像文件
+
+虽然我们可以直接从远程拉取一个 image，并创建一个容器，这里我们还是选择先下载一个 image，之后再从本地 image 创建容器
+
+[source, bash]
+----
+# 从 tuna-image: 将 ubunut/22.10 拷贝至本地存储 local:，并将本地的 image 命名为 ubuntu22.10
+lxc image copy tuna-images:ubuntu/22.10 local: --alias ubuntu22.10
+----
+
+=== 从镜像创建并运行一个容器
+
+[source, bash]
+----
+# 从本地存储的 ubuntu 镜像中创建一个名为 ubuntu-22-10 的容器
+# 注意容器名只能由英文字母、数字和横线组成
+lxc launch local:ubuntu22.10 ubuntu-22-10
+----
+
+=== 初始化设置
+
+创建容器之后，由于 root 账户没有任何密码，因此无法正确登陆，此时我们可以先通过 `lxc shell` 获得一个容器 root 级别的 shell，再通过 passwd 为 root 账户设置一个密码
+
+[source, bash]
+----
+# 要求 lxc 返回容器的一个 shell
+lxc shell ubuntu_22_10
+
+# 此时已处在容器中
+# 设置容器的 root 账户的密码
+passwd
+
+# 退出容器的 shell
+exit
+----
+
+=== 正式登陆容器
+
+可以通过 lxc console 连接至容器的控制台
+
+[IMPORTANT]
+====
+要退出容器 console，使用组合键 kbd:[ctrl+a] 之后 kbd:[q]
+====
+
+[source, bash]
+----
+lxc console ubuntu_22_10
+----
