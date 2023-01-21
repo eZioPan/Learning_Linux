@@ -1,0 +1,114 @@
+= SQL 修改数据
+
+== INSERT 语句
+
+向已有的表中插入新行
+
+[source]
+----
+INSERT INTO <表名> (<列1>[, <列2> ...])
+VALUES
+    (<行1值1>[, <行1值2> ...]),
+    [(<行2值1>, <行1值2> ...),]
+    ...
+----
+
+[NOTE]
+====
+在使用 `INSERT` 语句插入新行时，不要求必须输入该行所有列的数据， +
+但一个语句中，给出的每行的数据的列要与语句中指定的列匹配
+====
+
+[source]
+.INSERT 基本语法
+----
+/*
+创建一个表，并向其中写入两行数据
+*/
+
+CREATE TABLE mytable (
+    id INTEGER PRIMARY KEY,
+    name TEXT,
+    'phone number' INTEGER,
+    address TEXT
+);
+
+-- 如上说所，向表中插入新行不需要指定所有的字段
+-- 比如这里就忽略了电话号码和地址，在插入行时，SQLite 会自动填充 NULL 到未指定的列中
+INSERT INTO mytable (id, name)
+VALUES
+    (1, 'alice'),
+    (2, 'bob');
+----
+
+若要以全默认值插入一行，可以这样写
+
+[source]
+----
+INSERT INTO <表名> DEFAULT VALUE;
+----
+
+`INSERT` 可以与 `SELECT` 连用，这样就可以把查询到的数据插入另一个表中
+
+[source]
+----
+-- 注意，若 SELECT 的键名刚好与 INSERT 的列名相同，
+-- 那么 INSERT INTO 可以不写列名
+INSERT INTO <要修改的表> (<列名1>， <列名2>)
+SELECT ...
+----
+
+[source]
+.INSERT 与 SELECT 连用
+----
+/*
+创建一个 mytable 的备份表
+*/
+
+-- 创建备份表
+CREATE TABLE mytable_bk (
+    id INTEGER PRIMARY KEY,
+    name TEXT,
+    'phone number' INTEGER,
+    address TEXT
+);
+
+-- 把 mytable 的数据完全导入至 mytable_bk 中
+-- 由于 mytable 的列名与 mytable_bk 的完全相同，
+-- 这里忽略了 INSERT INTO 后面的列名
+INSERT INTO mytable_bk
+SELECT * FROM mytable;
+----
+
+== UPDATE 语法
+
+更新一个表中的行
+
+[source]
+.UPDATE 基础语法
+----
+/*
+注意，仅使用 UPDATE 会修改整个表中所有行对应的数据
+*/
+
+UPDATE <表名>
+SET
+    <列1> = <新值1>,
+    [<列2> = <新值2>,]
+    ...;
+----
+
+由于上面的语法会修改整个表指定的列的所有的数据， +
+因此单纯使用 `UPDATE` 几乎是没有什么用的， +
+一般来说，`UPDATE` 至少会搭配 `WHERE` 来使用
+
+[source]
+----
+UPDATE <表名1>
+SET
+    <列1> = <新值1>,
+    [<列2> = <新值2>,]
+    ...
+WHERE
+    <行筛选条件>;
+----

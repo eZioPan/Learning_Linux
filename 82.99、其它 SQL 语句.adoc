@@ -5,7 +5,7 @@
 
 [source]
 ----
-ATTACH DATABASE '<数据库文件>'' AS <名称>;
+ATTACH DATABASE '<数据库文件>' AS <名称>;
 ----
 
 在同一个 sqlite3 会话中再打开一个数据库
