@@ -211,6 +211,17 @@ lxc network list
 lxc network show main_bridge
 ----
 
+=== 为 LXD 指定 DNS 服务器
+
+不知道为什么，我的 LXD 自带的 dnsmasq 无法读取 `/etc/resolv.conf`，`journalctl -xe` 提示 `Permission denied`。 +
+这导致我在容器中使用 `resolvectl query` 的时候返回 `Refused`。 +
+这里只能手动指定一个远程 DNS 服务器了。
+
+[source, bash]
+----
+lxc network set main_bridge raw.dnsmasq="server=114.114.114.114"
+----
+
 === 修改默认 profile
 
 Profile 相当于创建容器时的配置信息，LXD 自带一个不可删除的 profile，其名为 default
@@ -287,7 +298,7 @@ lxc launch local:ubuntu22.10 ubuntu-22-10
 [source, bash]
 ----
 # 要求 lxc 返回容器的一个 shell
-lxc shell ubuntu_22_10
+lxc shell ubuntu-22-10
 
 # 此时已处在容器中
 # 设置容器的 root 账户的密码
@@ -308,5 +319,21 @@ exit
 
 [source, bash]
 ----
-lxc console ubuntu_22_10
+lxc console ubuntu-22-10
+----
+
+=== 为容器的当前状态生成快照
+
+[source, bash]
+----
+# 为容器 ubuntu-22-10 生成名为 just_build 的快照
+lxc snapshot ubuntu-22-10 just_build
+
+# 查看 ubuntu-22-10 当前的快照的列表
+# 这行命令会打印大量的信息
+# 其中有一个名为 Snapshots 的表格，记录了 snapshot 的详细信息
+lxc info ubuntu-22-10
+
+# 将 ubuntu-22-10 恢复至 just_build 快照的状态
+lxc restore ubuntu-22-10 just_build
 ----
