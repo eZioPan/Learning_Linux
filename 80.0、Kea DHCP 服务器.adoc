@@ -1,0 +1,221 @@
+= Kea DHCP 服务器
+
+历史悠久的 ISC DHCP（也就是 dhcpd）终于在 2022年12月走向了 EOL，于此同时 ISC 推出了 ISC DHCP 的替代软件 Kea DHCP
+
+相较于 ISC DHCP，Kea DHCP 具有如下的新特性
+
+* 模块化设计，Kea DHCP 的 IPv4 DHCP、IPv6 DHCP、DDNS 为三个独立的服务，而且可以动态地载入其它“钩子模块”来扩展功能。用户也可以方便地书写自己的 C++ 模块
+* 通过 REST API 的在线重配置，Kea 在启动时读取一个 JSON 文件，在运行时，可以通过 set 命令修改，而不需要重启 DHCP 服务。
+* 可与现有的系统集成，Kea 可以将数据从执行环境中分离，让部署有了更多选择。你的网络数据——lease、host reservation definitions、以及大多数配置——在使用一种 Kea 的“后端”之后，都可以与 DHCP 服务器分开存放
+* 基于网页的图形，Stork，可以用于以图标的形式查看多个 Kea 服务器
+
+== 初次使用配置流程
+
+[source, bash]
+----
+# 安装
+dnf install kea
+----
+
+Kea 的 DHCPv4 服务器配置存储在 `/etc/kea/kea-dhcp4.conf`，其文件格式为带注释的 json 文件。 +
+默认的文件有非常详细的注释，因此也很长，我们可以去 link:https://gitlab.isc.org/isc-projects/kea/-/blob/master/doc/examples/kea4/single-subnet.json[single-subnet.json] 看一看最简易的 DHCPv4 设置
+
+[source, json]
+.link:https://gitlab.isc.org/isc-projects/kea/-/blob/master/doc/examples/kea4/single-subnet.json[single-subnet.json]
+----
+// 在该配置中，我们启用了一个 Kea DHCPv4 服务器，
+// 并配置了一个 IPv4 子网
+// 而且包含了一个地址池，用于动态分配 IP 地址。
+{
+  // 对 DHCP4 进行配置
+  "Dhcp4": {
+    // 让服务器仅监听 eth0 接口
+    // 若 interfaces 为空，则不开启 DHCP 服务器
+    "interfaces-config": {
+      "interfaces": ["eth0"]
+    },
+
+    // lease 数据库
+    // 这里我们直接选用了内存文件 memfile 做演示
+    // 因为它不需要预先的配置
+    "lease-database": {
+      "type": "memfile",
+      "lfc-interval": 3600
+    },
+
+    // 地址具有的寿命为 4000 秒
+    "valid-lifetime": 4000,
+
+    // 刷新计时器和重绑计时器被注释掉了。
+    // 这暗含了不会对客户端发送 option 58 和 option 59。
+    // 此时，就由客户端依照 RFC2131 来选定计时器的值了。
+    // 移除注释以向客户端发送这些 options。
+    // "renew-timer": 1000,
+    // "rebind-timer": 2000,
+
+    // 下面的列表定义了子网。此处我们仅有一个子网。
+    // 我们告诉 Kea，它在本地界面上直接可达。
+    "subnet4": [
+      {
+        "pools": [{ "pool": "192.0.2.1 - 192.0.2.200" }],
+        "subnet": "192.0.2.0/24",
+        "interface": "eth0"
+      }
+    ],
+
+    // 下面配置了日志。
+    // 它假设最详细的信息界别（info, warn, error, fatal）应该被输出至标准输出。
+    // 此处你也可以指定为标准错误，一个文件，或者 syslog，
+    // 如果使用了 syslog，则会通过 syslog 存储输出的信息。
+    "loggers": [
+      {
+        "name": "kea-dhcp4",
+        "output_options": [
+          {
+            "output": "stdout"
+          }
+        ],
+        "severity": "INFO"
+      }
+    ]
+  }
+}
+----
+
+上面的四配置为非常简易的配置，按照实际的网络状态修改以后，启动服务器，DHCP 服务就可以正常运行了。
+实际上，`/etc/kea/kea-dhcp4.conf` 文件的默认内容会更加全面，注释也更加详细，参见 xref:80.1、kea-dhcp4.conf[]。
+
+[source, bash]
+.启动 Kea DHCPv4 服务器
+----
+# 启动 Kea DHCPv4 服务器
+systemctl start kea-dhcp4
+# 也可以通过 keactrl start -s dhcp4
+
+# 查看 Kea 状态与配置文件信息
+keactrl status
+----
+
+== 观察已经分配的 DHCP 租用信息
+
+[source, bash]
+----
+cat /var/lib/kea/kea-leases4.csv
+----
+
+== 对 Kea DHCP 发送命令
+
+Kea DHCP 相较于 ISC DHCP 具有的一个特性，就是 Kea DHCP 可以在线接受一些命令，比如读取和修改配置、查看状态，等等。
+
+要在线对 Kea DHCP 发送命令，需要在配置中启用 `control-socket`
+
+向 /etc/kea/kea-dhcp4.conf 的 `Dhcp4` 中添加如下内容
+
+[source, json]
+----
+"control-socket": {
+  "socket-type": "unix",
+  "socket-name": "/tmp/kea4-ctrl-socket"
+}
+----
+
+并重启 Kea DHCP4 服务
+
+[source, bash]
+----
+keactrl reload -s dhcp4
+# 或 systemctl restart kea-dhcp4
+
+# 接着我们就可以发现 /tmp/kea4-ctrl-socket 这个套接字文件了
+
+ls -l /tmp/kea4-ctrl-socket
+# 注意返回中该文件开头的 s 标记，表示它是一个 socket
+----
+
+=== 直接操作 Unix Domain Socket 发送命令
+
+首先要注意到的，Kea DHCP 接受的命令需要以 JSON 格式编码，比如，获取所有可用的命令
+
+[source, bash]
+----
+# 注意 socat 最后的横线不可以丢
+# 如果你是以非 root 权限运行该命令，那么 socat 需要使用 sudo 运行
+echo '{"command": "list-commands"}' | socat /tmp/kea4-ctrl-socket -
+----
+
+具体都有哪些命令可以使用，可以查看 link:https://kea.readthedocs.io/en/kea-2.2.0/arm/ctrl-channel.html[Management API]
+
+=== 通过 kea-ctrl-agent 以及 kea-shell 发送命令
+
+`kea-shell` 虽然叫做“shell”，但并非一个交互式的命令行解释器，更常用的方式是在批量脚本中使用。
+
+`kea-shell` 并不能直接控制 `kea-dhcp4`、`kea-dhcp6` 和 `kea-ddns-dhcp` 这三个服务，它是通过向 kea-ctrl-agent 以 HTTP/HTTPS 的形式发送命令，再让 kea-ctrl-agent 转发命令至实际的服务的方式，控制服务的运行。
+
+[IMPORTANT]
+====
+下面的为了简单演示，`kea-shell` 到 `kea-ctrl-agent` 的命令使用的是 **HTTP 明文**的传输方式，
+**切莫**用在生产环境中。
+====
+
+首先查看/编辑 `/etc/kea/kea-ctrl-agent.conf`
+
+[source, json]
+----
+{
+  "Control-agent": {
+    // control agent 默认的监听地址
+    "http-host": "127.0.0.1",
+    // control agent 默认的鉴定端口
+    "http-port": 8000,
+    // 关闭对客户端的证书验证
+    "cert-required": false,
+    // 连接验证使用基础的密码验证，不使用 TLS 加密
+    "authentication": {
+        "type": "basic",
+        "realm": "kea-control-agent",
+        // 确认客户端需要使用的账户名和密码
+        "clients": [
+            {
+                "user": "admin",
+                "password": "1234"
+            }
+        ]
+    },
+    // 确认服务器的控制套接字信息
+    "control-sockets": {
+      // 这里的设置要和 kea-dhcp4.conf 中的设置保持一致
+
+      "dhcp4": {
+          "socket-type": "unix",
+          "socket-name": "/tmp/kea4-ctrl-socket"
+      },
+      ...
+    },
+    ...
+  }
+}
+----
+
+之后我们启用 kea-ctrl-agent
+
+[source, bash]
+----
+systemctl start kea-ctrl-agent
+# 或 keactrl start -s ctrl_agent
+----
+
+接着我们就可以使用 kea-shell 发送命令了
+
+[source, bash]
+----
+kea-shell --auth-user admin --auth-password 1234 --service dhcp4 list-commands
+^D
+----
+
+在使用上面的命令时，有几个地方需要注意
+
+. 上面的命令中未指定 `host` 和 `port`，是因为，它们在 `kea-control-agent.conf` 中都是默认值，这里可以忽略不写
+. `auth-user` 和 `auth-password` 的值要和 `kea-control-agent.conf` 中 `client` 的配置一致。
+. `service` 参数表示最后的命令要向哪个服务发送，若不指定表示向 `kea-control-agent` 发送；若指定， +
+则名称为 `kea-control-agent.conf` 中 `control-soclets` 中字段的名称。
+. 在该行指定后，命令行不会立刻返回，而是要求输入这个命令对应的参数，我们这里没有参数，因此直接安 kbd:[ctrl + D] 返回即可。

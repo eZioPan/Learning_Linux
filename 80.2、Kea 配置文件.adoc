@@ -1,0 +1,46 @@
+= Kea 配置文件
+
+****
+本文参考 link:https://kea.readthedocs.io/en/kea-2.2.0/arm/config.html[Kea Configuration]
+****
+
+== JSON 配置文件
+
+=== JSON 语法
+
+Kea 配置文件的主要格式为 JSON，但相较于标准的 JSON 格式，Kea 配置文件还支持一些额外的语法：
+
+* Shell 风格注释：以井号 `#` 开头的文件为注释
+* C 风格注释：双斜线 `//` 开头的单行注释，以及 `/* */` 包裹的块注释
+* 文件包含：引用其它 json 文件，通过 `<?include "file.json"?>` 这样的格式实现
+* 额外的逗号：对于多余的逗号，在解析文件时会提示警告
+
+=== 兼容标准 JSON 语法的注释/用户内容
+
+由于标准 JSON 语法并不支持注释，虽然我们可以在本地配置文件中使用特殊的注释，但其它软件可能会认为这种文件有语法错误。而且这些注释的作用仅限于给直接阅读配置文件的人看，通过 Kea 的命令行获取和写入配置信息时（`config-get`/`config-write`），就完全无法看到这些信息。 +
+因此，Kea 还支持另一种符合 JSON 语法，且能被 Kea 读取和处理的注释方式。
+
+[source, json]
+.通过 user-context 书写自定义内容
+----
+"Dhcp4": {
+    "user-context": {
+        "comment": "用户可以写入一些说明",
+        "other_data": "还可以写入一些额外的数据"
+    }
+}
+----
+
+只要是 JSON 语法支持的地方，都可以写入 `user-context`，但要注意，`user-context` 必须是一个 JSON Object（以大括号包裹 `{ }` 的）。
+
+=== 简易标记
+
+有时候需要引用配置文件中的某些值，在书写层级的时候，可以使用斜线标号，比如：
+
+`Dhcp4/valid-lifetime` 以及 `Dhcp4/subnet4[0]/pool`
+
+== Kea 配置后端（Configureation Backend，简称 CB）
+
+Kea 的配置文件也可以存放在一个或多个数据库中
+
+（略）

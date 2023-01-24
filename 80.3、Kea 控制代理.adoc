@@ -1,0 +1,116 @@
+= Kea 控制代理
+
+****
+本文参考 link:https://kea.readthedocs.io/en/kea-2.2.0/arm/agent.html[The Kea Control Agent]
+****
+
+== 总览
+
+Kea 控制代理（Kea Control Agent，CA）是一个守护进程，其会暴露一个 RESTful 控制接口来控制 Kea 服务器。该守护程序可以通过 HTTP 接收控制命令，它可以将收到的指令转发给 Kea 服务器，也可以自行处理这些指令。至于一个命令到底是自行处理还转发，则通过检查 `service` 参数来决定，该参数可以被控制客户端加入进指令中。支持的命令、对应的结构的详细信息，参见 link:https://kea.readthedocs.io/en/kea-2.2.0/arm/ctrl-channel.html#ctrl-channel[Management API]。
+
+控制代理还可以通过钩子库提供额外的命令，或者自定义现有的命令的行为。详细信息查看 link:https://reports.kea.isc.org/dev_guide/[Kea Developer's Guide]。
+
+控制代理处理命令的过程如下：
+
+. （忽略 service 值）将命令发送给任何安装过的钩子。若命令可以被钩子处理，则返回响应。
+. 若指定了一个或多个 service，将命令发给指定的 service，并返回累积的响应。
+. 若未指定 service，或列表为空，则控制代理自行尝试处理命令。
+
+== 配置
+
+`/etc/kea/kea-ctrl-agent.conf` 本身就是一个不错的简易配置案例。
+
+[source, json]
+./etc/kea/kea-ctrl-agent.conf
+----
+// 这是一个 Kea Control Agent 的基础配置
+//
+// 这是非常基础的配置。Kea 有很多的（超过 30 个）配置案例，以及详尽的 Kea 用户指引。
+// 请参考这些材料，来更好地了解本软件都可以做什么。本配置的注释有时会指向一些 section 来展示更多细节。
+// 它们是 Kea 用户指引的 section 号。与你软件版本匹配的用户指引应该随软件一同安装了，
+// 但也可以从 ISC 的知识库（https://kea.readthedocs.io）获取（稳定版的直达链接是 https://kea.readthedocs.io/）。
+//
+// 该配置文件仅包含 Control Agent 的配置。若在本文件中包含了其它 Kea 服务的配置，则 Control Agent 会忽略那些配置。
+{
+    // 这是 Kea Control Agent 的一个基础配置。
+    // RESTful 接口在 http://127.0.0.1:8000/ 上可用
+    "Control-agent": {
+        "http-host": "127.0.0.1",
+        // 若启用了 HA 和多线程，8000 端口就会被 HA 钩子库的 http 监听器使用。
+        // 要让 HA 的多线程模式工作，请保证专用监听的地址与 CA 使用的不同（比如 8001）。
+        // 注意命令依旧应该发送至 CA。专用监听仅用来处理 HA 更新。
+        "http-port": 8000,
+        "cert-required": false,
+        "authentication": {
+            "type": "basic",
+            "realm": "kea-control-agent",
+            "clients": [
+                {
+                    "user": "admin",
+                    "password": "1234"
+                }
+            ]
+        },
+        // 指定控制代理应该连接的文件，以将命令通过 Unix unix socket
+        // 转发给 DHCPv4、DHCPv6 和 D2 服务器。
+        "control-sockets": {
+            "dhcp4": {
+                "socket-type": "unix",
+                "socket-name": "/tmp/kea4-ctrl-socket"
+            },
+            "dhcp6": {
+                "socket-type": "unix",
+                "socket-name": "/tmp/kea6-ctrl-socket"
+            },
+            "d2": {
+                "socket-type": "unix",
+                "socket-name": "/tmp/kea-ddns-ctrl-socket"
+            }
+        },
+        // 指定附加在控制代理上的钩子库。
+        // 这些钩子库应该支持 'control_comand_receive' 钩点。当前其被注释掉了，
+        // 因为其必须指向已有的钩子库。否则控制代理会无法启动。
+        "hooks-libraries": [
+            //  {
+            //      "library": "/usr/lib64/kea/hooks/control-agent-commands.so",
+            //      "parameters": {
+            //          "param1": "foo"
+            //      }
+            //  }
+        ],
+        // 日志配置从这里开始。Kea 使用不同的日志记录来记录器各种活动。
+        // 详细信息（比如记录器的名称）参见 18 章。
+        "loggers": [
+            {
+                // 本段为控制代理特定的日志配置
+                "name": "kea-ctrl-agent",
+                "output_options": [
+                    {
+                        // 指定输出文件。它还支持一些特殊值：
+                        // - stdout（打印到标准输出）
+                        // - stderr（打印到标准错误）
+                        // - syslog（记录至 syslog）
+                        // - syslog:name（使用特定的名称记录至 syslog）
+                        // 其它的值都被认为是一个文件名
+                        "output": "/var/log/kea-ctrl-agent.log"
+                        // 较短的日志样式适用于使用 systemd，以避免冗余信息。
+                        // "pattern": "%-5p %m\n",
+                        // 它规定了日志输出是否在每次写入后刷写到硬盘上。
+                        // "flush": false,
+                        // 指定了文件被轮转前的最大大小。
+                        // "maxsize": 1048576,
+                        // 指定了保留的轮转文件的最大数量。
+                        // "maxver": 8
+                    }
+                ],
+                // 指定了日志信息要保留的严重级别。支持的值包括：
+                // FATAL、ERROR、WARN、INFO、DEBUG
+                "severity": "INFO",
+                // 若使用了 DEBUG 级别，则该值启用。 0 表示最简洁，99 表示最详细。
+                // 特别小心，Kea 可能会在你的要求下，产生非常非常多的日志。
+                "debuglevel": 0
+            }
+        ]
+    }
+}
+----
