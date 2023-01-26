@@ -1,0 +1,83 @@
+= 使用 SQLite 查询 dnf 安装的任意包的状态
+
+. 将下面的 SQL 语句保存为文件，比如 `query_state.sql`
++
+[source, sql]
+.query_state.sql
+----
+-- 修改 sqlite 的显示方式，打开标题栏，并以表格形式显示结果
+.headers on
+.mode table
+
+-- 预先处理表格，为每个包分别添加行数（以 transaction id 为排序依据），为后面的筛选做准备
+WITH added_row_number AS (
+    SELECT
+        *,
+        ROW_NUMBER() OVER (
+            PARTITION BY
+                name
+            ORDER BY
+                trans_id DESC -- 注意这里使用了逆序排列，这样最后一个 transaction id 的行号为 1
+        ) AS row_number
+    FROM trans_item
+    INNER JOIN
+        rpm USING(item_id)
+    WHERE
+        name LIKE 'gcc'
+)
+-- 使用上面处理过的表格，生成最后的结果
+-- 数字的定义见：
+-- https://github.com/rpm-software-management/libdnf/blob/dnf-4-master/libdnf/transaction/Types.hpp
+SELECT
+    item_id,
+    trans_id,
+    name,
+    version,
+    release,
+    arch,
+    CASE action
+        WHEN 1 THEN 'INSTALL'
+        WHEN 2 THEN 'DOWNGRADE'
+        WHEN 3 THEN 'DOWNGRADED'
+        WHEN 4 THEN 'OBSOLETE'
+        WHEN 5 THEN 'OBSOLETED'
+        WHEN 6 THEN 'UPGRADE'
+        WHEN 7 THEN 'UPGRADED'
+        WHEN 8 THEN 'REMOVE'
+        WHEN 9 THEN 'REINSTALL'
+        WHEN 10 THEN 'REINSTALLED'
+        WHEN 11 THEN 'REASON_CHANGE'
+    END
+    AS action,
+    CASE reason
+        WHEN 0 THEN 'Unkown'
+        WHEN 1 THEN 'As Dependency'
+        WHEN 2 THEN 'User Install'
+        WHEN 3 THEN 'Clean'
+        WHEN 4 THEN 'Weak Dependency'
+        WHEN 5 THEN 'In Group Install'
+    END
+    AS reason,
+    CASE state
+        WHEN 0 THEN 'Unknow'
+        WHEN 1 THEN 'Done'
+        WHEN 2 THEN 'Error'
+    END
+    AS state
+FROM 
+    added_row_number
+WHERE 
+    row_number IS 1 AND action NOT IN (4, 5, 8); -- 行号为 1，且不应该是删除类的操作
+----
+
+. 将 `name LIKE 'gcc'` 这一行的 `gcc` 改为你想要查询的包的名称， +
+不清楚具体名称的，可以使用百分号 `%` 作为通配符，比如 `%kernel%`
+
+. 安装 sqlite3
+
+. 使用以下命令查询结果
++
+[source, bash]
+----
+sqlite3 --readonly /var/lib/dnf/history.sqlite < query_state.sql
+----
