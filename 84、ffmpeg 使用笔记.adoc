@@ -1,0 +1,42 @@
+= FFmpeg 笔记
+:source-language: powershell
+:source-highlighter: highlight.js
+
+
+ffmpeg 的命令行中，参数输入的位置非常重要，ffmpeg 首先会读取全局参数，之后以 `-i <输入文件>` 表示一个输入文件，所有在全局参数和这个输入文件参数之前的选项，都会被认为是为该输入文件指定的参数，其他输入文件依此类推；在罗列全部的输入文件之后，才可以指定输出文件，输出文件直接指定文件名，可以有多个，其参数的摆放位置与输入文件的规则相同。
+
+每个输入输出文件均可包含多条**数据流**，每个数据流可以是视频、音频、字幕、附件、数据，依照容器允许的承载的数据类型而定，可以通过指定 `-map` 参数手动指定输入流和输出流的映射关系。 +
+要在选项中指定特定的输入流，需要使用以 0 为起始的编号，比如 `0` 表示第一个输入文件，`1` 表示第二个输入文件；相同地，数据流则依照该数据流在文件中地序号指定，比如 `2:3` 就表示第 3 个文件的第 4 个数据流
+
+在流选择结束后，会对指定的流使用 `-codec` 参数进行流处理
+
+-c:v -c:a -c:s 分别是 -codec:v -codec:a -codec:s 的缩写，分别表示对于音频、视频、字幕的编码的指定
+
+用 `-filter_complex` 可以将多个输入流进行混合处理之后，再输出多个输出流，常见的用法就是与 `overlay` filter 连用，将一个视频叠加在另一个视频之上
+
+[source]
+----
+# 将前景图叠加在背景图上，使用左上角对齐的方法
+ffmpeg -i .\bg.jpg -i .\fg.png -filter_complex 'overlay' out.jpg
+
+# 分别将前景图和背景图转成黑白图片，之后将原始前景与黑白背景叠加为一张图，再将黑白前景与原始背景叠加为另一张图
+ffmpeg -i .\bg.jpg -i .\fg.png `
+    -filter_complex '[0:0]hue=s=0[bg_wb];[bg_wb][1:0]overlay[out0]' `
+    -filter_complex '[1:0]hue=s=0[fg_wb];[0:0][fg_wb]overlay[out1]' `
+    -map '[out0]' out0.jpg `
+    -map '[out1]' out1.jpg
+----
+
+当使用 `-map` 的时候，一个输入流并不会被自动的拷贝多分，需要手动指定 `split=<n>` 将一个输入流拷贝为多个流
+
+[source]
+----
+# 用一个 filter_complex 执行上一个案例中的操作
+# 似乎没有性能上的改变，连操作顺序似乎都没有变化
+ffmpeg  -i .\bg.png -i .\fg.png `
+    -filter_complex `
+        '[0:0]split=2[bg][bg_wb];[1:0]split=2[fg][fg_wb];
+        [bg_wb]hue=s=0[bg_bw];[fg_wb]hue=s=0[fg_bw];
+        [bg_bw][fg]overlay[out0];[bg][fg_bw]overlay[out1]' `
+    -map '[out0]' out0.png -map '[out1]' out1.png
+----
