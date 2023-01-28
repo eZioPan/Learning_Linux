@@ -112,3 +112,70 @@ SET
 WHERE
     <行筛选条件>;
 ----
+
+[source]
+.修改单列信息
+----
+-- 修改雇员表中 employeeid 为 3 的行的 lastname 修改为 'Smith'
+UPDATE employees
+SET lastname = 'Smith'
+WHERE employeeid = 3;
+----
+
+[source]
+.修改多列信息
+----
+-- 更新雇员表中 employeeid 为 4 的行的地址信息
+UPDATE employees
+SET 
+    city = 'Toronto',
+    state = 'ON',
+    postalcode = 'M5P 2N7'
+WHERE
+    employeeid = 4;
+----
+
+[source]
+.在修改中使用变量
+----
+-- 将所有员工的邮件地址设置为全名的形式
+-- 下方 SET 语句中，虽然我们仅指出了列名，
+-- 但是实际上 SQLite 会自动为每一行替换对应的内容
+UPDATE employees
+SET email = LOWER(
+    firstname || "." || lastname || "@chinookcorp.com"
+)
+----
+
+== DELETE 语法
+
+[source]
+----
+DELETE FROM <表1>
+WHERE <搜索条件>;
+----
+
+== REPLACE 语法
+
+REPLACE 其实是 INSERT 的一个变种，REPLACE 的全称应该为 `INSERT OR REPLACE`。 +
+所以 REPLACE 应该满足 INSERT 的语法。与 INSERT 的不同的地方在于： +
+若 REPLACE 的列具有 `UNIQUE` 或 `PRIMARY KEY` 约束，且新的数据的该列与旧数据的该列相同，
+则移除旧行，再插入新行（REPLACE 的语义是如此）。
+
+特别注意的是，若新的数据不满足约束，那么不会插入新行，而删除旧行的操作也会回滚。
+
+[source]
+----
+CREATE TABLE IF NOT EXIST positions(
+    id INTERGER PRIMARY KEY, -- 注意这里的 PRIMARY KEY 约束
+    title TEXT NOT NULL UNIQUE, -- 以及这里的 UNIQUE 约束
+    min_salary NUMERIC
+);
+
+INSERT INTO positions
+    (title, min_salary)
+VALUES
+    ('DBA', 120000),
+    ('Developer', 100000),
+    ('Architect', 150000);
+----
