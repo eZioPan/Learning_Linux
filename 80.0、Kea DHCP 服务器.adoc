@@ -160,6 +160,7 @@ echo '{"command": "list-commands"}' | socat /tmp/kea4-ctrl-socket -
 首先查看/编辑 `/etc/kea/kea-ctrl-agent.conf`
 
 [source, json]
+./etc/kea/kea-ctrl-agent.conf
 ----
 {
   "Control-agent": {
@@ -219,3 +220,127 @@ kea-shell --auth-user admin --auth-password 1234 --service dhcp4 list-commands
 . `service` 参数表示最后的命令要向哪个服务发送，若不指定表示向 `kea-control-agent` 发送；若指定， +
 则名称为 `kea-control-agent.conf` 中 `control-soclets` 中字段的名称。
 . 在该行指定后，命令行不会立刻返回，而是要求输入这个命令对应的参数，我们这里没有参数，因此直接安 kbd:[ctrl + D] 返回即可。
+
+== 使用数据库存储信息
+
+上面一直在使用 Memfile 的形式管理数据，在生产中，应该使用数据库作为后端。下面我们就简单的说明一下应该如何安装、设置数据库，并让 Kea 使用数据库作为后端。
+
+[NOTE]
+====
+我们将使用 PostgreSQL 数据库作为 Kea 的后端
+====
+
+=== 安装 PostgreSQL 并进行必要的配置
+
+. 安装 PostgreSQL
++
+[source, bash]
+----
+# 注意，这里要安装的是带 server 后缀的这个包，而非不带后缀的那个包
+dnf install postgresql-server
+----
+
+. 修改 PostgreSQL 的验证方式，以便让其它软件可以访问 PostgreSQL 数据库
++
+****
+来源：link:https://serverfault.com/questions/406606/postgres-error-message-fatal-ident-authentication-failed-for-user[Postgres error message: FATAL: Ident authentication failed for user]
+****
+修改 `/var/lib/pgsql/data/pg_hba.conf` 文件， +
+将 `host all all 127.0.0.1/32 ident` 替换为 `host all all 127.0.0.1/32 md5` +
+将 `host all all ::1/128 ident` 替换为 `host all all ::1/128 md5`
+
+. 启动/重启 PostgreSQL 服务器
++
+[source, bash]
+----
+systemctl enable --now postgresql
+# systemctl restart postgresql
+----
+
+=== 为 Kea 配置 PostgreSQL
+
+****
+参见 link:https://kea.readthedocs.io/en/kea-2.2.0/arm/admin.html#first-time-creation-of-the-postgresql-database[4.3.3.1. First-Time Creation of the PostgreSQL Database]
+****
+
+. 登陆 PostgreSQL
++
+[source, bash]
+----
+# 以 postgres Linux 用户的身份启动 psql 交互命令
+sudo -u postgres psql
+----
+
+. 创建一个数据库，以供 Kea DHCP 使用
++
+[source, SQL]
+----
+-- 注意该 SQL 语句是在 psql 交互命令行中执行的
+-- kea-dhcp4 是数据库的名称，可以自行定义
+CREATE DATABASE kea_dhcp;
+----
+
+. 创建一个 Kea 可以使用的用户，并将该数据库的权限授予该用户
++
+[source, SQL]
+----
+-- 注意该 SQL 语句是在 psql 交互命令行中执行的
+-- 用户名和密码可以自行定义
+-- 不建议使用 kea 这么简单的密码，这里仅作演示使用
+CREATE USER kea WITH PASSWORD 'kea';
+
+-- 将该数据库的所有权限授予创建的用户
+GRANT ALL PRIVILEGES ON DATABASE kea_dhcp TO kea;
+----
+
+. 检查数据库状态
++
+[source, SQL]
+----
+\l
+----
+
+. 退出 psql
++
+[source, SQL]
+----
+\q
+----
+
+=== 使用 kea-admin 初始化 PostgreSQL 数据库
+
+上面我们只是创建了一个空的数据库，并创建了一个账户，现在需要使用 `kea-admin` 将这个数据库“初始化”为 Kea DHCP 可以使用的状态
+
+[source, bash]
+----
+kea-admin db-init pgsql --name <数据库名> --user <数据库用户名> --password <数据库登陆密码>
+----
+
+=== 配置 Kea DHCP 使用 PostgreSQL 数据库
+
+修改 `/etc/kea/kea-dhcp4.conf`
+
+[source, json]
+./etc/kea/kea-dhcp4.conf
+----
+{
+  "Dhcp4": {
+    ...
+    "lease-database": {
+      "type": "postgresql", // 数据库类型，这里为 postgresql
+      "name": "<数据库名>",
+      "user": "<数据库用户名>",
+      "password": "<数据库登陆密码>",
+      "lfc-interval": 3600
+    },
+    ...
+  }
+}
+----
+
+== 通过 kea-admin 查看数据库中存储的 lease 信息
+
+[source, bash]
+----
+kea-admin lease-dump pgsql --name <数据库名> --user <数据库用户名> --password <数据库登陆密码> -4 --output <输出的 CSV 文件路劲>
+----
