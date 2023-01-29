@@ -1,4 +1,5 @@
 = SQL 修改数据
+:source-language: SQL
 
 == INSERT 语句
 
@@ -127,7 +128,7 @@ WHERE employeeid = 3;
 ----
 -- 更新雇员表中 employeeid 为 4 的行的地址信息
 UPDATE employees
-SET 
+SET
     city = 'Toronto',
     state = 'ON',
     postalcode = 'M5P 2N7'

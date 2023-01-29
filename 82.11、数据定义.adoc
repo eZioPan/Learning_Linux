@@ -1,0 +1,185 @@
+= 数据定义
+:source-language: SQL
+
+== 概述
+
+SQLite 与 MySQL、PostgreSQL 的类型系统不太相同。后两者使用静态类型，一个列具有唯一的数据类型；而 SQLite 则使用“灵活类型”（Flexible Type），一个值的类型由值的类型确定，而非列的类型确定。
+
+SQLite 不仅使用了灵活类型，准确来说，SQLite 不使用“数据类型（datatype）”而使用“存储类别（storage class）”来表述一个值。
+
+== SQLite 的 存储类别（storage class）
+
+SQLite 有以下五个存储类别：
+
+NULL::
+这个值是一个空（null）值
+
+INTEGER::
+这个值是一个有符号整数，依照值的大小，以 0/1/2/3/4/6/8 字节存储
+
+REAL::
+这个值是一个浮点数，使用 8 字节 IEEE 浮点数存储
+
+TEXT::
+这个值是一个文本字符串，使用数据库的编码方式（UTF-8、UTF-16BE、UTF-16LE）存储
+
+BLOB::
+这个值是一个二进制串，将以值输入的状态存储
+
+== 类别规则快览
+
+* 在定义一个列的时候，列的存储类别是可选的。也就是说，在定义一个列的时候，可以只给出列名。
+* 若定义列时提供了存储类别，那么后者可以是任意文本。SQLite 会尝试基于后者的文本缩减值的偏好的存储类别，但这个类别是建议性的，而非强制性的。偏好存储类别被称为“列亲和类别”。
+* 当输入值时，SQLite 会尝试将数据转换为“列亲和类别”。若失败，SQLite 会以原始类型存储这个数据。
+* 常见的对应关系
++
+|===
+| 列存储类别 | 该列支持的类别
+
+| INTEGER
+| INTEGER, REAL, TEXT, BLOB
+
+| REAL
+| REAL, TEXT, BLOB
+
+| TEXT
+| TEXT, BLOB
+
+| BLOB
+| INTEGER, REAL, TEXT, BLOB
+|===
+
+== 数字类型的字面量的类别推定
+
+. 若一个数字字面量不被引号包裹、不含小数点、不含指数，则推定为 INTEGER
+. 若一个数字字面量被引号包裹，则推定为 TEXT
+. 若一个数字字面量不被引号包裹，但具有小数点或指数，则推定为 REAL
+. 若一个数字字面量具有以下形式 x'ABCD' 或 x'abcd'（位数必须为 4 的整数倍），则推定为 BLOB
+
+== 字面量推定的检测
+
+字面量的类别的推定，可以用 `typeof()` 函数显示
+
+[source]
+----
+SELECT
+    typeof(100),
+    typeof('100'),
+    typeof(100.0),
+    typeof(100e2),
+    typeof(x'10001234'),
+    typeof(NULL);
+----
+
+== SQLite 的排序规则
+
+. NULL 具有最低的等级，排在最后，NULL 之间无排序
+. 稍高一些的是 INTEGER 和 REAL，它们将作为数值比较大小
+. 再高一些的是 TEXT，它们将作为文本排序
+. 最高的是 BLOB，它们通过 C 函数 `memcmp()` 比较
+
+因此，在使用 `ORDER BY` 排序时，SQLite 会先将数据归类为四类：NULL、INTEGER/REAL、TEXT、BLOB，然后再再每类中进行排序。
+
+== CREATE TABLE 语句
+
+创建一个新表
+
+[source]
+----
+CREATE [TEMPORARY | TEMP] TABLE [IF NOT EXIST] [<数据库名>.]<表名> (
+    <列名1> [<存储类别1>] [<约束>...],
+    ...
+    [<表约束>...]
+) [WITHOUT ROWID];
+----
+
+* 首先，表名不可以以 `sqlite_` 开头，因为这个是 SQLite 预留的内部使用的表。
+
+* 其次，IF NOT EXIST 会检测是否有同名的表，若有，则不创建； +
+若不指定 IF NOT EXIST，且存在同名的表，则 SQLite 会返回错误。
+
+* 若指定了 `TEMPORARY` 或者 `TEMP`，则表示创建的表是一个“临时的表”， +
+存放在内存中，一个名为 `temp` 的数据库中。
+
+* 可以额外指定数据库名，这样这个表就可以存放在指定的数据库下。若不指定则存放在 `main` 数据库中。 +
+若指定，则数据库名必须为 `main`、`temp` 或任何一个附加的数据库的名称。
+
+* 之后是列的定义，一个列包含一个列名，以及可选的一个存储类型、一系列的列约束。 +
+列定义的结尾以逗号 `,` 结尾。 +
+SQLite 支持的列约束包括 `PRIMARY KEY`、`UNIQUE`、`NOT NULL` 和 `CHECK`
+
+* 一个表定义的最后是表约束，表约束包括 `PRIMARY KEY`、`FOREIGN KEY`、`UNIQUE`、`CHECK`
+
+* 最后，还有一个 `WITHOUT ROWID` 选项， +
+默认情况下，SQLite 会为每个表添加一个隐藏的列， +
+它的类型为 64 位有符号整型，用来在当前的表中唯一确定一个行。 +
+通常这个列被称为 `rowid`、`oid`、`_rowid_`。 +
+而具有 `rowid` 列的表，有时候又被称为 `rowid` 表。 +
+指定了 `WITHOUT ROWID` 后，会关闭这个列。
+
+=== CREATE TABLE 案例
+
+我们要创建一个联系人数据库，这个联系人数据库要包含联系人的姓、名、电邮地址、电话号码，且每个电邮地址和电话号码是互不相同的。 +
+而且，我们还需要让每个联系人属于零个或多个组，且每个组可以含有零个或多个联系人。
+
+为了管理方便，这里我们可以创建三个表。
+
+* contacts 表，这个表包含的列为 联系人 id、姓、名、电邮地址、电话
+* groups 表，这个表包含的列为 组 id、组名
+* contact_group 表，这个表包含两个外键，分别是 联系人 id 和 组 id
+
+这样我们就建立了两个独立的表，以及一个关联表。
+
+[source]
+----
+-- 创建 contacts 表
+-- 这个表记录了联系人的信息
+CREATE TABLE contacts (
+    -- 当一个列的存储类别为 INTEGER 且约束为 PRIMARY KEY 时，它其实是一个 rowid 列的别名
+    contact_id INTEGER PRIMARY KEY,
+    first_name TEXT,
+    last_name TEXT,
+    email TEXT UNIQUE,
+    phone TEXT UNIQUE,
+
+    -- 这里设置了一个约束，其要求 first_name 和 last_name 不能同时为空
+    CHECK ((first_name IS NOT NULL) OR (last_name IS NOT NULL))
+);
+
+-- 创建 groups 表
+-- 就是记录了一个组名
+CREATE TABLE groups (
+    group_id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL
+);
+
+-- 最后是这个关联表
+-- 由于 联系人和群组是 M:N 的对应关系
+-- 因此不好直接使用包含关系
+-- 另列一张表会比较合适
+CREATE TABLE contact_group(
+    link_id INTEGER PRIMARY KEY,
+    contact_id INTEGER NOT NULL,
+    group_id INTEGER NOT NULL,
+
+    -- 这里要求 contact_id 和 group_id 的组合不可以相同
+    -- 保证了不会记录多个相同的关联
+    UNIQUE (contact_id, group_id),
+
+    -- 设置了两个外键
+
+    -- 将本表中的 contact_id 设置为外键
+    FOREIGN KEY (contact_id)
+        -- 其参考的外键为 contacts 表的 contact_id 这个列
+        REFERENCES contacts (contact_id)
+            -- 若主表的这个值被删除时，删除子表中所有相关的条目
+            ON DELETE CASCADE
+            -- 若主表的这个值被更新时，禁止更新主表的这个值（除非本表中所有相关的条目均被移除）
+            ON UPDATE NO ACTION,
+
+    FOREIGN KEY (group_id)
+        REFERENCES groups (group_id)
+            ON DELETE CASCADE
+            ON UPDATE NO ACTION
+);
+----

@@ -23,8 +23,11 @@ SQLite，第 82 章
 * 主线流程
 ** 鸟哥的 Linux 私房菜 第四版（CentOS7） https://linux.vbird.org/linux_basic/centos7/
 
+* Kea DHCP 官方文档 https://kea.readthedocs.io/
+
 * SQLite
-** 82、SQLite笔记 学习自 https://www.sqlitetutorial.net/
+** 学习自 https://www.sqlitetutorial.net/
+** SQLite 官方语法手册 https://www.sqlite.org/lang.html
 
 * C 语言
 ** 21补1、C 库相关 翻译自 http://www.zipcon.net/~swhite/docs/computers/languages/c_programming_libraries.html
