@@ -80,6 +80,87 @@ SELECT
 
 因此，在使用 `ORDER BY` 排序时，SQLite 会先将数据归类为四类：NULL、INTEGER/REAL、TEXT、BLOB，然后再再每类中进行排序。
 
+== 日期与时间的表示方法
+
+SQLite 中没有日期和时间特定的存储类别，SQLite 使用 `TEXT`、`REAL`、`INTEGER`，并搭配特定的函数来存储/表示日期和时间值。
+
+* 若使用 `TEXT` 来表示/存储日期和时间值， +
+那么字符串的格式为 __ISO8601__ 格式的一个子集：
++
+[source, plain]
+----
+// 完整形式
+YYYY-MM-DD HH:MM:SS.SSS
+
+// 仅日期
+YYY-MM-DD
+
+// 仅时间（读取时会当作 2000-01-01 当日的时间点）
+HH:MM:SS
+
+// 带小数的时间（读取时会当作 2000-01-01 当日的时间点）
+HH:MM:SS.SSS
+----
++
+比如 `2023-01-02 12:06:55.123`
+
+* 若使用 `REAL` 来表示/存储日期时间值 +
+那么实际的值是自公元前 4714 年 11 月 24 日午夜记为 0 时刻的儒略历**天数**（含小数） +
+比如 __2023-01-02 12:06:55.123__ 会被记为 `2459947.00480466`
+
+* 若使用 `INTEGER` 来表示/存储日期和时间值 +
+那么实际的值是自 1970-01-01 00:00:00 UTC 起的**整数秒数** +
+比如 __2023-01-02 12:06:55.123__ 会被记为 `1672661215`（忽略了小数）
+
+=== 与日期时间相关的函数
+
+SQLite 中共有 6 个与日期时间相关的函数
+
+[source]
+----
+-- 以 YYYY-MM-DD 的形式转换时间值
+data(<时间值>, <修饰符>, <修饰符>...)
+
+-- 以 HH:MM:SS 的形式转换时间值
+time(<时间值>, <修饰符>, <修饰符>...)
+
+-- 以 YYYY-MM-DD HH:MM:SS 的形式转换时间值
+datetime(<时间值>, <修饰符>, <修饰符>...)
+
+-- 将时间值转换为儒略历计时
+julianday(<时间值>, <修饰符>, <修饰符>...)
+
+-- 将时间值转换为 UNIX 计时
+unixepoch(<时间值>, <修饰符>, <修饰符>...)
+
+-- 以指定的格式格式化时间值
+strftime(<格式>, <时间值>, <修饰符>, <修饰符>...)
+----
+
+[IMPORTANT]
+====
+上面函数的 `<时间值>` 这个参数
+
+* 如果参数值是 TEXT 类型的，则会当作 __ISO8601__ 格式处理
+* 如果是 REAL 或者 INTEGER，则会当作儒略历计时来处理
+
+若要将数值强制以 UNIX 计时处理，需要使用修饰符 `unixepoch`。 +
+若要将数值强制以儒略历计时处理，需要使用修饰符 `julianday`。
+====
+
+[IMPORTANT]
+====
+默认情况下，SQLite 始终使用 UTC 作为时区。
+
+若要将 UTC 转换为本地时，需要使用修饰符 `localtime`。 +
+若要将本地时转换为 UTC，需要使用修饰符 `utc`。
+====
+
+[NOTE]
+====
+具体格式化表和修饰符，参见 link:https://www.sqlite.org/lang_datefunc.html[Date And Time Functions]
+====
+
 == CREATE TABLE 语句
 
 创建一个新表
@@ -117,6 +198,13 @@ SQLite 支持的列约束包括 `PRIMARY KEY`、`UNIQUE`、`NOT NULL` 和 `CHECK
 而具有 `rowid` 列的表，有时候又被称为 `rowid` 表。 +
 指定了 `WITHOUT ROWID` 后，会关闭这个列。
 
+除了直接创建一个表，还有一种从 SELECT 的结果创建一个表的方法
+
+[source]
+----
+CREATE [TEMPORARY | TEMP] TABLE [IF NOT EXIST] [<数据库名>.]<表名> AS <SELECT 语句>;
+----
+
 === CREATE TABLE 案例
 
 我们要创建一个联系人数据库，这个联系人数据库要包含联系人的姓、名、电邮地址、电话号码，且每个电邮地址和电话号码是互不相同的。 +
@@ -144,13 +232,17 @@ CREATE TABLE contacts (
 
     -- 这里设置了一个约束，其要求 first_name 和 last_name 不能同时为空
     CHECK ((first_name IS NOT NULL) OR (last_name IS NOT NULL))
+
+    -- 这里设置了一个约束，其要求 email 和 phone 不能同时为空
+    CHECK ((email IS NOT NULL) OR (phone IS NOT NULL))
 );
 
 -- 创建 groups 表
 -- 就是记录了一个组名
 CREATE TABLE groups (
     group_id INTEGER PRIMARY KEY,
-    name TEXT NOT NULL
+    -- 组名不应为空，且不应相同
+    name TEXT NOT NULL UNIQUE
 );
 
 -- 最后是这个关联表
@@ -182,4 +274,33 @@ CREATE TABLE contact_group(
             ON DELETE CASCADE
             ON UPDATE NO ACTION
 );
+----
+
+让我们尝试向其中插入一些数据
+
+[source]
+----
+INSERT INTO
+    contacts (first_name, last_name, email, phone)
+VALUES
+    ('Alice', 'Joe', 'alice@example.com', NULL),
+    ('Bob', 'Turing', NULL, '123-456789');
+
+INSERT INTO
+    groups (name)
+VALUES
+    ('family'),
+    ('colleague');
+
+INSERT INTO
+    contact_group (contact_id, group_id)
+VALUES
+    (
+        (SELECT contact_id FROM contacts WHERE last_name IS 'Joe'),
+        (SELECT group_id FROM groups WHERE name IS 'family')
+    ),
+    (
+        (SELECT contact_id FROM contacts WHERE first_name IS 'Bob'),
+        (SELECT group_id FROM groups WHERE name IS 'colleague')
+    );
 ----
