@@ -105,11 +105,11 @@ HH:MM:SS.SSS
 比如 `2023-01-02 12:06:55.123`
 
 * 若使用 `REAL` 来表示/存储日期时间值 +
-那么实际的值是自公元前 4714 年 11 月 24 日午夜记为 0 时刻的儒略历**天数**（含小数） +
+那么实际的值是自公元前 4714 年 11 月 24 日午夜记为 0 时刻的儒略历 **天数**（含小数） +
 比如 __2023-01-02 12:06:55.123__ 会被记为 `2459947.00480466`
 
 * 若使用 `INTEGER` 来表示/存储日期和时间值 +
-那么实际的值是自 1970-01-01 00:00:00 UTC 起的**整数秒数** +
+那么实际的值是自 1970-01-01 00:00:00 UTC 起的 **整数秒数** +
 比如 __2023-01-02 12:06:55.123__ 会被记为 `1672661215`（忽略了小数）
 
 === 与日期时间相关的函数
@@ -249,7 +249,7 @@ CREATE TABLE groups (
 -- 由于 联系人和群组是 M:N 的对应关系
 -- 因此不好直接使用包含关系
 -- 另列一张表会比较合适
-CREATE TABLE contact_group(
+CREATE TABLE contact_group (
     link_id INTEGER PRIMARY KEY,
     contact_id INTEGER NOT NULL,
     group_id INTEGER NOT NULL,
@@ -304,3 +304,51 @@ VALUES
         (SELECT group_id FROM groups WHERE name IS 'colleague')
     );
 ----
+
+== ALTER TABLE 语句
+
+SQLite 支持的 `ALTER TABLE` 语句的功能仅为 SQL 标准中的一小部分。
+
+SQLite 的 `ALTER TABLE` 主要负责
+
+* 表名的修改
+* 列的添加
+* 列的删除
+* 列的改名
+
+[source]
+----
+ALTER TABLE <表名>
+    RENAME TO <新表名>;
+
+ALTER TABLE <表名>
+    ADD [COLUMN] <列定义语句>;
+
+ALTER TABLE <表名>
+    RENAME [COLUMN] <列名> TO <新列名>;
+
+ALTER TABLE <表名>
+    DROP [COLUMN] <列名>;
+----
+
+== VACUUM 语句
+
+清理硬盘上的数据库文件
+
+即便执行了 DROP / DELETE 操作，SQLite 也不会自动释放磁盘空间，被 DROP 的磁盘空间会用于新数据的存储， +
+若确实需要释放磁盘空间（且整理数据库碎片），则需要使用 `VACUUM` 语句。
+
+[source]
+----
+VACCUM [<数据库名> INTO '<新的数据库文件路径>'];
+----
+
+VACCUM 的默认操作流程为：
+
+. 在硬盘上备份整个数据库
+. 对新生成的数据库执行清理操作
+. 替换旧的数据库
+
+由于有备份的操作，因此硬盘空间不够的话，会导致 VACUUM 失败。
+
+另外可以使用 VACUUM INTO 将新的数据库写入到另一个文件中

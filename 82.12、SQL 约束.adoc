@@ -1,0 +1,80 @@
+= SQL 约束
+:source-language: SQL
+
+== PRIMARY KEY 约束
+
+主键约束
+
+PRIMARY KEY 具有以下特性
+
+. 对于任意一个表来说，`PRIMARY KEY` 约束最多有一个， +
+但一个 `PRIMARY KEY` 可以同时约束数个列，此时这些列的值的**组合**作为判断依据。
+
+. 对于一个 rowid 表（不指定 `WITHOUT ROWID`）来说，若 `PRIMARY KEY` 仅约束了一个列，且这个列具有 `INTEGER` 存储类别，那么这个列就是 rowid 列的别名。
++
+[source]
+.rowid 的别名
+----
+-- 这是一个 rowid 表
+-- 它具有 INTEGER PRIMARY KEY
+CREATE TABLE t0_0 (
+    id INTEGER PRIMARY KEY,
+    some TEXT
+);
+
+-- 这个描述方案和上面的等价
+CREATE TABLE t0_1 (
+    id INTEGER,
+    some TEXT,
+    PRIMARY KEY ( id )
+);
+
+SELECT * FROM sqlite_schema;
+----
+
+. 对于其它任何情况，`PRIMARY KEY` 约束等价于生成了 `UNIQUE INDEX`
++
+[source]
+.PRIMARY KEY 与 UNIQUE INDEX
+----
+-- 仅设置 PRIMARY KEY，不设置 INTEGER
+CREATE TABLE t1_0 (
+    id PRIMARY KEY
+);
+
+-- 将多个列联合设置 PRIMARY KEY
+CREATE TABLE t1_1 (
+    id1 INTEGER,
+    some TEXT,
+    PRIMARY KEY ( id1, some )
+);
+
+-- 对于非 rowid 表设置 PRIMARY KEY
+CREATE TABLE t2_0 (
+    id INTEGER,
+    PRIMARY KEY ( id )
+) WITHOUT ROWID;
+
+-- 对于非 rowid 表的多个列设置 PRIMARY KEY
+CREATE TABLE t2_1 (
+    id0 INTEGER,
+    id1 TEXT,
+    PRIMARY KEY ( id0, id1 )
+) WITHOUT ROWID;
+
+-- 注意，这个返回中，不会包含 t2_0 t2_1 这两个表的索引
+SELECT * FROM sqlite_schema;
+
+-- 使用 PRAGMA index_list 准确查找索引状态
+SELECT
+    schema.name AS table_name,
+    "index".name AS index_name,
+    "index"."unique" AS index_unique,
+    "index".origin AS index_origin,
+    "index".partial AS index_partial
+FROM
+    sqlite_schema AS schema,
+    pragma_index_list(schema.name) AS "index"
+WHERE
+    type IS 'table';
+----
