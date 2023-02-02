@@ -78,3 +78,71 @@ FROM
 WHERE
     type IS 'table';
 ----
+
+== NOT NULL 约束
+
+标记某个列不可以具有空值
+
+[IMPORTANT]
+====
+* `NOT NULL` 约束仅可以写在行声明中，不可以写做表约束中。
+
+* 就标准的 SQL 语句来说，`PRIMARY KEY` 约束必然隐含了 `NOT NULL` 约束， +
+不过由于 SQLite 的某个远古时期的漏洞（现在已经修复），导致那时创建的具有 `PRIMARY KEY` 的列依旧可以具有 **NULL** 值， +
+为了保持兼容性，于是 SQLite 对 `PRIMARY KEY` 没有强制 `NOT NULL` 要求 +
+**注意 1**，`INTEGER PRIMARY KEY` 是隐含 `NOT NULL` 的 +
+**注意 2**，`WITHOUT ROWID` 的表的 `PRIMARY KEY` 是隐含 `NOT NULL` 的。
+====
+
+== UNIQUE 约束
+
+唯一约束，一个列中的值互不相同，或者几个列的值的组合互不相同
+
+[source]
+----
+-- t0 表中，不同行的 id 列的值应该互不相同
+CREATE TABLE t0 (
+    id UNIQUE
+);
+
+-- t1 表中，不同行的 id0 的值和 id1 的值的组合应该互不相同
+CREATE TABLE t1 (
+    id0,
+    id1,
+    UNIQUE ( id0, id1 )
+);
+----
+
+[IMPORTANT]
+====
+对于 UNIQUE 约束来说，每个 **NULL** 都是不同的。因此一个被 UNIQUE 约束的列可以具有一个或多个 **NULL**
+====
+
+[NOTE]
+====
+UNIQUE 约束等价于创建了 `UNIQUE INDEX`
+====
+
+== CHECK 约束
+
+使用一个表达式作为约束的内容
+
+[source]
+----
+-- 这个表记录任务是否完成
+-- is_done 由于 CHECK 语句的存在，成为了一个布尔值
+CREATE TABLE tasks (
+    task_id INTEGER PRIMARY KEY,
+    task_name TEXT NOT NULL,
+    is_done INTEGER CHECK ( ( bool IS 0 ) OR ( bool IS 1 ) )
+);
+
+-- 记录联系方式
+-- 电话和电邮至少应该记录一个
+CREATE TABLE contacts (
+    contact_id INTEGER PRIMARY KEY,
+    phone TEXT,
+    email TEXT,
+    CHECK ( ( phone IS NOT NULL ) OR ( email IS NOT NULL ) )
+)
+----
