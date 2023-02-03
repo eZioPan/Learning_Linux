@@ -1,0 +1,95 @@
+= SQLite 的编译
+
+== 在 Windows 上
+
+Windows 上的编译稍微有一点复杂，需要先编译 Tcl，再编译 SQLite
+
+=== 编译环境准备
+
+首先安装 link:https://visualstudio.microsoft.com/zh-hans/downloads/#build-tools-for-visual-studio-2022[Visual Studio 2022 生成工具]
+
+下载器安装完成后，在 Individual componnets 选项卡中勾选
+
+* MSVC v__XXX__ - VS 2022 C++ x64/x86 生成工具(最新) +
+找到最新的版本即可
+* 用于 Windows 的 C++ CMake 工具 +
+这个是提供 make 工具的（windows 下名为 nmake）
+* Windows __XX__ SDK (__...__) +
+开发 Windows 软件必备的库，类似 linux 下的 kernel-devel
+
+=== 编译 Tcl
+
+[source, powershell]
+----
+<#
+注意，不要加入 --depth=1 这个参数，
+sqlite 可能并不支持最新的 tcl，这里我们可能需要切换到其它的 tag 上
+#>
+git clone https://github.com/tcltk/tcl
+
+cd tcl
+
+# 查看仓库中所有的 tag
+git tag
+
+# 目前（2023/2/3）sqlite 的 master branch 支持的 tcl 版本为 87
+# 这里我们需要将 tcl 源码退回到特定的版本
+git checkout core-8-7-a5
+----
+
+启动 `Developer Powershell for VS 2022`，并执行
+
+[source, powershell]
+----
+# 移动到 tcl 源码目录下的 win 目录
+cd tcl/win
+
+# 启用编译器的多核功能
+$Env:CL="/MP"
+
+# 编译 tcl
+nmake -f .\makefile.vc all
+
+# 创建一个输出目录
+mkdir release
+
+# 将生成的文件拷贝至我们创建的输出文件夹中
+nmake -f .\makefile.vc install INSTALLDIR=.\release
+----
+
+之后我们就应该可以在 tcl\win\release 下看到输出的文件了
+
+=== 编译 SQLite
+
+[source, powershell]
+----
+# 由于我们只想编译最新的 SQLite，这里可以添加 --depth=1
+git clone --depth=1 https://github.com/sqlite/sqlite
+----
+
+启动 `Developer Powershell for VS 2022`，并执行
+
+[source, powershell]
+----
+cd sqlite
+
+# 自行创建一个输出文件夹
+mkdir release
+
+cd release
+
+$Env:CL="/MP"
+
+<#
+指定要编译的五个软件
+sqlite3.exe sqlite3_analyzer.exe sqlite3_checker.exe sqlite3_expert.exe sqldiff.exe
+TOP 表示源码根目录的路径
+USE_AMALGAMATION=0 表示不要使用单一 c 文件编译，这样有利于多核同时编译
+TCLVERSION=87 指定 Tcl 的版本号
+TCLSH_CMD 设置 tclsh 的名称
+TCLDIR 设置 Tcl 的安装路径，这里为 tcl\win\release 这个目录
+#>
+nmake -f ..\Makefile.msc sqlite3.exe sqlite3_analyzer.exe sqlite3_checker.exe sqlite3_expert.exe sqldiff.exe TOP=.. USE_AMALGAMATION=0 TCLVERSION=87 TCLSH_CMD=<tcl 的 release 的 bin 目录>\tclsh87.exe TCLDIR=<tcl 的 release 目录>
+----
+
+最后我们将上述五个软件移动到需要的位置即可
