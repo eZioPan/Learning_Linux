@@ -1,0 +1,57 @@
+= SQL 视图
+:source-language: SQL
+
+SQL 视图（view）可以认为是存储在数据库中的查询结果。
+
+SQL 视图有以下一些优点
+
+* 视图提供了一种在表之上的抽象层，你可以随意增加或移除视图中的列，而不用修改底层的基表
+* 你可以用视图来封装非常复杂的查询，来简化数据的获取
+
+SQLite 的视图为只读的。通常情况下，你不可以通过修改视图的数据来修改底层表的数据。
+
+要修改 SQLite 的视图，可以使用触发器间接地实现。
+
+== CREATE VIEW 语句
+
+创建一个视图
+
+[source]
+----
+CREATE [TEMP] VIEW [IF NOT EXISTS] <视图名>[(视图列名1, 视图列名2...)]
+AS
+<SELECT 语句>;
+----
+
+[source]
+.案例
+----
+CREATE VIEW song_info
+AS
+SELECT
+    tracks.TrackId as track_id,
+    tracks.Name as track,
+    albums.Title as album,
+    artists.Name as artists,
+    media_types.Name as media,
+    genres.Name as genres
+FROM
+    tracks
+INNER JOIN
+    albums USING(AlbumId)
+INNER JOIN
+    artists USING(ArtistId)
+INNER JOIN
+    media_types USING(MediaTypeId)
+INNER JOIN
+    genres USING(GenreId);
+----
+
+== DROP VIEW 语句
+
+删除一个视图
+
+[source]
+----
+DROP VIEW song_info;
+----

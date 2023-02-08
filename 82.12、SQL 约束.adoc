@@ -130,7 +130,7 @@ UNIQUE 约束等价于创建了 `UNIQUE INDEX`
 [source]
 ----
 -- 这个表记录任务是否完成
--- is_done 由于 CHECK 语句的存在，成为了一个布尔值
+-- is_done 这列，由于 CHECK 语句的存在，在逻辑上成为了一个布尔值
 CREATE TABLE tasks (
     task_id INTEGER PRIMARY KEY,
     task_name TEXT NOT NULL,
