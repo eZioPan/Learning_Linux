@@ -4,7 +4,7 @@
 
 Windows 上的编译稍微有一点复杂，需要先编译 Tcl，再编译 SQLite
 
-=== 编译环境准备
+=== Windows 编译环境准备
 
 首先安装 link:https://visualstudio.microsoft.com/zh-hans/downloads/#build-tools-for-visual-studio-2022[Visual Studio 2022 生成工具]
 
@@ -17,24 +17,24 @@ Windows 上的编译稍微有一点复杂，需要先编译 Tcl，再编译 SQLi
 * Windows __XX__ SDK (__...__) +
 开发 Windows 软件必备的库，类似 linux 下的 kernel-devel
 
-=== 编译 Tcl
+=== Windows 上编译 Tcl
 
 [source, powershell]
 ----
 <#
 注意，不要加入 --depth=1 这个参数，
-sqlite 可能并不支持最新的 tcl，这里我们可能需要切换到其它的 tag 上
+sqlite 可能并不支持最新的 tcl，这里我们可能需要切换到其它的 branch 上
 #>
 git clone https://github.com/tcltk/tcl
 
 cd tcl
 
-# 查看仓库中所有的 tag
-git tag
+# 查看远程仓库中所有的 branch
+git branch -r
 
-# 目前（2023/2/3）sqlite 的 master branch 支持的 tcl 版本为 87
+# 目前（2023/2/5）sqlite 的 master branch 支持的 tcl 版本为 8 系列
 # 这里我们需要将 tcl 源码退回到特定的版本
-git checkout core-8-7-a5
+git checkout core-8-branch
 ----
 
 启动 `Developer Powershell for VS 2022`，并执行
@@ -59,7 +59,7 @@ nmake -f .\makefile.vc install INSTALLDIR=.\release
 
 之后我们就应该可以在 tcl\win\release 下看到输出的文件了
 
-=== 编译 SQLite
+=== Windows 上编译 SQLite
 
 [source, powershell]
 ----
@@ -93,3 +93,144 @@ nmake -f ..\Makefile.msc sqlite3.exe sqlite3_analyzer.exe sqlite3_checker.exe sq
 ----
 
 最后我们将上述五个软件移动到需要的位置即可
+
+== 在 Linux 上
+
+Linux 的编译可以简单，也可以复杂
+
+较为简单的方法，可以跳过 Tcl 的编译，安装 Tcl-devel 包，直接开始编译 SQLite，也可以先编译 Tcl，再编译 SQLite
+
+这里主要介绍较为复杂的方法，较为复杂的方法实现的目标是，使用最新的 Tcl 和 SQLite 源码，并将它们的动态库链接路径设置为与程序所在目录相对的路径下（方便移动路径）
+
+=== Linux 编译环境准备
+
+安装 gcc make zip
+
+[source, bash]
+----
+dnf install gcc make zip
+----
+
+=== Linux 上编译 Tcl
+
+[NOTE]
+====
+使用 tcl-devel 包的话，可以直接跳到 <<Linux 上编译 SQLite>> 的部分
+====
+
+安装需要的库文件
+
+[source, bash]
+----
+dnf install libtommath-devel zlib-devel
+----
+
+创建一些目录，方便我们编译软件，并保持源码目录的整洁
+
+[source, bash]
+----
+mkdir -p source_code/tcl_build
+----
+
+下载整个 Tcl 源码仓库
+
+[source, bash]
+----
+cd source_code
+
+# 由于 SQLite 不一定支持最新的 Tcl，这里下载整个仓库，方便切换
+git clone https://github.com/tcltk/tcl
+
+# 查看远程的所有 branch
+git branch -r
+
+# 目前（2023/2/5）sqlite 的 master branch 支持的 tcl 版本为 8 系列
+# 这里我们需要将 tcl 源码退回到特定的版本
+git checkout core-8-branch
+----
+
+配置，并编译 Tcl
+
+[source, bash]
+----
+cd tcl_build
+
+# prefix 移除默认的安装前缀 /usr/local
+# LDFLAGS 提示 runpath 基于程序的路径查找动态库文件
+../tcl/unix/configure --enable-64bit --prefix='' LDFLAGS='-Wl,-rpath,\$$ORIGIN/../lib'
+
+# 如果有多个 CPU 核心，可以添加 -j<线程数> 来多线程编译
+make all
+
+# 安装到 source_code/local 路径下
+# 会自动生成 bin include lib share 等目录
+make install DESTDIR="$(pwd)/../local"
+----
+
+=== Linux 上编译 SQLite
+
+安装需要的库文件
+
+[source, bash]
+----
+dnf install readline-devel
+----
+
+创建一些目录，方便我们编译软件，并保持源码目录的整洁
+
+[source, bash]
+----
+# 如果未编译 tcl，则创建这个文件夹
+# mkdir source_code
+
+cd source_code
+
+mkdir sqlite_build
+----
+
+配置并编译 SQLite
+
+[source, bash]
+.使用 dnf 安装的 tcl-devel 编译 SQLite
+----
+dnf install tcl-devel
+
+cd sqlite_build
+
+# disable-amalgamation 关闭合并为单一源码，让源码文件逐个编译，这样可以并行编译，充分利用多核 CPU 的性能
+# enable-all enable-tempstore enable-update-limit 启用 SQLite 内置的一些功能
+../sqlite/configure --disable-amalgamation --enable-all --enable-tempstore --enable-update-limit --disable-static
+
+# 如果有多个 CPU 核心，可以添加 -j<线程数> 来多线程编译
+make sqlite3 sqldiff sqlite3_analyzer sqlite3_checker sqlite3_expert
+
+# 之后拷贝走上面 5 个程序即可
+----
+
+[source, bash]
+.手动编译 Tcl 之后，编译 SQLite 的操作
+----
+cd sqlite_build
+
+# disable-amalgamation 关闭合并为单一源码，让源码文件逐个编译，这样可以并行编译，充分利用多核 CPU 的性能
+# enable-all enable-tempstore enable-update-limit 启用 SQLite 内置的一些功能
+# disable-static 不要生成 libsqlite.a 文件，减少编译时间
+# prefix 移除默认的安装前缀 /usr/local
+# TCLSH_CMD 指定 tclsh 二进制文件的路径，SQLite 编译时会用到
+# TCLLIBDIR 指定安装 SQLite-Tcl 插件的位置
+# CPPFLAGS 手动指定 tcl.h 文件的位置
+# LDFLAGS 手动指定 libtclX.X.so 文件的位置，并提示 runpath 基于程序的路径查找动态库文件
+../sqlite/configure --disable-amalgamation --enable-all --enable-tempstore --enable-update-limit --disable-static --prefix='' TCLSH_CMD="../local/bin/tclsh8.7" TCLLIBDIR='/lib' CPPFLAGS='-I../local/include' LDFLAGS='-L../local/lib -Wl,-rpath,\$$ORIGIN/../lib'
+
+# 指定要编译的五个软件
+make all sqldiff sqlite3_analyzer sqlite3_checker sqlite3_expert
+
+# 安装到 source_code/local 路径下
+# 此时会与 tcl 的文件放置在一起
+make install DESTDIR="$(pwd)/../sqlite_release"
+
+# 拷贝额外生成的文件到 source_code/local 下
+cp sqldiff sqlite3_analyzer sqlite3_checker sqlite3_expert ../local/bin
+
+# 最后，可以直接执行 source_code/local/bin 下的软件，或将 local 文件夹移动到更统一的位置（比如 /opt 下），并设置 PATH 路径
+----
