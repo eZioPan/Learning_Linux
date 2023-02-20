@@ -1,0 +1,337 @@
+= readelf 命令
+
+== 名称
+
+readelf - 显示 ELF 文件的信息
+
+== 语法
+
+readelf [<选项>] <elf文件>...
+
+== 描述
+
+**readelf** 显示一个或多个 `ELF` 格式的目标文件的信息。
+
+本软件支持 32 位及 64 位的 `ELF` 格式文件、也支持包含 `ELF` 的打包文件。
+
+本程序的功能与 **objdump** 类似，但能获得更多信息，且部依赖于 `BFD` 库，因此也不受到 `BFD` 库中可能的 BUG 的影响。
+
+== 选项
+
+选项的长格式和短格式是等价的。必须至少给出除了 **-v** 和 **-H** 之外的任意一个选项。
+
+-a::
+--all:::
+等价于指定 `--file-header --program-headers --sections --symbols --relocs --dynamic --notes --version-info --arch-specific --unwind --section-groups --histogram`
++
+注意：本选项不会启用 **--use-dynamic** 本身，因此，若不在命令行中指定，那么不会显示动态符号以及动态重定位。
+
+-h::
+--file-header::
+显示位于文件头部的包含了 `ELF` 头的信息。
+
+-l::
+--program-headers::
+--segments::
+显示任何包含在文件段头（segment headers）的信息。
+
+--quiet::
+抑制 "no symbols" 诊断信息。
+
+-S::
+--sections::
+--section-headers::
+显示任何包含在文件节头（section headers）中的信息。
+
+-g::
+--section-groups::
+显示任何包含在文件节组（section groups）中的信息。
+
+-t::
+--section-details::
+显示详细的节的信息。隐含了 **-S**。
+
+-s::
+--symbols::
+--syms::
+显示文件中任何符号表节中的条目。若一个符号关联有版本信息，则一同显示。版本字符串作为符号名的后缀显示，以 `@` 字符作为间隔。比如 **foo@VER_1**。
+若该一个版本，在解析不具版本号的引用时，为默认的版本，则版本与符号间会间隔两个 `@` 字符，比如 **foo@@VER_2**。
+
+--dyn-syms::
+显示文件中任何动态符号表节中的条目。输出的格式与 **--syms** 选项的相同。
+
+--lto-syms::
+显示文件中任何 `LTO` 符号表中的内容。
+
+--sym-base=[0|8|10|16]::
+强制符号表的尺寸字段使用指定的进制。任何不可辨认的选项均作为 `0` 处理。 +
+`--sym-base=0` 表示的是默认且传统的行为。对于小于 `100000` 的值，使用十进制，大于的是使用 `0x` 前缀的 16 进制。 +
+`--sym-base=8` 使用 8 进制表示。 +
+`-sym-base=10` 仅使用 10 进制表示。 +
+`--sym-base=16` 使用 16 进制表示，并前缀 `0x`。
+
+-C::
+--demangle[=style]::
+解码（解构）低层级符号名为用户层级名称。其使得 C++ 函数的名称可读。不同得编译器有不同的结构风格。额外的解构风格参数可以用于挑选一个适合于你的编译器的解构风格。
+
+--no-demangle::
+不要解构低层级符号名。其为默认值。
+
+--recurse-limit::
+--no-recurse-limit::
+--recursion-limit::
+--no-recursion-limit::
+开启或关闭解构字符串时的递归次数的限制。由于名称构建格式允许无限层级的递归，因此创建出的字符串可能会穷尽宿主机上可用的栈空间，并导致内存错误。为了防止此类事件，递归被限制在 2048 级嵌套。
++
+默认值为开启，但在解构特别复杂的名称时也许需要禁用它。注意，若解除了递归限制，那么就可能发生栈耗尽，而此类错误报告会被回绝。
+
+-U [d|i|l|e|x|h]::
+--unicode=[default|invalid|locale|escape|hex|highlight]::
+控制标识名中非 ASCII 字符的显示。默认（`--unicode=locale` 或 `--unicode=default`）为将它们作为多字节字符，并在当前的 locale 中显示。该选项的任何其它版本都将字节作为 UTF-8 编码的值，并尝试解析它们。若它们不可以被解析，或使用了 `--unicode=invalid`，则将它们作为十六进制字节显示，并包裹在花括号中。
++
+使用 `--unicode=escape` 会将字符显示为 unicode 转义字符串（__\uxxxx__）。 +
+使用 `--unicode=hex` 会将字符显示为十六进制字节串，并以尖角括号包裹。
++
+使用 `--unicode=highlight` 会将字符以 unicode 转义序列显示，同时还会以红色标识它们（会假设输出设备支持着色）。着色是为了强调 unicode 序列可能出现在了意料之外的地方。
+
+-e::
+--headers::
+显示文件所有的头部（headers）。等价于 `-h -l -S`。
+
+-n::
+--notes::
+显示任何 `NOTE` 段和节的内容。
+
+-r::
+--relocs::
+显示文件中任何重定位节的内容。
+
+-u::
+--unwind::
+显示文件中任何 unwind 节的内容。当前仅支持 `IA64 ELF` 文件的 unwind 节，以及 `ARM` unwind 表（".ARM.exidx"、".ARM.extab"）。若还未支持你的架构，你可以尝试通过 `--debug-dump=frames` 或 `--debug-dump=frames-interp` 选项 dump __.eh_frames__ 节中的内容。
+
+-d::
+--dynamic::
+显示文件中任何动态节的内容。
+
+-V::
+--version-info::
+显示文件中可能有的版本节的内容。
+
+-A::
+--arch-specific::
+显示文件中任何构架特定的信息。
+
+-D::
+--use-dynamic::
+显示符号时，该选项让 readelf 使用文件的动态节中的符号散列表，而非符号表节。
++
+当显示重定位时，该选项让 readelf 显示动态重定位，而非静态重定位。
+
+-L::
+--lint::
+--enable-checks::
+警示被检查的文件（们）中可能出现的问题。若仅使用本选项，则检查所有文件的内容。 +
+若与某个 dump 选项连用，则仅对正在显示的内容输出警告信息。
+
+-x <number or name>::
+--hex-dump=<number or name>::
+将指定的节的内容以十六进制字节显示。若指定的是一个数字，则该数字为节表中的序号，要显示的是对应节的内容；其它字符串会匹配目标文件中所有以该名称为节名的节。
+
+-R <number or name>::
+--relocated-dump=<number or name>::
+将指定的节的内容以十六进制字节显示。若指定的是一个数字，则该数字为节表中的序号，要显示的是对应节的内容；其它字符串会匹配目标文件中所有以该名称为节名的节。节的内容会在重定位之后再显示。
+
+-p <number or name>::
+--string-dump=<number or name>::
+以可打印字符串的形式显示指定节的内容。若指定的是一个数字，则该数字为节表中的序号，要显示的是对应节的内容；其它字符串会匹配目标文件中所有以该名称为节名的节。节的内容会在重定位之后再显示。
+
+-z::
+--decompress::
+要求通过 **x**、**R**、**p** 选项 dump 的节，先解压再显示。若节未被压缩，则按其原始内容显示。
+
+-c::
+--archive-index::
+显示包含在二进制包的头部的文件符号索引信息。其功能等价于在 `ar` 中使用 `t` 命令，但是不适用 `BFD` 库。
+
+-w[lLiaprmfFsOoRtUuTgAckK]::
+--debug-dump[=rawline,=decodedline,=info,=abbrev,=pubnames,=aranges,=macro,=frames,=frames-interp,=str,=str-offsets,=loc,=Ranges,=pubtypes,=trace_info,=trace_abbrev,=trace_aranges,=gdb_index,=addr,=cu_index,=links,=follow-links]::
+显示文件中任何 `DWARF` debug 节的内容。压缩的 debug 节会在显示前自动（临时）解压。若指定了一个或多个可选字符或单次，则仅有指定的类型（们）会被 dump。字符和单词指向下面的信息：
++
+--
+"a":::
+"=abbrev":::
+显示 **.debug_abbrev** 节中的内容
+
+"A":::
+"=addr":::
+显示 **.debug_addr** 节中的内容
+
+"c":::
+"=cu_index":::
+显示 **.debug_cu_index** 以及/或 **.debug_tu_index** 节中的内容
+
+"f":::
+"=frames":::
+显示 **.debug_frame** 节的原始内容
+
+"F":::
+"=frames-interp":::
+显示 **.debug_frame** 节的解析后的内容
+
+"g":::
+"=gdb_index":::
+显示 **.gdb_index** 以及/或 **.debug_names** 节中的内容
+
+"i":::
+"=info":::
+显示 **.debug_info** 节中的内容。 +
+注意：该选项的数据可能会被 **--dwarf-depth** 以及 **--dwarf-start** 选项限制。
+
+"k":::
+"=links":::
+显示任何 **.gnu_debuglink**、**.gnu_debugaltlink** 以及 **.debug_sup sections** 节中的内容。并显示任何通过 **.debug_info** 节的 DW_AT_GNU_dwo_name or DW_AT_dwo_name 属性指定的、链接至独立的 dwarf 目标文件（dwo）的链接。
+
+"K":::
+"=follow-links":::
+显示链接的、独立的 debug 信息文件中的任何选中的 debug 节的内容。若一个 debug 节出现在了多个文件中，可能会显示它的多个版本。
++
+其次，在显示 `DWARF` 属性时，若有任意形式的参考指向了独立的 debug 信息文件，则参考的内容同样会被显示。
++
+注意：在一些分发版中，该选项默认启用。其可以通过 **N** debug 选项来关闭。在配置 binutils 时，可以通过 `--enable-follow-debug-links=yes` 或 `--enable-follow-debug-links=no` 选项来修改其默认值。若两个选项均不指定，则默认启用 debug 链接的跳转。
++
+注意：若构建 binutils 时，启用了 debuginfod 协议的支持，那么该选项还会联系任何在环境变量 `DEBUGINFOD_URLS` 中指定的 debuginfod 服务器。解析它可能会花些时间。可以通过 **=do-not-use-debuginfod** debug 选项关掉该行为。
+
+"N":::
+"=no-follow-links":::
+关闭对独立 debug 信息文件的链接的跳转。
+
+"D":::
+"=use-debuginfod":::
+在跳转 debug 链接时，若需要查询 debuinfod 服务器，则联系服务器。其为默认行为。
+
+"E":::
+"=do-not-use-debuginfod":::
+在跳转 debug 链接时，即便需要查询 debuinfod 服务器，也不联系服务器。
+
+"l":::
+"=rawline":::
+以原始格式显示 **.debug_line** 节的内容。
+
+"L":::
+"=decodedline":::
+以解析过的格式显示 **.debug_line** 节的内容。
+
+"m":::
+"=macro":::
+显示 **.debug_macro** 和/或 **.debug_macinfo** 节的内容。
+
+"o":::
+"=loc":::
+显示 **.debug_loc** 和/或 **.debug_loclists** 节的内容。
+
+"O":::
+"=str-offsets":::
+显示 **.debug_str_offsets** 节的内容。
+
+
+"p":::
+"=pubnames":::
+显示 **.debug_pubnames** 和/或 **.debug_gnu_pubnames** 节的内容。
+
+
+"r":::
+"=aranges":::
+显示 **.debug_aranges** 节的内容。
+
+"R":::
+"=Ranges":::
+显示 **.debug_ranges** 和/或 **.debug_rnglists** 节的内容。
+
+"s":::
+"=str":::
+显示 **.debug_str**、**.debug_line_str** 和/或 **.debug_str_offsets** 节的内容。
+
+"t":::
+"=pubtype":::
+显示 **.debug_pubtypes** 和/或 **.debug_gnu_pubtypes** 节的内容。
+
+"T":::
+"=trace_aranges":::
+显示 **.trace_aranges** 节的内容。
+
+"u":::
+"=trace_abbrev":::
+显示 **.trace_abbrev** 节的内容。
+
+"U":::
+"=trace_info":::
+显示 **.trace_info** 节的内容。
+--
++
+注意：当前不支持显示 **.debug_static_funcs**、**.debug_static_vars** 以及 **debug_weaknames** 节的内容。
+
+--dwarf-depth=n::
+限制 **.debug_info** 节的 dump 至 __`n`__ 阶子级。仅当启用 `--debug-dump=info` 时有用。 +
+默认值为打印全部的 DIE；特殊值 `0` 也有相同的功能。
++
+对于非 `0` 的 __`n`__ 值，等于或深于 __`n`__ 阶的 DIE 均不会被打印。 __`n`__ 的取值范围包含 `0`。
+
+--dwarf-start=n::
+仅打印序号从 __`n`__ 开始的 DIE。仅当启用 `--debug-dump=info` 时有用。
++
+若指该选项，则所有头信息，以及全部早于序号 __`n`__ 的 DIE 均不会显示。仅有指定的 DIE 的同级和子级才会被显示。
++
+该选项可以与 **--dwarf-depth** 连用。
+
+-P::
+--process-links::
+显示链接至主文件的 debug 信息文件中的非 debug 段的内容。该选项会自动隐含 `-wK` 选项，且仅会显示其它命令行选项请求的节。
+
+--ctf[=section]::
+显示指定的 `CTF` 节的内容。`CTF` 节本身会包含很多子节，它们也会依序一并显示出来。
++
+默认情况下，会显示名为 `.ctf` 的节的名称，该名称是由 `ld` 指定的。
+
+--ctf-parent=member::
+若 `CTF` 包含模糊定义的类型，那么它会包含一个由很多 `CTF` 字典组成的包，这些字典全部继承自一个包含明确类型的字典。该成员的默认名为 `.ctf`，同包含它的节一致，但也可以在链接时通过 `ctf_link_set_memb_name_changer` 函数修改其名称。若一个 CTF 包的父级包的成员的名字已被链接器修改，那么就可以使用 `-ctf-parent` 来指定父级使用的名称。
+
+--ctf-symbols=section::
+--ctf-strings=section::
+指定 CTF 文件可以用于继承字符串和符号的其它节的名称。默认情值为 `.symtab` 以及其链接的字符串表。
++
+两个选项要么同时不指定，要么同时指定。
+
+-I::
+--histogram::
+在显示符号表的内容的时候，显示一个 bucket list 长度的直方图。
+
+-v::
+--version::
+显示 readelf 的版本号。
+
+-W::
+--wide::
+不要将输出列数限制在 80 字符。默认情况下，readelf 会在读取 64 位 ELF 文件时截断节头以及段列表行，来适应 80 列。对于远宽于 80 列的终端来说，它会将一个节打印在一行里，让输出更易读。
+
+
+-T::
+--silent-truncation::
+通常情况下，当 readelf 打印一个符号名称、且不得不将名称限制在 80 列宽时，它会在名称后添加 `[...]`。该命令行关闭了该行为，允许打印 5 个更多的字节，并还原旧的（早于 2.35 版本的） readelf 的行为。
+
+-H::
+--help::
+显示 readelf 可以理解的命令行参数。
+
+@__file__::
+从文件中读取命令行参数。读取到的参数将在 `@file` 选项所在位置插入。若文件不存在、或不可读，则该选项将作为字面量读入，而非移除。
++
+文件中的选项将以白空格间隔。若一个选项中有一个白空格，则需要将整个选项用单引号或双引号引起。任何字符（包括反斜线）都可以通过在其前添加一个反斜线来引入。该文件自身还可以包含额外的 `@file` 选项；此类选项会被递归处理。
+
+== 参见
+
+__（略）__
+
+== 版权
+
+__（略）__
