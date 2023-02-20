@@ -98,7 +98,7 @@ nmake -f ..\Makefile.msc sqlite3.exe sqlite3_analyzer.exe sqlite3_checker.exe sq
 
 Linux 的编译可以简单，也可以复杂
 
-较为简单的方法，可以跳过 Tcl 的编译，安装 Tcl-devel 包，直接开始编译 SQLite，也可以先编译 Tcl，再编译 SQLite
+较为简单的方法，可以跳过 Tcl 的编译，安装 Tcl-devel 包，直接开始编译 SQLite
 
 这里主要介绍较为复杂的方法，较为复杂的方法实现的目标是，使用最新的 Tcl 和 SQLite 源码，并将它们的动态库链接路径设置为与程序所在目录相对的路径下（方便移动路径）
 
@@ -191,7 +191,7 @@ mkdir sqlite_build
 配置并编译 SQLite
 
 [source, bash]
-.使用 dnf 安装的 tcl-devel 编译 SQLite
+.简单方案：使用 dnf 安装的 tcl-devel 编译 SQLite
 ----
 dnf install tcl-devel
 
@@ -208,7 +208,7 @@ make sqlite3 sqldiff sqlite3_analyzer sqlite3_checker sqlite3_expert
 ----
 
 [source, bash]
-.手动编译 Tcl 之后，编译 SQLite 的操作
+.复杂方案：手动编译 Tcl 之后，编译 SQLite 的操作
 ----
 cd sqlite_build
 
@@ -223,6 +223,7 @@ cd sqlite_build
 ../sqlite/configure --disable-amalgamation --enable-all --enable-tempstore --enable-update-limit --disable-static --prefix='' TCLSH_CMD="../local/bin/tclsh8.7" TCLLIBDIR='/lib' CPPFLAGS='-I../local/include' LDFLAGS='-L../local/lib -Wl,-rpath,\$$ORIGIN/../lib'
 
 # 指定要编译的五个软件
+# 如果有多个 CPU 核心，可以添加 -j<线程数> 来多线程编译
 make all sqldiff sqlite3_analyzer sqlite3_checker sqlite3_expert
 
 # 安装到 source_code/local 路径下
