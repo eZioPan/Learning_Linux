@@ -1,24 +1,25 @@
 = Grub 简单配置处理
 :experimental:
 
-:invoking_grub_mkconfig: link:https://www.gnu.org/software/grub/manual/grub/html_node/Invoking-grub_002dmkconfig.html#Invoking-grub_002dmkconfigp[Invoking grub-mkconfig]
-:booting: link:https://www.gnu.org/software/grub/manual/grub/html_node/Booting.html#Booting[Booting]
-:shell_link_scripting: link:https://www.gnu.org/software/grub/manual/grub/html_node/Shell_002dlike-scripting.html#Shell_002dlike-scripting[Shell-like scripting]
-:environment_block: link:https://www.gnu.org/software/grub/manual/grub/html_node/Environment-block.html#Environment-block[Environment block]
-:vendor_power_on_keys: link:https://www.gnu.org/software/grub/manual/grub/html_node/Vendor-power_002don-keys.html#Vendor-power_002don-keys[Vendor power-on keys]
-:serial: link:https://www.gnu.org/software/grub/manual/grub/html_node/serial.html#serial[serial]
-:gfxmode: link:https://www.gnu.org/software/grub/manual/grub/html_node/gfxmode.html#gfxmode[gfxmode]
-:gfxpayload: link:https://www.gnu.org/software/grub/manual/grub/html_node/gfxpayload.html#gfxpayload[gfxpayload]
-:fallback: link:https://www.gnu.org/software/grub/manual/grub/html_node/fallback.html#fallback[fallback]
-:default: link:https://www.gnu.org/software/grub/manual/grub/html_node/default.html#default[default]
-:play: link:https://www.gnu.org/software/grub/manual/grub/html_node/play.html#play[play]
-:badram: link:https://www.gnu.org/software/grub/manual/grub/html_node/badram.html#badram[badram]
+:grub_manual: https://www.gnu.org/software/grub/manual/grub/html_node
+:invoking_grub_mkconfig: link:{grub_manual}/Invoking-grub_002dmkconfig.html#Invoking-grub_002dmkconfigp[Invoking grub-mkconfig]
+:booting: link:{grub_manual}/Booting.html#Booting[Booting]
+:shell_link_scripting: link:{grub_manual}/Shell_002dlike-scripting.html#Shell_002dlike-scripting[Shell-like scripting]
+:environment_block: link:{grub_manual}/Environment-block.html#Environment-block[Environment block]
+:vendor_power_on_keys: link:{grub_manual}/Vendor-power_002don-keys.html#Vendor-power_002don-keys[Vendor power-on keys]
+:serial: link:{grub_manual}/serial.html#serial[serial]
+:gfxmode: link:{grub_manual}/gfxmode.html#gfxmode[gfxmode]
+:gfxpayload: link:{grub_manual}/gfxpayload.html#gfxpayload[gfxpayload]
+:fallback: link:{grub_manual}/fallback.html#fallback[fallback]
+:default: link:{grub_manual}/default.html#default[default]
+:play: link:{grub_manual}/play.html#play[play]
+:badram: link:{grub_manual}/badram.html#badram[badram]
 
 
 [NOTE]
 ====
 本文译自：GNU 关于 GRUB 的官方文档 +
-link:https://www.gnu.org/software/grub/manual/grub/html_node/Simple-configuration.html#Simple-configuration[6.1 Simple configuration handling]
+link:{grub_manual}/Simple-configuration.html#Simple-configuration[6.1 Simple configuration handling]
 ====
 
 大多数情况下，均可使用程序 `grub-mkconfig`（参见 {invoking_grub_mkconfig}）生成 `grub.cfg`。它适用于升级一个分发版的情况，它会自动发现可用的内核，并尝试为它们生成菜单条目。
