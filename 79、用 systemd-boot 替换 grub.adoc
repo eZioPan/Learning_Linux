@@ -1,6 +1,6 @@
 = 用 systemd-boot 替换 grub
 
-systemd-boot 是 systemd 推出的仅支持 UEFI 模式启动的 boot loader，相较于 grub，systemd-boot 的配置更简单，使用也更加方便
+systemd-boot 是 systemd 推出的仅支持 UEFI 模式启动的 boot loader，相较于 grub，systemd-boot 的配置更简单，使用也更加方便 +
 如果你的机器支持 UEFI 启动，且你的系统也仅需 UEFI 启动，那么可以考虑使用 systemd-boot 替换 grub
 
 [IMPORTANT]
@@ -201,7 +201,8 @@ mount /boot
 # 取消 EFI 分区的挂载
 umount /boot
 
-# 用 lsblk --byte /dev/<EFI 分区> 确认 EFI 分区的总容量
+# 确认 EFI 分区的总容量
+lsblk --byte /dev/<EFI 分区>
 
 # 用 fatresize 命令扩充文件系统
 # 其中容量为 lsblk 返回的容量再减去 1
