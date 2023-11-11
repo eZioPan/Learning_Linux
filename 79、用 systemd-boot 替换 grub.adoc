@@ -1,0 +1,229 @@
+= 用 systemd-boot 替换 grub
+
+systemd-boot 是 systemd 推出的仅支持 UEFI 模式启动的 boot loader，相较于 grub，systemd-boot 的配置更简单，使用也更加方便
+如果你的机器支持 UEFI 启动，且你的系统也仅需 UEFI 启动，那么可以考虑使用 systemd-boot 替换 grub
+
+[IMPORTANT]
+====
+. 本文仅在 x64 架构上测试成功，其它架构（如 AArch64）请确认是否需要额外的操作步骤
+. 下面的操作仅支持 **非 Secure Boot** 模式，已经开启 **Secure Boot** 的机器切勿尝试
+====
+
+== 操作概述
+
+我们这里使用的系统为 Fedora 39，实际上，即便是默认使用 grub 安装的 Fedora 39，也是默认就安装了 systemd-boot 所需要的配置文件的，因此我们的操作就简化为了
+
+. 用 `bootctl` 将 systemd-boot 的 .efi 文件注入 EFI 分区中
+. 拷贝 `/boot` 中相关的文件到 EFI 分区中
+. 让机器的 UEFI 加载 systemd-boot，并引导至操作系统
+. 移除 grub 相关的程序和配置文件
+
+需要注意的一些路径：
+
+. **/boot**，Fedora 将启动相关的信息（比如 grub 的 .efi 文件和配置信息）保存在一个独立的磁盘分区中，该分区就会被 Fedora 挂载在 **/boot** 分区下，默认情况下，该分区为磁盘的第二个分区，且其文件系统为 ext4
+. **/boot/efi**，该路径并非是 **/boot** 对应的磁盘分区的内容，而是 EFI 分区的挂载路径，它的文件系统为 EFI Filesystem（其实是 FAT32）
+
+== 详细步骤
+
+[IMPORTANT]
+====
+实际操作前须知： +
+错误操作 boot loader 会导致引导失败，虽然不会直接导致数据丢失，但会导致无法正确引导至系统 +
+强烈建议在实际操作之前，使用虚拟机完整走一遍流程，再**考虑**是否要实际引用在 bare metal 上
+====
+
+=== 安装 systemd-boot-unsigned
+
+该包中包含了一些我们需要的文件
+
+[source, bash]
+----
+dnf install systemd-boot-unsigned
+----
+
+=== 将 systemd-boot 引导写入 EFI 分区中
+
+[source, bash]
+----
+bootctl install
+----
+
+该操作将会在 **/boot/efi** 中释放相关的文件，主要是覆盖了 **EFI/BOOT/BBOTX64.efi**，并新增了 **EFI/systemd/systemd-boot.efi**，并在 EFI 自己的 NVRAM 里写入 systemd-boot 对应的启动项配置，我们可以通过 `efibootmgr` 命令观察到名为 `Linux Boot Manager` 的启动项
+
+之后我们就可以通过下面的命令查看可以由 systemd-boot 引导的系统
+
+[source, bash]
+----
+bootctl - list
+----
+
+不过就默认的配置来说，它应该返回 **No boot loader entries found.**，也就是说，没有任何一个系统可以被 systemd-boot 引导。因此我们还需执行后面的操作，让 systemd-boot 有操作系统可以引导
+
+=== 拷贝所需文件到 EFI 分区中
+
+你至少需要拷贝的文件有
+
+* 内核文件 ** /boot/vmlinuz-* **
+* 加载系统时使用的 ramdisk ** /boot/initramfs-* **
+* systemd-boot 可引导系统的配置文件夹 ** /boot/loader **（注意需要拷贝整个文件夹）
+
+可以拷贝的文件有
+
+* 内核编译配置文件 ** /boot/config-* **
+* 内核的符号表 ** /boot/System.map-* **
+
+无需拷贝的文件有
+
+* grub2 配置文件 **/boot/grub2**
+
+无法拷贝的文件有
+
+* ** /boot/symvers-* **，它其实是一个符号连接，不过由于 EFI 分区的 FAT32 不支持符号链接，因此这个文件是无法拷贝的
+* **/boot/efi** 这个是我们的目标文件夹，因此也无需拷贝
+
+然后我们就可以将上面提到的文件拷贝至 **/boot/efi** 中了
+
+[source, bash]
+----
+cp -r /boot/vmlinuz-* /boot/initramfs-* /boot/loader /boot/System.map-* /boot/config-* /boot/efi
+----
+
+之后我们再次执行 `bootctl - list`，就可以看到其中列出了不少可以被引导的引导项了
+
+到此，我们就可以重启电脑，通过 systemd-boot 引导系统了
+
+=== 重启后的配置
+
+在重启之后，我们再次使用 `bootctl - list` 命令，就可以看到其输出中有
+
+[source]
+----
+Current Boot Loader:
+    Product: systemd-boot XXX
+----
+
+字样，就表示本次启动是通过 systemd-boot 引导的了。
+
+不过我们在启动过程中，应该没有看到任何的启动菜单界面，这个并不符合我们的要求，因此我们还需要再做一些配置，让启动菜单显示出来。
+
+修改 **/boot/efi/loader/loader.conf** 文件，将 `timeout 3` 这行前的注释去掉，然后保存文件。再次重启，就能看到 systemd-boot 的启动菜单界面了。
+
+其实到这一步，我们的系统就已经是 systemd-boot 引导的了，我们就可以着手删除 grub 相关的程序和配置了
+
+=== 【可选】删除 grub 引导
+
+[IMPORTANT]
+====
+请再次确认系统可以正确被 systemd-boot 引导，否则我们在删除 grub 之后，可能会造成引导失败
+====
+
+[NOTE]
+====
+在这个步骤中，我们将
+
+. 删除 grub 和 shim
+. 为 systemd-boot-unsigned 包添加保护
+. 将 /boot 对应的分区删除，将其容量交给 EFI 分区
+. 调整 EFI 分区的挂载目录为 /boot，方便后续系统更新
+====
+
+. 移除 dnf 中 grub2、shim 包相关的保护
++
+[source, bash]
+----
+rm -f /etc/dnf/protected.d/grub2-*.conf /etc/dnf/protected.d/shim.conf
+----
+. 为 systemd-boot-unsigned 包添加保护 +
+在 **/etc/dnf/protected.d/** 下添加文件 **systemd-boot-unsigned.conf**，并在其中写入下面的内容
++
+[source]
+----
+systemd-boot-unsigned
+----
+. 测试 systemd-boot-unsigned 是否被保护成功
++
+[source, bash]
+----
+dnf remove --setop=tsflags=test systemd-boot-unsigned
+----
++
+如果返回错误表示要移除的是 **protected packages** 则表示保护成功
+. 移除 grub 和 shim 相关的包
++
+[IMPORTANT]
+====
+执行移除之后，**切勿关机**，此时系统缺失 **/boot/efi/BOOT/BOOTX64.EFI** 这个文件，会无法自动引导操作系统 +
+如果此时不幸系统掉电，则请在机器启动时，进入 UEFI Shell，然后通过 FS0: 进入第一个文件系统，然后 EFI\systend\systemd-bootx64.efi 启动系统
+====
++
+[source, bash]
+----
+dnf remove grub* shim* mactel-boot
+----
++
+注：我的电脑不是 mac，因此我还移除了引导 mac 相关的 mactel-boot 包
++
+之后我们再次进入到 **/boot/efi/BOOT/** 和 **/boot/fedora/** 下，就可以发现 grub 相关的 .efi 文件已经被移除了 +
+然后我们就需要将 `systemd-bootx64.efi` 拷贝为 `BOOTX64.efi`，并放到到对应的目录里
++
+[source, bash]
+----
+cp /boot/efi/EFI/systemd/systemd-bootx64.efi /boot/efi/EFI/BOOT/BOOTX64.EFI
+----
+. 移除 efi 分区中 grub 残余的文件
++
+[source, bash]
+----
+rm -rf /boot/efi/fedora
+----
+. 卸载 EFI 分区和 /boot 对应的分区
++
+[source, bash]
+----
+umount /boot/efi /boot
+----
+. 删除 /boot 对应的分区，并将其容量扩充给 EFI 分区 +
+用 gdisk 删除 /boot 对应的分区和 EFI 分区，然后再重新建立 EFI 分区，在建立 EFI 分区的时候，其分区类型的编号为 `EF00`
+. 用 `lsblk -o+UUID` 确认 EFI 分区的文件系统的 UUID；修改 **/etc/fstab**，移除原有的 /boot 挂载点的信息，并将 EFI 分区的挂载点从 /boot/efi 修改到 /boot，并确认 EFI 分区的 UUID 和 `lsblk` 返回的一致 +
+并尝试挂载 EFI 到 /boot
++
+[source, bash]
+----
+mount /boot
+----
++
+确认挂载正常，内容无误后
+. 重启电脑
+. 通过 `fatresize` 命令扩展 EFI 分区上文件系统的大小
++
+[source, bash]
+----
+# 取消 EFI 分区的挂载
+umount /boot
+
+# 用 lsblk --byte /dev/<EFI 分区> 确认 EFI 分区的总容量
+
+# 用 fatresize 命令扩充文件系统
+# 其中容量为 lsblk 返回的容量再减去 1
+fatresize -s <容量> /dev/<EFI 分区>
+----
+. 再次重启电脑
+. 使用 `efibootmgr` 检查是否有残余的 EFI 启动项，如果有，用 `efibootmgr --bootnum <要删除的启动项编号> --delete-bootnum` 清除
+
+到此，我们就完成了使用 systemd-boot 作为唯一 boot loader 的流程
+
+== 其它常见的操作
+
+=== systemd-boot 启动菜单的尺寸过小
+
+这个一般出现在屏幕是高 DPI 屏的时候，直接按 r 键，就能切换显示模式，一般都有一到两个模式是能放大显示的
+
+=== 无法通过 loader.conf 文件设置 systemd-boot 启动菜单的 timeout
+
+一般来说，是由于在启动菜单中设置了 timeout，或者通过 `bootctl set-timeout` 导致的 +
+这两个方法会直接将 timeout 设置到 EFI 专有的 NVRAM 中，而且 NVRAM 中的值的优先度是高于 loader.conf 配置文件的 +
+因此我们有两种方案解决这个问题
+
+* 直接在 systemd-boot 启动菜单中按减号键 `-`，直到屏幕上显示 **Menu timeout defined by configuration file.**
+* 删除 /sys/firmware/efi/efivars/LoaderConfigTimeout-4a67b082-0a4c-41cf-b6c7-440b29bb8c4f 这个 EFI 变量 +
+删除前需要用 `chattr -i` 移除该文件的删除保护
