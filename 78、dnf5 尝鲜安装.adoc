@@ -1,0 +1,37 @@
+= DNF5 尝鲜安装
+
+DNF5 是用 C++ 重写的 dnf 软件，它极大的提高了 dnf 处理数据的能力，因此缩短了 dnf 的查询时间
+
+[IMPORTANT]
+====
+如果你在使用一些 python 写的 dnf 命令行插件，那么我建议你先不要尝试用 dnf5 替换 dnf4，因为 dnf5 目前（2023 Nov）还不支持（未来也可能不打算支持）python 写的 cli 插件
+====
+
+[NOTE]
+====
+如果不想用 dnf5 替换默认的 dnf 命令，那么直接 `dnf install dnf5` 即可 +
+此时 dnf 命令依旧会使用 dnf4，而要使用 dnf5 则必须输入 dnf5
+
+下面说的是要将 dnf 命令替换为 dnf5 的版本，而 dnf4 则需要使用 dnf4 调用的方法
+====
+
+[source, bash]
+----
+# 启用 dnf5-testing copr 仓库
+# 该仓库下的 dnf5，在构建时，启用了替换 dnf 的功能
+dnf copr enable rpmsoftwaremanagement/dnf5-testing
+
+# 用 dnf 下载 dnf5 的 rpm 包
+dnf download --arch x86_64 dnf5 libdnf5 libdnf5-cli
+
+# 移除 dnf 和 yum
+# 注意，包名一定要加引号，否则 bash 会搜索当前目录下的 rpm 文件
+# 由于 dnf 默认是被保护的状态，不可以移除，因此我们要使用 --setopt protected_packages= 在命令行中清空 dnf 的保护
+dnf remove --setopt protected_packages= 'dnf*' 'yum*'
+
+# 通过 rpm 安装 dnf5
+rpm -i ./dnf5* ./libdnf5*
+
+# 用 repo 中的 dnf5 libdnf5 libdnf5-cli 替换我们本地安装的版本
+dnf reinstall dnf5 libdnf5 libdnf5-cli
+----
