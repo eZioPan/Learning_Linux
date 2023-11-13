@@ -228,3 +228,4 @@ fatresize -s <容量> /dev/<EFI 分区>
 * 直接在 systemd-boot 启动菜单中按减号键 `-`，直到屏幕上显示 **Menu timeout defined by configuration file.**
 * 删除 /sys/firmware/efi/efivars/LoaderConfigTimeout-4a67b082-0a4c-41cf-b6c7-440b29bb8c4f 这个 EFI 变量 +
 删除前需要用 `chattr -i` 移除该文件的删除保护
+** **4a67b082-0a4c-41cf-b6c7-440b29bb8c4f** 这个 UUID 是 systemd-boot 专属的 vendor UUID，见 link:https://systemd.io/BOOT_LOADER_INTERFACE/[The Boot Loader Interface]
