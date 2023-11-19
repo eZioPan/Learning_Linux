@@ -31,7 +31,23 @@ dnf remove --setopt protected_packages= 'dnf*' 'yum*'
 
 # 通过 rpm 安装 dnf5
 rpm -i ./dnf5* ./libdnf5*
+----
 
-# 用 repo 中的 dnf5 libdnf5 libdnf5-cli 替换我们本地安装的版本
+之后，为了保证我们一直优先使用 copr 的 dnf5，我们可以设置一下这个 copr 仓库的优先级 +
+编辑 **/etc/yum.repos.d/_copr:copr.fedorainfracloud.org:rpmsoftwaremanagement:dnf5-testing.repo** 这个文件，在其中加入一行
+
+[source]
+----
+priority=95
+----
+
+默认情况下，一个 repo 的优先级为 99，值越小越优先，这里设置到 95，就可以保证比 update 和 fedora 这两个 repo 更加优先
+
+然后，我们用 repo 中的 dnf5 libdnf5 libdnf5-cli 替换我们本地安装的版本
+
+[source, bash]
+----
 dnf reinstall dnf5 libdnf5 libdnf5-cli
 ----
+
+另：在使用 `sudo` 的时候，将被 sudo 的指令所需要的环境变量写在 `sudo` 的后面，默认情况下，sudo 前面的环境变量是不会传递给里面的命令的
