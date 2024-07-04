@@ -105,11 +105,12 @@ wsl --shutdown
 
 === 启用 systemd 之后需要的额外配置
 
-WSL 并没有通过 DHCP 给出 ip 地址，因此，我们可以关闭 systemd-networkd
+WSL 并没有通过 DHCP 给出 ip 地址，因此，我们可以关闭 systemd-networkd.service +
+另外我们还要关闭 systemd-networkd-wait-online.service
 
 [source, sh]
 ----
-systemctl disable systemd-networkd
+systemctl disable systemd-networkd.service systemd-networkd-wait-online.service
 ----
 
 最后，重启 Guest 系统
@@ -154,3 +155,25 @@ dnf install man
 ----
 dnf repoquery --installed | sudo xargs dnf reinstall -y
 ----
+
+=== 缩减 vhdx 大小
+
+wsl2 的 vhdx 默认只扩大，不缩小，有时候在我们删除了大量文件之后，可以手动缩小 vhdx 来节省硬盘空间
+
+首先停止 wsl2
+
+[source, powershell]
+----
+wsl --shutdown
+----
+
+以管理员模式启动 powershell，并运行
+
+[source, powershell]
+----
+Optimize-VHD -Path <ext4.vhdx 路径> -Mode Full
+----
+
+就可以缩小 vhdx 盘的大小
+
+注意我们不用手动修改 ext4 文件系统的大小。
