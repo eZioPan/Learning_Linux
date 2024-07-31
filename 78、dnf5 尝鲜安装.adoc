@@ -2,39 +2,106 @@
 
 DNF5 是用 C++ 重写的 dnf 软件，它极大的提高了 dnf 处理数据的能力，因此缩短了 dnf 的查询时间
 
+[NOTE]
+====
+Update 2024/7
+
+Fedora 41 似乎已经准备将 dnf 从 dnf4 替换为 dnf5 link:https://fedoraproject.org/wiki/Changes/SwitchToDnf5#Current_status[]
+
+如果不是很想尝鲜，也可以等待 Fedora 41 发布了再说。
+====
+
 [IMPORTANT]
 ====
 如果你在使用一些 python 写的 dnf 命令行插件，那么我建议你先不要尝试用 dnf5 替换 dnf4，因为 dnf5 目前（2023 Nov）还不支持（未来也可能不打算支持）python 写的 cli 插件
 ====
 
-[NOTE]
-====
-如果不想用 dnf5 替换默认的 dnf 命令，那么直接 `dnf install dnf5` 即可 +
-此时 dnf 命令依旧会使用 dnf4，而要使用 dnf5 则必须输入 dnf5
+== 安装流程
 
-下面说的是要将 dnf 命令替换为 dnf5 的版本，而 dnf4 则需要使用 dnf4 调用的方法
-====
+我们当前的目标是使用 dnf5 **替换** dnf4 作为调用 `dnf` 命令时默认使用的 dnf 版本。 +
+为了达到这个目标，我们需要
 
-[source, bash]
+. 借用 fedora update 仓库里的 dnf5 作为中介，让我们可以正常卸载 dnf4
+. 卸载 dnf4
+. 启用 rpmsoftwaremanagement 的 dnf5 的 copr 仓库
+. 通过更新将 fedora update 仓库的 dnf5 替换为 copr 仓库的 dnf5，让 `dnf` 命令默认调用 dnf5
+
+=== 从 update 仓库安装 dnf5
+
+[source, sh]
 ----
-# 启用 dnf5-testing copr 仓库
-# 该仓库下的 dnf5，在构建时，启用了替换 dnf 的功能
-dnf copr enable rpmsoftwaremanagement/dnf5-testing
-
-# 用 dnf 下载 dnf5 的 rpm 包
-dnf download --arch x86_64 dnf5 libdnf5 libdnf5-cli
-
-# 移除 dnf 和 yum
-# 注意，包名一定要加引号，否则 bash 会搜索当前目录下的 rpm 文件
-# 由于 dnf 默认是被保护的状态，不可以移除，因此我们要使用 --setopt protected_packages= 在命令行中清空 dnf 的保护
-dnf remove --setopt protected_packages= 'dnf*' 'yum*'
-
-# 通过 rpm 安装 dnf5
-rpm -i ./dnf5* ./libdnf5*
+dnf install dnf5
 ----
+
+若你之前已经启用了 dnf5 的 copr 仓库但没有成功安装 dnf5，那么你还需要在这一步临时禁用它
+
+* 如果启用的是 dnf5-testing copr
++
+[source, sh]
+----
+dnf install dnf5 --disablerepo="copr:copr.fedorainfracloud.org:rpmsoftwaremanagement:dnf5-testing"
+----
+* 如果启用的是 dnf5-testing-nightly copr
++
+[source, sh]
+----
+dnf install dnf5 --disablerepo="copr:copr.fedorainfracloud.org:rpmsoftwaremanagement:dnf5-testing-nightly"
+----
+
+=== 卸载 dnf4
+
+[source, sh]
+----
+# 注意这里要使用 dnf5 命令
+dnf5 remove dnf
+----
+
+=== 启用 copr
+
+一般来说，安装的 dnf5 是没有 copr 自命令的，因此我们需要安装它
+
+[source, sh]
+----
+# 这里最好给包名添加双引号，因为圆括号在一些 shell 中有特殊的含义
+dnf5 install "dnf5-command(copr)"
+----
+
+启用对应的 copr（下面的仓库二选一）
+
+[source, sh]
+----
+# 如果你想启用测试仓库
+dnf5 copr enable "rpmsoftwaremanagement/dnf5-testing"
+# 如果你想启用每夜构建仓库
+dnf5 copr enable "rpmsoftwaremanagement/dnf5-testing-nightly"
+----
+
+=== 更新 dnf
+
+[source, sh]
+----
+dnf5 update dnf5
+----
+
+[TIP]
+====
+如果在这个操作中遇到了一些文件冲突错误，则我们可以手动删除冲突的包，再更新 dnf
+====
+
+== 将 dnf5 替换为 fedora update 中的 dnf4
+
+从原理上来说，其实和将 dnf4 替换为 dnf5 的逻辑是类似的，这里我们做一个简要说明
+
+. 安装 copr 仓库中的 dnf4
+. 通过 dnf4 移除 dnf5
+. 安装 dnf4 的 copr 子命令
+. 通过 dnf4 copr 命令禁用 copr 仓库
+. 通过 dnf4 的 distro-sync 子命令将系统中安装的 dnf4 同步为 fedora update 仓库中的 dnf4
+
+== 其它
 
 之后，为了保证我们一直优先使用 copr 的 dnf5，我们可以设置一下这个 copr 仓库的优先级 +
-编辑 **/etc/yum.repos.d/_copr:copr.fedorainfracloud.org:rpmsoftwaremanagement:dnf5-testing.repo** 这个文件，在其中加入一行
+编辑 **/etc/yum.repos.d/_copr:copr.fedorainfracloud.org:rpmsoftwaremanagement:dnf5-testing.repo** 或 ****/dnf5-testing-nightly.repo** 这个文件，在其中加入一行
 
 [source]
 ----
@@ -42,12 +109,5 @@ priority=95
 ----
 
 默认情况下，一个 repo 的优先级为 99，值越小越优先，这里设置到 95，就可以保证比 update 和 fedora 这两个 repo 更加优先
-
-然后，我们用 repo 中的 dnf5 libdnf5 libdnf5-cli 替换我们本地安装的版本
-
-[source, bash]
-----
-dnf reinstall dnf5 libdnf5 libdnf5-cli
-----
 
 另：在使用 `sudo` 的时候，将被 sudo 的指令所需要的环境变量写在 `sudo` 的后面，默认情况下，sudo 前面的环境变量是不会传递给里面的命令的
