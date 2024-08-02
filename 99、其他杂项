@@ -173,21 +173,15 @@ AcceptEnv 字段未被注释
 
 
 
-有关 Putty 无法正常显示方框绘制字符（line-drawing）的解决方法
+有关 PuTTY 无法正常显示方框绘制字符（line-drawing）的解决方法
 
+比如在编译内核的时候 make menuconfig 就不会正确显示边框
 
-在 C 语言库 NCURSES 输出方块绘制符时默认不检测显示终端是否会正确显示
-用于 VT100 终端 line-drawing 的 Alternate Character Set, a.k.a ACS
+这是因为即便在 UTF-8 编码下，make menuconfig 依旧会使用 DEC Special Graphics 来绘制边框，
+很明显这些特殊的编码被 PuTTY 解析为了 UTF-8 编码，导致绘制边框出现问题。
 
-此时使用 UTF-8 编码的 Putty 会错误的显示 ACS，可以向 shell 传递
-
-NCURSES_NO_UTF8_ACS=1
-
-或者
-
-export NCURSES_NO_UTF8_ACS=1
-
-让 NCURSES 库在检测到 UTF8 locale 后不要使用 ASC 来显示方框绘制符
+我们需要启用 PuTTY 的配置 Window - Translation - Adjust how PuTTY handles line drawing characters - Enable VT100 line drawing even in UTF-8 mode
+让其可以正确绘制边框
 
 
 
