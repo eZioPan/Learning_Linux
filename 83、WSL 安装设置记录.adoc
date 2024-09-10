@@ -108,9 +108,11 @@ wsl --shutdown
 WSL 并没有通过 DHCP 给出 ip 地址，因此，我们可以关闭 systemd-networkd.service +
 另外我们还要关闭 systemd-networkd-wait-online.service
 
+systemd-homed.service 也是无法兼容 WSL 的，所以也可以一并关闭了
+
 [source, sh]
 ----
-systemctl disable systemd-networkd.service systemd-networkd-wait-online.service
+systemctl disable systemd-networkd.service systemd-networkd-wait-online.service systemd-homed.service
 ----
 
 最后，重启 Guest 系统
