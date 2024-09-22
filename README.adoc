@@ -14,7 +14,7 @@ Linux 学习笔记，最初基于 **鸟哥的 Linux 私房菜 第四版** https:
 
 == 当前活跃编写内容
 
-SQLite，第 82 章
+SELinux，第 77 章
 
 == 部分参考的文章来源列表
 
@@ -22,6 +22,8 @@ SQLite，第 82 章
 
 * 主线流程
 ** 鸟哥的 Linux 私房菜 第四版（CentOS7） https://linux.vbird.org/linux_basic/centos7/
+
+* SELinux 《SELinux System Administration, 3rd Edition》
 
 * Kea DHCP 官方文档 https://kea.readthedocs.io/
 

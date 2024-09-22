@@ -1,0 +1,110 @@
+= SELinux 基础概念
+
+== LSM - Linux Security Modules
+
+LSM —— Linux 安全模块，是 Linux 内核的一个子系统（subsystem），SELinux 正是依托于这个子系统而运行的。
+
+内核在处理一个用户空间请求之前，就会调用 LSM 子系统。这些“请求”即为**系统调用**。
+
+在 LSM 的实现上，LSM 本身并没有任何安全功能，它依赖于系统中实际实现了安全功能的内核模块——比如 SELinux、AppArmor 等等。
+
+检查当前正在运行的内核激活的 LSM 模块
+
+[source, sh]
+----
+cat /sys/kernel/security/lsm
+----
+
+== SELinux 是传统 DAC 的扩展
+
+注意，DAC 检查是先于 SELinux 检查的，也就是说，如果一个文件在文件权限检查（user/group/others 或 ACL）上不通过，则不会执行 SELinux 检查。
+
+这种先通过 DAC 检测，再通过 SELinux 检测的流程，实际上来自于 LSM 的实现。
+
+== SELinux 的组成部分
+
+SELinux 并非仅仅由 SELinux LSM 模块组成，它包含了多个部分：
+
+* SELinux 内核子系统，其通过 LSM 在 Linux 内核中实现
+* 库，需要与 SELinux 交互的程序使用它
+* 工具，与 SELinux 交互的管理员使用它
+* 策略（Policy），它确定了访问控制本身
+
+其中，库和工具由 SELinux 用户空间项目（link:https://github.com/SELinuxProject/selinux[]）提供。而且，由于 SELinux 的出现，部分初始化系统和部分核心工具也许要更新。
+
+== SELinux 上下文（context）
+
+SELinux 是通过上下文（context）来确定是否允许一个特定的操作的。这里的上下文同时包含**主体（subject）**（也就是操作的发起方）的上下文，和**对象（object）**（也就是操作的目标）的上下文。这些上下文（或部分上下文）会出现在策略规则中，SELinux 将其作为判断标准。
+
+SELinux 使用进程的**上下文**来唯一确认（identify）一个进程。SELinux 不关心 Linux 进程的所有权，也不关心进程如何被调用，或者进程的 PID 是什么，或者进程以什么用户运行。SELinux 仅关注进程的上下文，该上下文作为一个**标签（label）**呈现给管理员和用户。
+
+通常情况下“标签”和“上下文”是可以相互表述的。（从技术上来说，前者是后者的表现方式。）
+
+[source, sh]
+.显示当前用户的上下文
+----
+id -Z
+----
+
+返回值可能为 `unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023`
+
+准确来说，上面的命令显示的是 `id` 命令在运行的过程中，它的进程的上下文。
+
+SELinux 使用上下文，而非实际的进程和文件作为访问控制的判断依据，是基于如下考虑：
+
+* 文件可以被移动或重挂载，进程也可能使用不同的命名空间访问文件，此时文件的路径会变化。而基于标签的上下文，则不受影响。
+* 上下文可以很好地揭示进程的目的。基于二进制文件启动的方式，相同的二进制文件可以具有不同的上下文。通过上下文的值（比如 `id -Z` 所显示的）就可以确定每个运行的实例需要的权限；而且从上下文也可以反推出进程启动的情况，以及其目的。
+* 上下文也是对象（object）本身的抽象。上下文除了可以应用在进程和文件上，它也可以作用于抽象资源，比如管道（进程间通信），或数据库对象。
+
+比较下面两种表示：
+
+* 允许 `httpd` 进程绑定 `TCP` 端口 `80`
+* 允许具有 `httpd_t` 标签的进程绑定具有 `http_port_t` 标签的 `TCP` 端口
+
+第一种表示更简洁，但限制更多。而第二种方法下，规则本身则并不关心提供 HTTP 的实际进程是什么，也不关心 HTTP 实际能绑定的端口有哪些，它只关心 `httpd_t` 上下文可以绑定 `http_port_t` 上下文的端口，这样就可以减少规则指定的数量。
+
+让我们看一个进程的上下文：
+
+[source, sh]
+.检查 systemd 进程的上下文
+----
+ps -eZ | grep systemd
+----
+
+返回值
+
+[source, text]
+----
+system_u:system_r:init_t:s0           1 ?        00:00:03 systemd
+...
+----
+
+这个上下文由 4 部分组成
+
+* SELinux 用户（user） `system_u`
+* SELinux 角色（role） `system_r`
+* SELinux 类型（type）（对于正在运行的进程，类型又被称为域 domain） `init_t`
+* 以及敏感级别（sensitivity level） `s0`
+
+上下文的四个部分中，**第三部分 type，或称 domain**最为重要，因为绝大多数 SELinux 策略规则都是关于两个类型之间的交互的（它们并未提及角色、用户或敏感等级）。
+
+SELinux 上下文与 LSM 安全属性对齐，并以标准方式暴露给用户空间。用户可以在 `/proc/<PID>/attr/` 下找到数个文件，这些文件要么是空的，要么包含了 SELinux 上下文。若某个文件为空，则表示应用没有为那个特定的用途设置一个上下文，而这个上下文会从规则中推断，或者从父级继承。
+
+* current：显示进程的当前 SELinux 上下文
+* exec：通过该进程执行的新进程应该具有的 SELinux 上下文。通常为空。
+* fscreate：应用将写入的下一个文件的 SELinux 上下文。通常为空。
+* keycreate：引用在内核中缓存的密钥（kernel keyring 子系统）所赋予的 SELinux 上下文。通常为空。
+* prev：该进程的上一个 SELinux 上下文。通常为父进程的上下文。
+* socketcreate：应用创建的下一个套接字的 SELinux 上下文。通常为空。
+
+若一个进程有多个线程，则每个线程的 SELinux 上下文可以在 `/proc/<PID>/task/<taskid>/attr` 中查看。
+
+== 类型确定访问
+
+一个进程的 SELinux 类型是细分该进程的访问控制的基石。
+
+SELinux 是基于标签的（labed-based）访问控制机制，又可以表述为 SELinux 是**类型强制（type enforcement）**的强制访问控制系统（mandatory access control system, MAC）。
+
+有了类型强制，SELinux 可以基于程序的启动缘由来控制程序的行为：举例来说，systemd 运行的网页服务和用户直接运行的网页服务很有可能并不相同，因此依照两者进程的 SELinux 类型的不同，赋予不同的权利是必然的。
+
+SElinux 类型通常以 `_t` 为后缀，但并非强制的。
