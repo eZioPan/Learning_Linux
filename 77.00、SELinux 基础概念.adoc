@@ -1,6 +1,8 @@
 = SELinux 基础概念
 
-== LSM - Linux Security Modules
+== 更安全的 Linux
+
+=== LSM - Linux Security Modules
 
 LSM —— Linux 安全模块，是 Linux 内核的一个子系统（subsystem），SELinux 正是依托于这个子系统而运行的。
 
@@ -15,13 +17,13 @@ LSM —— Linux 安全模块，是 Linux 内核的一个子系统（subsystem�
 cat /sys/kernel/security/lsm
 ----
 
-== SELinux 是传统 DAC 的扩展
+=== SELinux 是传统 DAC 的扩展
 
 注意，DAC 检查是先于 SELinux 检查的，也就是说，如果一个文件在文件权限检查（user/group/others 或 ACL）上不通过，则不会执行 SELinux 检查。
 
 这种先通过 DAC 检测，再通过 SELinux 检测的流程，实际上来自于 LSM 的实现。
 
-== SELinux 的组成部分
+=== SELinux 的组成部分
 
 SELinux 并非仅仅由 SELinux LSM 模块组成，它包含了多个部分：
 
@@ -99,7 +101,7 @@ SELinux 上下文与 LSM 安全属性对齐，并以标准方式暴露给用户�
 
 若一个进程有多个线程，则每个线程的 SELinux 上下文可以在 `/proc/<PID>/task/<taskid>/attr` 中查看。
 
-== 类型确定访问
+=== 类型确定访问
 
 一个进程的 SELinux 类型是细分该进程的访问控制的基石。
 
@@ -108,3 +110,86 @@ SELinux 是基于标签的（labed-based）访问控制机制，又可以表述�
 有了类型强制，SELinux 可以基于程序的启动缘由来控制程序的行为：举例来说，systemd 运行的网页服务和用户直接运行的网页服务很有可能并不相同，因此依照两者进程的 SELinux 类型的不同，赋予不同的权利是必然的。
 
 SElinux 类型通常以 `_t` 为后缀，但并非强制的。
+
+=== 角色确定域访问
+
+SELinux 角色（SELinux 上下文的第二部分）允许 SELinux 支持基于角色的访问控制。虽然 SELinux 中最常见的就是类型强制，但是基于角色的访问控制也是保证系统安全的重要一环，特别是让系统远离刻意的用户尝试。SELinux 角色定义了可以从当前的上下文到哪些类型（域）。SELinux 角色帮助定义了一个用户（用户可以访问一个或多个角色）能做的和不能做的。
+
+通常来说，SELinux 角色使用 `_r` 后缀。
+
+`seinfo --role` 可以查看系统上存在的角色。
+
+=== 通过用户限制角色
+
+SELinux 用户（SELinux 上下文的第一部分）与 Linux 用户并不相同。虽然 Linux 用户可以在使用时修改（比如 `sudo`` 和 `su`）。即便 Linux 用户发生更改，SELinux 策略也可以（且大多数时候会）强制 SELinux 用户保持固定。这种稳定性让我们可以阻止用户通过获得特权账户而绕过权限限制。
+
+SElinux 用户的一个重要特性是，SELinux 用户确定了 Linux 用户可以获取的 SELinux 角色。也就是说一旦一个 Linux 用户赋予了一个 SELinux 用户，那么它就只能在与该 SELinux 用户关联的 SELinux 角色间切换。
+
+SELinux 通常以 `_u` 结尾，但并不强制。
+
+=== 通过敏感级别控制信息流动
+
+SELinux 上下文的第四分部为敏感（sensitivity）级别，它并非总是存在。SELinux 的可选的**多级安全（multilevel security, MLS）**需要这部分标签。该部分标签由两部分组成：一个保密值（confidentiality value）（前缀 `s`），以及一个类别值（catagory value）（前缀 `c`）。
+
+当 SELinux 启用 MLS 后，就可以遵循 Bell-LaPadula 模型，也即“不向上读，不向下写”。也就是说具有低保密值的进程不可以读取高保密值的文件的内容，而具有高保密值的进程不可以向低保密值的文件中写入内容。在 SELinux 中，最低保密值为 `s0`，s 后的数字越高，保密值越高。
+
+类别值则直接规定了主体/对象的类别，仅当主体与对象的类别值相匹配时，才可以通过访问检查。特别的，若一个系统不使用多个保密值，而使用多个类别值，则这种安全形式又称为**多类别安全（multi-category security, MCS）**
+
+== 定义与分发策略
+
+SELinux 必须依赖于策略才能运行。SELinux 策略通常以编译后的形式——称为策略模块（policy modules）——分发。之后，这些模块会整合为单一策略库，并加载至内存中。
+
+=== 书写 SELinux 策略
+
+目前有三种书写 SELinux 策略的方法
+
+* 标准 SELinux 源码格式，人类可读、著名的格式
+* 参考策略风格（reference policy），标准 SELinux 源码格式上扩展了 M4 宏，简化了开发
+* SELinux 通用中间语言（**common intermediate language, CIL**），机器可读的（部分人类可读的）格式
+
+大多数 SELinux 分发版都是基于“参考策略”（link:https://github.com/SELinxProject/refpolicy[]）的
+
+直接书写 SELinux CIL 格式的策略并不太常见，但其本身却大量使用（SELinux 用户空间工具会将所有策略转换为 CIL 格式）。
+
+.案例：三种格式的对比
+====
+允许具有 http_t 类型的进程绑定具有 http_port_t 类型的 TCP 端口
+
+标准 SELinux 源码格式
+
+`allow httpd_t http_port_t : tcp_socket { name_bind }`
+
+参考策略风格
+
+`corenet_tcp_bind_http_port(httpd_t)`
+
+CIL
+
+`(allow httpd_t http_port_t (tcp_socket (name_bind)))`
+====
+
+一般来说，一个策略的源码文件包含三种文件：
+
+* `.te` 文件，Type Enforcement，是规则编写的主文件（类似 C 的 .c 源码文件）
+* `.if` 文件，InterFace，SELinux 规则接口文件，可以为其它规则文件提供接口的和模板（类似于 C 的头文件）
+* `.fc` 文件，File Context，为文件赋予特定标签的定义
+
+=== 策略文件的编译流程
+
+. `.te` 文件和 `.if` 文件通过 `checkmodule` 生成 `.mod` 文件
+. `.mod` 文件和 `.fc` 文件通过 `semodule_package` 生成 `.pp` 文件
+. `.pp` 文件通过 `semodule` 转换为 `.hll` 文件
+. `.hll` 文件通过 `semodule` 翻译为 `.cil` 文件
+. `.cil` 文件通过 `semodule` 构建为 `policy.##` 文件
+
+=== 显示系统当前使用的策略
+
+一个系统在任何一个时间点上，能且只能激活一个单一策略，这个单一策略被存储在一个 **policy store** 中。
+
+[source, sh]
+.查询系统上激活的 SELinux policy store
+----
+sestatus | grep "Loaded policy name"
+----
+
+修改 **/etc/selinux/config** 中的 `SELINUXTYPE`，可以修改下次启动时加载的 policy store。
