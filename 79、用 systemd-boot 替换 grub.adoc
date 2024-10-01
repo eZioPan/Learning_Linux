@@ -229,3 +229,18 @@ fatresize -s <容量> /dev/<EFI 分区>
 * 删除 /sys/firmware/efi/efivars/LoaderConfigTimeout-4a67b082-0a4c-41cf-b6c7-440b29bb8c4f 这个 EFI 变量 +
 删除前需要用 `chattr -i` 移除该文件的删除保护
 ** **4a67b082-0a4c-41cf-b6c7-440b29bb8c4f** 这个 UUID 是 systemd-boot 专属的 vendor UUID，见 link:https://systemd.io/BOOT_LOADER_INTERFACE/[The Boot Loader Interface]
+
+=== 设置 Linux kernel 的命令行参数
+
+systemd 使用命令 `kernel-install` 来管理启动项，而且 system-install 具有 systemd-boot 的配置文件。
+
+kernel-install 的插件会读取 **/etc/kernel/cmdline** 来为 Linux kernel 添加命令行参数。因此我们可以修改 **/etc/kernel/cmdline** 的内容，并调用 `kernel-install` 来生成新的启动配置。
+
+**/etc/kernel/cmdline** 中就是要传递给 kernel 的参数文本，因此我们直接进行修改即可
+
+之后我们执行 `kernel-install add-all` 让 kernel-install 查找系统上存在的所有内核，并重新生成所有的启动条目。
+
+[NOTE]
+====
+kernel-install 二进制程序更像流程的前端处理器，它负责收集来自命令行和系统的信息，并呈递给插件（脚本）来处理实际的问题。
+====
