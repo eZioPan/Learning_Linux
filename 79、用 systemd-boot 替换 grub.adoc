@@ -232,7 +232,7 @@ fatresize -s <容量> /dev/<EFI 分区>
 
 === 设置 Linux kernel 的命令行参数
 
-systemd 使用命令 `kernel-install` 来管理启动项，而且 system-install 具有 systemd-boot 的配置文件。
+systemd 使用命令 `kernel-install` 来管理启动项，而且 kernel-install 具有 systemd-boot 的配置文件。
 
 kernel-install 的插件会读取 **/etc/kernel/cmdline** 来为 Linux kernel 添加命令行参数。因此我们可以修改 **/etc/kernel/cmdline** 的内容，并调用 `kernel-install` 来生成新的启动配置。
 

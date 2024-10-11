@@ -1,0 +1,211 @@
+= SELinux 用户登录管理
+
+== 用户导向的 SELinux 上下文
+
+以 targeted 策略运行的 SELinux 系统上，有很大概率，所有用户都以 `unconfined_u` 登录。
+
+SELinux 用户定义了用户可以切换的 SELinux 角色，而 SELinux 角色则定义了用户可以使用的应用域。默认情况下，系统上仅有固定数量的 SELinux 用户，但管理员可以自行创建额外的 SELinux 用户。而且管理员也需要负责将 Linux 用户与 SELinux 用户关联。
+
+SELinux 角色不可以通过管理员命令直接创建，因为 SELinux 角色是 SELinux 策略的一部分。
+
+通过 `seinfo --role` 查看当前系统上的 SELinux 角色。
+
+== SELinux 用户与角色
+
+在启用了 SELinux 的系统上，登录程序会调用 **libselinux** 的 API 来建立本地用户与 SELinux 用户的映射。之后系统会查询用户应该处于的角色和域，并据此设置用户的上下文。
+
+=== 列举 SELinux 用户映射
+
+通过 `semanage login --list` 命令可以查看本地用户与 SELinux 用户之间的映射关系。
+
+这条命令的返回值中，**Login Name** 为 **__default__** 的，表示若没有其它规则可以匹配的情况下，默认赋予的 SELinux 用户，以 **%** 开头的表示匹配的是本地的登录组；**Service** 列表示的是当前行的 SELinux 用户，是当某个用户以特定服务（比如 **sshd**）登录系统时，因该映射的 SELinux 用户。
+
+在匹配规则中，若一个登录用户同时匹配了登录组和用户，则使用用户匹配规则。若匹配上了多个登录组，则使用第一个匹配上的规则（顺序基于系统上的 `seusers` 配置文件（一般位于 **/etc/selinux/{SELinux 类型}/seusers** 文件中））。
+
+[WARNING]
+====
+* 我们不应该手动修改 seusers 配置文件，它仅应该被 `semange login` 管理
+* 若一个用户处于两个登录组中，且这两个登录组都有各自的 SELinux 用户映射，那么在创建 SELinux 用户映射的时候，SELinux 就会提示应该为该用户设置用户级别的映射规则，从而明确该用户的 SELinux 用户。
+====
+
+[IMPORTANT]
+====
+系统进程会统一使用 **system_u** SELinux 用户。这个 SELinux 用户绝不应该赋予任何终端用户。
+====
+
+=== 将用户映射至 SELinux 用户
+
+[source, sh]
+.将 `users` 用户组映射至 `user_u`
+----
+semanage login --add --seuser user_u &users
+----
+
+之后我们可以通过 `semanage login --list` 查看我们的修改。
+
+[source, sh]
+.指定额外的 MLS/MCS
+----
+semanage login --modify --seuser staff_u --range "s0-s0:c0.c4" %users
+----
+
+需要注意的是，当我们指定 MLS/MCS range 的时候，我们给出的 range 不能超过 SELinux 用户支持的 range。 +
+比如 **user_u** 就只有 `s0` 这个 range，我们是不能赋予 `s0:c0.c1023` 这个 range 的。
+
+注意，当我们更新了一个用户对应的 SELinux 用户，那么该用户会在下次登录的时候使用新 SELinux 用户。 +
+我们可以使用 `pkill -KILL -u <登录名>` 将指定的用户踢下线。
+
+注意，若我们修改了某用户的 SELinux 用户，则我们需要重置其家目录的 SELinux 上下文。
+
+[source, sh]
+----
+restorecon -RF <用户家目录路径>
+----
+
+=== 以服务区分登录
+
+SELinux 用户空间程序会参考下面两种文件来确定登录用户与 SELinux 用户的映射关系
+
+* **/etc/selinux/{SELinux 类型}/seusers** 文件，该文件包含标准的、服务无关的映射，该文件通过 `semanage login` 管理，我们不应该手动修改。
+
+* **/etc/selinux/{SELinux 类型}/logins/** 目录，该文件夹下为分服务的映射。
+
+比如说，若我们希望从 **sshd** 登录的 **root** 账户映射至 **user_u**，那么我们可以在 **/etc/selinux/targeted/logins/** 下创建名为 **root** 的文件，并向文件中写入 **sshd:user_u:s0**。
+
+[NOTE]
+====
+依照 link:https://selinuxproject.org/page/NB_PAM[] 的说法，service 应该是登录程序的名称，若存在 **/etc/pam.d/** 文件夹，则 service 对应该文件夹中配置文件的名称。
+====
+
+=== 创建 SELinux 用户
+
+[source, sh]
+.查看当前已有的 SELinux 用户
+----
+semanage user --list
+----
+
+[source, sh]
+.创建一个 SELinux 用户
+----
+# 在创建 SELinux 时，至少要为其指定一个 SELinux 角色
+semanage user --add --role <SELinux 角色列表> <SELinux 用户>
+----
+
+除了 SELinux 角色之外，我们还可以使用 `--level <MLS/MCS 等级>` 和 `--range <MLS/MCS 范围>` 指定 SELinux 角色的额外信息。
+
+=== 罗列可访问的域
+
+对于一个 SELinux 角色，我们可以通过下面的命令查看它可以访问的域：
+
+[source, sh]
+----
+seinfo --role <SELinux 域> --expand
+----
+
+比如，我们通过 `seinfo --role` 枚举了当前系统中所有的 SELinux 角色，现在我们想知道 **logadm_r** 可以切换的域有哪些：
+
+[source, sh]
+------
+seinfo --role logadm_r --expand
+------
+
+返回值可能如下：
+
+[source, text]
+----
+Roles: 1
+   role logadm_r types { auditctl_t logadm_t };
+----
+
+第二行其实就是 SELinux 策略的定义语句，它说的是“角色 logadm_r 具有如下 类型 { auditctl_t logadm_t }”，从这里我们可以推断出，**logadm_t** 关联的类型有 **auditctl_t** 和 **logadm_t**。
+
+[TIP]
+====
+如果我们通过 `seinfo --type auditctl_t --expand` 和 `seinfo --type logadm_t --expand` 进一步查询，可以发现两者具有 **domain** 属性，所以称两者为“域”是没有问题的。
+====
+
+=== 管理类别（categories）
+
+编辑 **/etc/selinux/{SELinux 类型}/setrans.conf** 文件，可以让 SELinux 工具显示 MLS/MCS level 和 range 的时候，显示我们定义的文本内容，增加可读性。
+
+[NOTE]
+====
+注意，要让该文件中的配置实际起效，需要系统运行 **mcstransd** 守护程序，fedora 上需要安装 **mcstrans** 包，并启动 **mcstrans.service**。
+
+不过，如果我们要阅读配置文件，配置文件中记录的依旧是数值形式的 category，从这方面来说，可能开启解析反而导致对应的困难。
+====
+
+可以用 `chcat` 修改用户或文件的 category，或者使用 `chcon` 修改文件的 catagory
+
+== 处理 SELinux 角色
+
+=== 定义可用的 SELinux 上下文
+
+对于成功认证的用户，SELinux 会基于用户登录时所使用的服务的上下文，并结合“默认上下文”来为用户分配上下文。
+
+文件 **/etc/selinux/{SELinux 类型}/contexts/default_contexts** 中记录了“默认上下文”的内容。这个文件的每行是一条单独的记录；行首的第一个上下文表示的是登录服务的上下文，其后跟随的是可能可以赋予用户的 SELinux 上下文的**有序列表**；实际赋予的上下文，需要结合用户允许的 SELinux 角色，赋予有序列表中第一个匹配上的上下文。
+
+现在假设一个具有 **staff_r** 角色的用户，从 **sshd** 登录，查询 **default_contexts** 文件的 **system_r:sshd_t:s0** 行可知，从 **sshd** 登录的用户，可以匹配四种上下文，且其中包含 **staff_r**，于是匹配的上下文为 `staff_r:staff_t:s0`。
+
+**default_contexts** 能给出基础的上下分赋予匹配，但其控制精细度并不够。类似 **seusers** 文件与 **logins** 文件夹，对于 context，SELinux 也提供了 **/etc/selinux/{SELinux 类型}/contexts/users** 文件夹，让管理员可以更细致地控制用户登录时赋予的上下文。
+
+[NOTE]
+====
+若存在 **/etc/selinux/{SELinux 类型}/contexts/users** 文件夹，则 **/etc/selinux/{SELinux 类型}/contexts/default_contexts** 为 fallback。
+====
+
+就我们上面提及的 **staff_r** 从 **sshd** 登录的情形，这里我们做一个额外假设，那就是 Linux 用户是被映射到 **staff_u** 上的。此时，我们的推断的步骤为：
+
+.手工推断 Linux 用户从 sshd 登录所具有的上下文
+====
+. 通过 `semanage login -l` 查询 Linux 用户与 SELinux 用户对应的关系，这里我们假定为 **staff_u**
+. 通过 `seinfo --user staff_u --expand` 查询 **staff_u** 可以切换的 SELinux 角色，发现有 **staff_r**、**sysadm_r**、**system_r**、**unconfined_r** 四种。
+. 通过 `ps -C sshd -Z` 查询到 sshd 运行的上下文为 **system_u:system_r:sshd_t**
+. 查看 **users** 文件夹，发现 **staff_u** 有额外定义。查阅该文件，可知 **system_u:system_r:sshd_t** 能切换的上下文有 **staff_r:staff_t:s0** 和 **sysadm_r:sysadm_t:s0** 两种。又由于 **staff_u** 的首选角色为 **staff_r**，因此这里会选择 **staff_r:staff_t:s0** 作为上下文
+====
+
+=== 通过 `newrole` 切换角色
+
+[NOTE]
+====
+Fedora 默认没有 **newrole** 命令，需要通过 **policycoreutils-newrole** 包安装
+====
+
+比如我们有一个上下文为 **staff_u:staff_r:staff_t:s0** 的会话，我们可以通过 
+
+[source, sh]
+----
+newrole -r sysadm_r
+----
+
+将上下文__切换到__ **staff_u:sysadm_r:sysadm_t:s0**。
+
+当然我们也可以通过 `newrole -l <range>` __切换__ MLS/MCS range。
+
+[NOTE]
+====
+说是“切换”，实际上是 `newrole` 新建了一个 shell，新 shell 的上下文是我们给定的上下文。
+====
+
+要恢复先前的上下文状态，exit 当前 shell 即可。
+
+=== 通过 `sudo` 管理角色访问
+
+在运行 **sudo** 的时候，是可以给出 SELinux 角色 和/或 SELinux 类型的。
+
+比如，上面的 newrole 将 **staff_r** 切换到 **sysadm_r** 就可以改写为
+
+[source, sh]
+----
+sudo -u <当前用户> -r sysadm_r <要执行的命令>
+----
+
+我们也可以编辑 **/etc/sudoers** 文件，在主配置行添加运行 sudo 时，需要切换的 role 和/或 type。
+
+[source, sudoers]
+----
+someuser ALL=(ALL) ROLE=some_role_r TYPE=some_type_t ALL
+----
+
+**sudo** 相较于 **newrole** 的优势是，它可以同时切换 effective user ID，这样可以方便通过 DAC 的检查。
