@@ -1,0 +1,529 @@
+= 使用文件上下文与进程域
+
+== 简介 SELinux 文件上下文
+
+=== 获取上下文信息
+
+一般来说，文件系统中的文件和目录的上下文信息是以扩展属性的方式存储的。**扩展属性（extended attribute）**（常简称为**xattr**）是与资源（文件、目录、软链接等）的 inode 关联的键值对。一个资源可以有多个扩展属性。
+
+[NOTE]
+====
+对于不支持 SELinux 的文件系统，我们依旧可以在其上使用 SELinux 上下文。此时整个文件系统会被赋予单一的 SELinux 上下文。它可以通过添加相关的挂载选项来实现。
+====
+
+通常来说，Linux 的扩展属性的语法为：
+
+----
+<namespace>.<attribute>=<value>
+----
+
+与 SELinux 相关的的键名为 **security.selinux**
+
+需要注意的是，**security** 这个 namespace 有一个较为特殊的地方，那就是，在没有启用任何安全模块（LSM）的时候，仅有具有 **CAP_SYS_ADMIN** capability 的进程可以修改这个 namespace 下的属性。这种设计，可以阻止非管理员用户在不启用安全模块的时候修改 **security** 扩展属性，而在启用安全模块的时候可以限允许特定用户修改该扩展属性。
+
+除了 `ls -Z` 我们开可以通过 `getfattr` 获取文件的扩展上下文，来获得 SELinux 上下文。
+
+[source, sh]
+.dump 扩展属性
+----
+getfattr --match - --dump <文件名>
+----
+
+--match -::
+这个选项表示过滤扩展属性的键名，默认情况下，getfattr 仅会显示 **user** namespace 下的扩展属性，使用 `-` 来包含所有的扩展属性。
+
+--dump::
+若扩展属性是通过通配键名（非 `--name` 方式）的方式获得的，那么就仅显示键名，而不显示对应的键值。使用该选项之后，就会显示键值。
+
+除了 `getfattr`，`stat` 也可以用来获取 SELinux 上下文。
+
+== 保持或忽略上下文
+
+
+=== 继承默认上下文
+
+默认情况下，在创建文件时，SELinux 安全子系统使用上下文继承，来确定文件应该被赋予的上下文。这让文件从其父目录继承上下文，而非从执行程序继承上下文。
+
+有几个特例：
+
+* SELinux 感知的程序可以强制文件使用不同的上下文（当然，SELinux 策略必须要允许它）。这些代码在程序中，这类行为通常无法配置。
+* `restorecond` 可以通过 SELinux 的上下文规则，以基于路径的方式，强制上下文。
+* SELinux 策略具有一些转换规则（transition rule），会考虑进程的上下文和要创建的文件的名称，来设置文件的上下文。
+
+=== 查询转换规则（transition rule）
+
+类型转换规则（type transition rule），是一种在特定情况下使用不用类型的策略规则。比如：运行在 **httpd_t** 的进程要创建在标记为 **var_lot_t** 的文件夹中创建一个文件，那么该文件类型则设置为 **httpd_log_t**。
+
+上面这条规则，简单来说，就是，如果网络服务器要在日志目录中写日志文件，那么该文件的上下文应该是 **httpd_log_t**，而不是默认的 **var_log_t**。
+
+让我们用命令实际查找一下这个规则：
+
+[source, sh]
+----
+sesearch --type_transition --source httpd_t --target var_log_t
+----
+
+返回值
+
+----
+type_transition httpd_t var_log_t:file httpd_log_t;
+----
+
+这个返回值的意义是：当具有 **httpd_t** 类型的进程，在具有 **var_log_t** 的目录下，创建 **file** 的时候，将进程的类型设置为 **httpd_log_t**（也就是新 **file** 的类型为 **httpd_log_t**）。
+
+再举一个稍微复杂的例子：
+
+[source, sh]
+----
+sesearch --type_transition --source ssh_t --target user_home_dir_t
+----
+
+从返回值中我们可以发现一条规则：
+
+----
+type_transition ssh_t user_home_dir_t:dir ssh_home_t .ssh;
+----
+
+它的含义是：当具有 **ssh_t** 类型的进程，在具有 **user_home_dir_t** 的目录下，创建名为 **.ssh** 的 **dir** 的时候，将进程的类型设置为 **ssh_home_t**（也就是新 **.ssh** **dir** 的类型为 **ssh_home_t**）。
+
+=== 拷贝与移动文件
+
+默认情况下，Linux 遵守以下原则：
+
+* 在相同的文件系统中**移动**文件时，保留原有的上下文（仅修改元数据，但保留扩展属性）。
+* 在**不同**的文件系统间移动文件时，其等价于删除原始文件，并在新文件系统上创建文件。因此会使用继承和规则设置新文件的上下文
+* 拷贝文件，其等价于创建新文件，会使用继承和规则设置新文件的上下文。
+
+当然，我们可以为工具指定参数，来方便地修改默认行为：
+
+`mv -Z` 会强制移动后的文件使用继承和规则，而非保留原始上下文。
+
+`cp --preserve=context` 会让新创建的文件保留源文件的上下文。
+
+大部分 **coreutils** 包提供的工具，都支持 `-Z` 选项，比如 `mkdir`、`mknod`、`mkfifo`。
+
+[IMPORTANT]
+====
+若 `mv` 命令返回 `failed to set the security context`，有可能是因为目标位置不支持设置 SELinux 标签，或则没有对应的 SELinux 规则。比如 `/tmp` 下是没有默认规则的，因此进程必须提供标签。
+====
+
+而且，很多工具是允许用户明通过 `--context` 参数，确设置上下文的，比如：
+
+[source, sh]
+----
+mkdir --context=user_u:object_r:user_home_t:s0 /bar/foo
+----
+
+请参阅工具对应的文档，来了解如何指定上下文。
+
+=== 临时修改文件上下文
+
+我们可以通过 `chcon` 修改文件的上下文。比如，我们可以明确指定上下文：
+
+[source, sh]
+----
+chcon -t <SELinux 类型> <目标文件>
+----
+
+我们也可以使用引用，从源文件拷贝其上下文至目标文件
+
+[source, sh]
+----
+chcon --reference <源文件> <目标文件>
+----
+
+通过 `chcon` 修改文件上下上文都被称为“临时修改”，是因为包管理器可能会还原文件的上下文，或者管理员也可以触发全局重标签（relabel）来还原上下文。
+
+`chcon` 除了修改上下文的 type，还能修改上下文的 role 和 user。它们可以通过 `-r` 和 `-u` 参数指定。由于 `-r` 被修改 role 占用了，因此递归修改的选项为 `-R`。
+
+一般来说，文件的 role 均为 **object_r**，因为总的来说，仅有进程/用户的 role 才是有意义的，于是文件的 role 被统一设置为了 **object_r**。
+
+[IMPORTANT]
+====
+当然，我们要修改上下文，则我们也需要获得相应的 SELinux 权限，相关的 SELinux 权限为 **relablefrom** 和 **relabelto**。
+
+假设我们要将上下文 A 修改为上下文 B，则 **relablefrom** 权限允许我们修改已有的上下文 A，**relabelto** 权限允许我们将文件的上下文设置为上下文 B。也就是说，修改文件上下文的权限，被拆分为了“准入”和“准出”两个权限。
+====
+
+=== 设置文件和目录的类别（category）
+
+为文家设置级别（level）和类别（category）：
+
+[source, sh]
+----
+chcon -l s0:c0.c2 some_file
+----
+
+也可以使用 `chcat` 设置，好处是可以使用我们在 **/etc/selinux/{SELinux 类型}/setrans.conf** 设置的 MCS/MLS 别名。
+
+[source, sh]
+----
+chcat -- +/-<别名> <文件名>
+----
+
+=== 使用挂载选项设置 SELinux 上下文
+
+当某个文件系统不支持扩展属性的时候，其中的文件要么继承该文件系统本身的上下文（每一个文件系统都关联一个上下文），或者我们可以通过 `mount` 的选项设置一个上下文。
+
+最常见的 `mount` 选项为 **context=**，设置后，它会为该文件系统上所有的文件赋予同一个上下文。
+
+比如，将一个具有 FAT 文件系统的 U 盘挂载为用户可以读写的状态，则我们可以设置上下文为 **user_home_t**：
+
+[source, sh]
+----
+mount -o context="user_u:object_r:user_home_t:s0" /dev/sdc1 /media/usb
+----
+
+若文件系统支持扩展属性，但不是所有文件都具有标签，则我们可以使用 **defcontext=** 选项赋予一个默认的上下文，这样没有上下文的文件都会获得指定的上下文：
+
+[source, sh]
+----
+mount -o defcontext="system_u:object_r:var_t:s0" /dev/sdc1 /srv/backups
+----
+
+另一个挂载选项是 **fscontext=**，它会指定文件系统（而非文件系统中的文件）的上下文。比如 CD/DVD 系统可以具有不同的格式，这些格式默认会具有不同的上下文，而我们使用 **fscontext=** 就可以人为指定这个上下文。
+
+另一个相关选项为 **rootcontex=**，它表示文件系统的根 root 的 inode 应该具有的上下文。这个上下文主要用于通过挂载权限检查，而这个选项则常出现在将文件系统挂载至非默认位置的时候：
+
+[source, sh]
+----
+mount -o rootcontext="system_u:object_r:tmp_t:s0" -t tmpfs none /var/tmp
+----
+
+[NOTE]
+====
+需要额外注意的是，**context=** 选项与 **defcontext=** 和 **fscontext=** 选项互斥，它们两者不能同时使用。
+====
+
+== SELinux 文件上下文表达式
+
+=== 使用上下文表达式
+
+SELinux 使用这则表达式的方式记录路径与对应的上下文。这些信息存储在 **/etc/selinux/{SELinux 类型}/contexts/files/** 下的各种 **file_contexts.*** 文件。我们也可以使用 `semanage fcontext -l` 来罗列所有的文件上下文。
+
+.semanage fcontext -l 的返回值
+----
+SELinux fcontext                type                Context
+
+/                               directory           system_u:object_r:root_t:s0
+....
+/home/[^/]+                     directory           unconfined_u:object_r:user_home_dir_t:s0
+....
+----
+
+如果要知晓特定路径会匹配到的 SELinux 上下文，我们可以使用 `matchpathcon` 来查询某路径对应的默认 SELinux 上下文。
+
+[NOTE]
+====
+* `matchpathcon` 需要给出绝对路径，因为 SELinux 规则是用全局路径定义的。
+* 若给定路径在文件系统上真实存在，则 `matchpathcon` 会考虑该真实路径对应的类型（文件/目录/软链接 等）来给出上下文，反之亦然。我们也可以通过 `-m` 强制指定文件类型。
+====
+
+在 SELinux 规则中，若一个路径有多个规则可以匹配，则按照如下优先级进行匹配：
+
+[start=0]
+. 若通过 `semanage` 额外指定了规则（本地规则），则按照由新至旧的顺序，优先选择这些额外规则
+. 若一条规则没有正则表达式，另一条有，则优先选择前者
+. 若一条规则中，第一个正则表达式字符前的字符数量多余另一个规则，则优先选择前者
+. 若一条规则的总字符数量大于另一条，则优先选择前者
+. 若一条规则明确指出不要赋予特定的 SELinux 类型（策略编写者可以明确告诉 SELinux 不要赋予类型），而另一条赋予了 SELinux 类型，则优先选择后者
+
+=== 注册文件上下文修改
+
+使用 `chcon` 修改文件上下文是一个临时举措。当我们通过 `chcon` 测试上下文无误之后，强烈建议使用 `semanage` 将其注册为 SELinux 规则。
+
+[source, sh]
+----
+# 为 /srv/web 文件夹及其下所有文件和文件夹设置 httpd_sys_content_t 类型
+semanage fcontext --add --type httpd_sys_content_t '/srv/web(/.*)?'
+# 调用 restorecon 递归更新 /srv/web 和其下所有子级的上下文
+restorecon -Rv /srv/web
+----
+
+我们添加的规则会写入 **file_contexts.local** 文件中。而这个文件的匹配顺序，则是按照规则书写的先后顺序进行匹配的。也就是上面说的“本地规则”的匹配顺序。
+
+我们也可以使用**等价规则**（**equivalency rule**），将某个新路径等价于已有规则的某个路径，这样旧规则就可以直接匹配上新路径，而不用重复书写相同的规则。
+
+[source, sh]
+----
+# 将路径 /srv/web 等价于 /var/www
+semanage fcontext --add --equal /var/www /srv/web
+----
+
+默认的等价规则存储在 **/etc/selinux/{SELinux 类型}/contexts/files/file_contexts.subs_dist** 中，而本地定义的则存放在 **/etc/selinux/{SELinux 类型}/contexts/files/file_contexts.subs** 中。
+
+[NOTE]
+====
+假设同时存在一个 fcontext 规则和一个 equivalency 规则，它们的匹配路径完全一致，且 fcontext 规则的文件类型为 **all files**；也就是说两条规则无法通过路径区分。那么通过 `semanage --delete '<路径>'` 首先删除的是 equivalency 规则，之后再次运行相同命令，删除的才是 fcontext 规则。
+====
+
+=== 优化递归时的上下文操作
+
+`restorecon` 会基于 SELinux 规则和 fcontext 重置指定文件的上下文。若我们对一个文件夹执行递归式的重置上下文操作，可能会较为费时间。因此，`restorecon` 提供了一种缓存机制，来减少递归重置的时间。
+
+当 `restorecon` 处于递归模式（具有 `-R` 选项），且同时指定了摘要（`-D`）选项，`restorecon` 会在指定的目录，及每个子目录上记录额外的摘要信息。若下次运行 `restorecon` 时也指定了 `-RD` 选项，则 `restorecon` 会比较新生成的摘要和目录上的摘要信息是否相同，若相同则直接跳过该目录。
+
+`restorecon` 生成的摘要信息，是存放在目录的 **security.sehash** 扩展属性中的。
+
+需要注意的是，`restorecon` 生成摘要所使用的信息，并非来自文件夹和文件夹的内容；所使用的信息来自 SELinux fcontexts 规则。也就是说，对于某个目录来说，若该目录和其所有内容对应的 SELinux 规则没有变化，那么生成的摘要就是恒定不变的，`restorecon` 就会跳过该目录上下文的恢复操作。
+
+要查看某个文件夹的 **security.sehash** 具体由哪些 SELinux 规则文件统计而来，可以使用 `restorecon_xattr -v <目录>` 来查看。
+
+=== 使用可自定义类型
+
+部分 SELinux 被用于为无法确定路径的文件、或管理员不希望在重置上下文时重置这些文件的上下文。这种特殊的 SELinux 类型被称为**可自定义类型**（**customizable type**）。当 SELinux 工具执行上下文重置的时候（比如 `restorecon`），不会修改具有这类上下文的文件的上下文。
+
+可自定义类型在 **/etc/selinux/{SELinux 类型}/contexts/** 下的 **customizable_types** 文件中定义。要强制 `restorecon` 重置这类文件的标签，管理员需要使用强制重置选项（`-F`）。
+
+要让其它类型也具有可自定的性质，需要更新 **customizable_types** 文件，但没有命令行工具可以修改该文件。且该文件会被分发版或新的策略包覆盖，它的修改需要小心对待。
+
+=== 重标签整个文件系统
+
+我们仅需要在更目录下创建 **.autorelabel**，并重启系统，在开机时，SELinux 就会重置整个文件系统的上下文。
+
+== 进程的上下文
+
+=== 获取一个进程的上下文
+
+查询一个进程的上下文
+
+[source, sh]
+----
+ps -C <进程名> -Z
+----
+
+通过 `secon` 可以更详细地从文件/程序/用户输入中查看 SELinux 上下文。
+
+[source, sh]
+----
+secon --pid <pid>
+----
+
+=== 变换至一个域
+
+默认情况下，子进程继承父进程的上下文。若某进程需要具有与父进程不同的上下文，则需要定义域变换。**域变换**（**domain transition**）（又称为 进程变换 process transition 或 类型变换 type transition）是一条 SELinux 规则，它告诉 SELinux，子进程应该使用不同的域。（实际上，该域变换发生在 **execve** 中，一般是 **fork** 系统调用后）。
+
+域变换规则也可以使用 `sesearch` 来查询。
+
+这里我们以 **auditd** 为例
+
+[source, sh]
+.查询可以变换至 auditd_t 域的规则
+----
+sesearch --type_transition --target auditd_exec_t
+----
+
+返回值举例：
+
+----
+type_transition init_t auditd_exec_t:process auditd_t;
+----
+
+上面的返回值表示的是：当具有 **init_t** 的进程，将具有 **auditd_exec_t** 类型的文件，作为 **process** 的时候，新的进程应该具有的 SELinux 类型为 **auditd_t**。
+
+上面这条规则要能成功执行，还需要其它一些规则放行上面的规则：
+
+* 允许源进程转换至目标进程：
++
+--
+[source, sh]
+.查找允许 init_t 转向 auditd_t 的规则
+----
+sesearch --allow --source init_t --target auditd_t --class process --perm transition
+----
+
+返回值
+
+----
+allow initrc_domain daemon:process transition;
+----
+
+其中 **initrc_domain** 和 **daemon** 分别是包含了 **init_t** 和 **auditd_t** 的 type attribute。 +
+可以通过 `seinfo --attribute <属性名> --expand` 来查看 type attribute 与实际的 type 对应的类型。
+--
+
+* 源进程需要有权执行目标文件类型
++
+--
+[source, sh]
+.查找允许 init_t 的进程 执行 auditd_exec_t 的 文件 的规则
+----
+sesearch --allow --source init_t --target auditd_exec_t --class file --perm execute
+----
+
+返回值
+
+----
+allow initrc_domain direct_init_entry:file { execute getattr map open read };
+----
+
+关于 type attribute，同上。
+--
+
+* **auditd_exec_t** 类型必须是 **auditd_t** 域的进入点（entrypoint）。SELinux 使用**进入点** **entry point** 来确保 域转换 仅发生在 执行具有特定文件上下文的二进制或脚本文件 的时候。
++
+--
+[source, sh]
+----
+sesearch --allow --source auditd_t --target auditd_exec_t --class file --perm entrypoint
+----
+
+返回值
+
+----
+allow auditd_t auditd_exec_t:file { entrypoint execute getattr ioctl lock map open read };
+----
+
+--
+
+* 源进程的 role 可以匹配目标 type
++
+--
+在这里，**auditd** 是由 **systemd** fork 来的，因此源进程的 role 为 **system_r**。
+
+[source, sh]
+.查找 system_r 匹配的 type
+----
+seinfo --role system_r --expand
+----
+
+返回值中包含了 **auditd_t**
+--
+
+总的来说，domain transition 通常发生在进程所需要的权限明显多于源进程，或者明显不同于源进程的情况下。
+
+这也就是 **unconfined_t** 域不太需要执行域转换的原因，因为 **unconfined_t** 自己已经具有不少权限了。
+
+
+=== 验证一个目标上下文
+
+我们可以使用 `selinuxexeccon` 命令确认一个程序会以什么 SELinux 上下文运行。
+
+[NOTE]
+====
+这个程序名是这么解读的 selinux-exec-con
+====
+
+[source, sh]
+----
+selinuxexeccon <可执行文件路径> [父进程上下文]
+----
+
+比如，要查看我们运行 **passwd** 时，**passwd** 具有的上下文：
+
+[source, sh]
+----
+selinuxexeccon /usr/bin/passwd
+----
+
+假设我们要检查 **auditd** 作为 systemd 管理的系统进程的上下文：
+
+[source, sh]
+----
+selinuxexeccon /usr/sbin/auditd system_u:system_r:init_t:s0
+----
+
+=== 其它支持的转换
+
+除了最常见的域变换，部分程序（比如 **cron** 和 **login**）能感知 SELinux，并明确指定要产生的域变换。这类程序会直接调用 **setexeccon()** 方法来指定目标域，而不依赖于 SELinux 规则。当然，域变换的其它要求，这些程序还是要遵守的。
+
+有一部分可感知 SELinux 的程序甚至可以修改**当前**的域，这些程序需要具有 **dyntransition** 权限。比如 OpenSSH 就可以将自身从 **sshd_t** 切换到 **sftpd_t**。
+
+== 类型、权限与约束
+
+=== 理解类型属性
+
+在上面的案例中，我们发现 type_transition 语句使用了类似
+
+----
+allow initrc_domain daemon:process transition;
+----
+
+这样的规则。
+
+而其中的 **initrc_domain** 和 **daemon** 就是一种**类型属性**（**type attribute**）。将其称为“属性”，倒不如将其理解为“组”，也就是这个“组”为多个 SELinux 类型起了一个统一的名称。这样，我们就可以用“组”来编写规则，这大大减少了规则编写的数量。
+
+至于为什么将这种“组”称为“属性”，大概是由于“组”听起来具有排他性。而一个类型却可以具有多个“属性”，同时，一个“属性”也可以赋予多个类型。这样在编写规则的时候，实际上我们在为类型们的“某种共性”编写规则。
+
+用 `seinfo --attribute` 可以枚举系统上所有的类型属性。对于某个特定的属性，则可以使用 `seinfo --attribute <类型名> --expand`
+
+=== 查询域权限
+
+最常见的 SELinux 规则为 **allow** 规则，标示了一个域具有的权限。**allow** 规则具有如下语法：
+
+----
+allow <源> <目标> : <类别> <权限>;
+----
+
+**<源>** 几乎总是一个域，**<目标>** 可以是任何类型。**<类别>** 允许我们基于资源的类型——比如文件、目录、TCP 套接字、capability——赋予不同的权限。所有可以使用的类别可以通过 `seinfo --class` 来获取。
+
+比如，我们要查看 **file** 的权限，可以使用如下命令：
+
+[source, sh]
+----
+seinfo --class file --expand
+----
+
+返回值为：
+
+----
+Classes: 1
+   class file
+inherits file
+{
+	entrypoint
+	execute_no_trans
+}
+----
+
+class file::
+类别的定义，这行标示该类别的名称为 **file**
+
+inherits file::
+继承的 common 的名称为 **file**
+
+
+{ entrypoint execute_no_trans }::
+相较于继承的 common 的权限，该 class 额外增加的权限
+
+上面的 common 指的是 **common permission set**，它是一种预定义的权限的集合，而其它 class 可以继承这些 common 的权限，并在其上增加新的权限。
+
+比如，要查看 **file** common 包含的权限，可以使用如下的命令：
+
+[source, sh]
+----
+seinfo --common file --expand
+----
+
+**allow** 语句中的 **<权限>** 字段，明确确认了，在这条语句中，**<源>** 对具有指定 **<类别>** 的 **<目标>** 具有的 **<权限>**。
+
+[NOTE]
+====
+这里我们可以发现 **<类别>** 也设置了一组权限，**<权限>** 也设置了一组权限。从我实际查看规则来说，**<权限>** 字段设置的权限，必须是 **<类别>** 具有的权限的子集。也就是说，**<类别>** 是 **<权限>** 的限制。
+====
+
+=== 关于约束
+
+**allow** 语句专注于基于类型的权限。有时候，我们也需要更加丰富和详细的规则来设置权限。此时我们就可以使用 **constrain** 语句来进行约束。
+
+让我们查看有关 **file** 这个 class 的约束：
+
+[source, sh]
+----
+seinfo --constrain file
+----
+
+返回值
+
+----
+constrain file { create relabelfrom relabelto } (u1 == u2 or ( t1 == can_change_object_identity ));
+...
+----
+
+上面这段表示，若一个 **file** class 要具有 **create** **relabelfrom** **relabelto** 三者之一的权限，还需要满足额外的需求：
+
+. 条件满足下列**二者之一**
+** 源用户（**u1**）与目标用户（**u2**）相同
+** 源类型（**t1**）具有属性 **can_change_object_identity**
+
+若对于同一个 class 的同一个 permission 有多条约束，则这些约束必须同时满足。
