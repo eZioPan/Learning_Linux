@@ -179,3 +179,24 @@ Optimize-VHD -Path <ext4.vhdx 路径> -Mode Full
 就可以缩小 vhdx 盘的大小
 
 注意我们不用手动修改 ext4 文件系统的大小。
+
+=== 无法启动 WSL2 中带 GUI 的应用程序
+
+解决方案：link:https://github.com/microsoft/WSL/issues/6999#issuecomment-2303010704[]
+
+简单来说，创建文件 **/etc/tmpfiles.d/wslg.conf**，内容如下：
+
+[source, conf]
+----
+#  This file is part of the debianisation of systemd.
+#
+#  systemd is free software; you can redistribute it and/or modify it
+#  under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+
+# See tmpfiles.d(5) for details
+
+# Type Path           Mode UID  GID  Age Argument
+L+     /tmp/.X11-unix -    -    -    -   /mnt/wslg/.X11-unix
+----
