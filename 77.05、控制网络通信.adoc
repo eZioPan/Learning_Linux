@@ -1,0 +1,182 @@
+= 控制网络通信
+
+== 控制进程通信
+
+=== 使用共享内存
+
+最不像网络通信的进程间通信就是共享内存了。应用可以在进程间共享特定的内存部分。应用可以使用**互斥锁**（**mutual exclusions**, **mutexes**），或**信号量**（**semaphores**）来控制共享内存的访问。
+
+在 Linux 上，有两种访问和控制共享内存的实现：SysV 风格和 POSIX 风格。 +
+就 SysV 风格来说，SELinux 通过特定的 class 来控制它：**sem** 用来控制信号量，**shm** 用来控制共享内存。信号量、互斥锁、共享内存区段都继承创建它们的第一个进程的上下文。 +
+就 POSIX 风格来说，信号量、互斥锁、共享内存区段都是通过 **/dev/shm** 下的文件来实现的。因此 SELinux 使用基于文件的访问控制来控制它们。
+
+=== 使用管道进行本地通信
+
+管道通常是单向通信的，信息总是从一个或多个发送端发送至一个接收端。管道的另一个名字为 **先进先出**（**first-in, first-out**，**FIFO**）。
+
+Linux 中有两种管道：**匿名管道**（**anonymous pipes**，又称 **unnamed pipes**），以及**具名管道**（**named pipes**）。具名管道会使用常规文件系统中的一个文件作为其标识符；而匿名管道不会在常规文件系统中生成一个文件，它基于一个挂在在内核中的伪文件系统 **pipefs**。由于两者都使用 Linux 的虚拟文件系统（VFS）进行管理，因此 SELinux 使用基于文件的 **fifo_file** class 来完成对其的管理。
+
+从 SELinux 策略的视角来说，FIFO 文件是 SELinux 策略的目标对象，当两个域都具有对某个 FIFO 文件的特定权限，则两个域可以相互通信。
+
+=== 通过 UNIX 域套接字交流
+
+常见的使用套接字的通信是 TCP 和 UDP。但是，在单台 Linux 系统上，套接字也可以用于通信。有两种套接字可以用于通信：**UNIX 域套接字**（**UNIX domain socket**）以及 **netlink 套接字**（**netlink socket**）。netlink 套接字为 Linux 特有的、更底层，UNIX 域套接字更高级，更面向管理员。
+
+与管道类似，UNIX 域套接字也有两种：具名套接字（named socket）和匿名套接字（unamed socket）。而且两种套接字的区别与两种管道类似，具名套接字会在普通的文件系统中创建一个文件，而匿名套接字则不会，它会使用 **sockfs** 伪文件系统。UNIX 域套接字可以创建为**数据报套接字**（**datagram socket**，发送至套接字的数据保持其块尺寸（chunk size）和格式），或者**流套接字**（**streaming socket**，发送至套接字的数据可以使用不同的块尺寸读取）。
+
+对于 SELinux 来说，要通过 UNIX 域套接字进行通信，要求两个域，依照其通信方向，对于套接字文件类型具有一定的权限（**open**，**read**，**write**）。而且发送（客户）域需要对接收（服务）域有特定的额外权限：
+
+* 对于流套接字，对 **unix_stream_socket** class 有 **connectto** 权限
+* 对于数据包套接字，对 **unix_dgram_socket** class 有 **sendto** 权限
+
+=== 理解 netlink 套接字
+
+**netlink 套接字**常用于用户空间应用与内核进程们之间的交流。与常规的 UNIX 域套接字不同，netlink 套接字总是具有自己的 SELinux 上下文。
+
+=== 处理 TCP、UDP 以及 SCTP 套接字
+
+就网络通信来说，SELinux 会为端口分配类型。比如 DNS 常见端口 TCP 53 端口，就被分配了 **dns_port_t** 类型。
+
+我们可以使用 `semanage port --list` 来了解 SELinux 中端口类型与协议和端口号的对应状态。 +
+注意到返回值中，存在用端口范围标记端口号的情况，因此想通过 grep 以过滤端口号的形式，反查某个端口所属的类型，会比较麻烦。这里我们可以使用 `sepolicy network --port <端口号>` 或者 `seinfo --portcon <端口号>` 来查看。
+
+比如说，我们想查看端口号 22 对应的类型，我们可以这样查找：
+
+[source, sh]
+----
+sepolicy network --port 22
+----
+
+返回值
+
+----
+22: tcp ssh_port_t 22
+22: udp reserved_port_t 1-511
+22: tcp reserved_port_t 1-511
+22: sctp reserved_port_t 1-511
+----
+
+从上面的返回值我们可以看到，端口 22 同属 udp、tcp 和 sctp 的 **reserved_port_t** 类型，还属于 tcp 的 **ssh_port_t** 类型。其中值得我们注意的是 **ssh_port_t** 类型，这个类型的名称表明，这个端口是一个和 **ssh** 相关的端口。
+
+另外，网络端口有三种特殊的类型，分别为 **reserved_port_t**、**unreserved_port_t** 和 **hi_reserved_port_t**。若某个端口仅仅被赋予了上述三种端口类型之一，则它还可以被分配到其余的类型中，否则这个端口就是一个已经被分配了类型的端口，该端口就不再可以分配到新的端口类型中了。
+
+让我们假设如下场景，若我希望 sshd 的监听端口，从默认的 22/tcp 修改为 2222/tcp，应该如何操作？
+
+这里面涉及了三大部分的修改：防火墙的修改，SELinux 规则的修改以及 sshd 配置的修改 。而且，为了尽量减少修改过程中出现问题，导致我们无法通过 ssh 登录远程系统，这里我们采取的是“先添加新端口，确认成功以后移除旧端口”的方式进行的操作。
+
+. 配置防火墙（以 **firewalld** 和 `firewall-cmd` 为例）
++
+[source, sh]
+----
+# 将 tcp/2222 添加到防火墙的 ssh 规则中
+firewall-cmd --permanent --zone=public --service=ssh --add-port=tcp/2222
+
+# 重载规则，让防火墙放行 tcp/2222
+firewall-cmd --reload
+----
+
+. 配置 SELinux
++
+[source, sh]
+----
+# 检查 2222 端口的使用情况
+seinfo --portcon 2222
+# 从返回值我们可以知道，该端口除了被赋予 unreserved_port_t，没有被赋予其它类型
+
+# 让 sshd_t 可以绑定 tcp 2222 端口
+semanage port --add --type ssh_port_t --proto tcp 2222
+
+# 检查 2222 端口的分配情况
+sepolicy network --port 2222
+----
+
+. 配置 sshd，在 **/etc/ssh/sshd_config.d** 添加文件 **99-listen_port.conf**，并写入如下内容：
++
+[source, conf]
+./etc/ssh/sshd_config.d/99-listen_port.conf
+----
+# Original port
+Port 22
+
+# Custom port
+Port 2222
+----
+
+. 重载 sshd 服务
++
+[source, sh]
+----
+systemctl reload sshd
+----
+
+. 保持当前 ssh session 不关闭。新建一个从 2222 端口登录的 ssh session。若新的 ssh session 可以正常登录，则可以执行下方的移除原始端口的操作。
+
+. 配置 sshd，注释我们刚才新建的配置文件的内容
++
+[source, conf]
+./etc/ssh/sshd_config.d/99-listen_port.conf
+----
+# Original port
+#Port 22
+
+# Custom port
+Port 2222
+----
+
+. 重载 sshd
++
+[source, sh]
+----
+systemctl reload sshd
+----
+
+. 配置 SELinux
++
+[source, sh]
+----
+# 将 22 tcp 端口从 ssh_port_t 中移除
+semanage port --delete --type ssh_port_t --proto tcp 22
+
+# 检查 22 端口的分配情况
+sepolicy network --port 22
+----
+
+. 配置防火墙
++
+[source, sh]
+----
+# 将 tcp/22 从到防火墙的 ssh 规则中移除
+firewall-cmd --permanent --zone=public --service=ssh --remove-port=22/tcp
+
+# 重载规则，禁用 tcp/22
+firewall-cmd --reload
+----
+
+上面的操作中，有一个小细节值得讨论，那么就是 SELinux 中，将 tcp 端口 2222 加入 ssh_port_t 到底改变了什么。
+
+首先我们看一下 SELinux 策略中，有关 sshd_t 和 ssh_port_t 的条目：
+
+[source, sh]
+----
+sesearch --allow --source sshd_t --target ssh_port_t --class tcp_socket
+----
+
+返回值
+
+----
+allow nsswitch_domain port_type:tcp_socket { recv_msg send_msg }; [ nis_enabled ]:True
+allow nsswitch_domain reserved_port_type:tcp_socket name_connect; [ nis_enabled ]:True
+allow sshd_t port_type:tcp_socket { recv_msg send_msg };
+allow sshd_t ssh_port_t:tcp_socket name_bind;
+----
+
+观察后两条没有 SELinux Boolean 的条目，第一条说的是，sshd_t 对具有 port_type 属性的类型的 tcp_socket，都可以收发信息。第二条说的是，sshd_t 对于具有 ssh_port_t 类型的 tcp_socket 具有 name_bind 权限。 +
+第一条规则中，所有的网络端口都具有 port_type 属性，因此，**第一条实际上允许 sshd_t 在任意 tcp 端口上收发信息**，这并不是我们理解的对 sshd 的限制。 +
+第二条规则中，SELinux 仅允许 sshd_t 绑定（name_bind）特定的端口（这里是 2222），也就是说，**SELinux 实际上是限制了 sshd 的监听端口**，这条才是真正对 sshd 的限制。
+
+由于 SELinux 的这种设计，这里有一个小小的注意点，那就是由于 SELinux 限制的是 sshd_t 可以监听的端口，虽然 SELinux 策略的修改是实时的，但是 sshd 进程可以监听的端口是在 sshd **启动时**就分配的。因此，在修改了 ssh_port_t 所包含的端口之后，我们需要**重载** sshd 服务，才能让 SELinux 的新设置实际影响 sshd 的运行。
+
+[NOTE]
+====
+关于各种 SELinux 权限的描述，见 link:https://selinuxproject.org/page/NB_ObjectClassesPermissions[]
+====
