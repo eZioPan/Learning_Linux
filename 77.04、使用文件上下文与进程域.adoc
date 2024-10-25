@@ -46,7 +46,7 @@ getfattr --match - --dump <文件名>
 
 有几个特例：
 
-* SELinux 感知的程序可以强制文件使用不同的上下文（当然，SELinux 策略必须要允许它）。这些代码在程序中，这类行为通常无法配置。
+* SELinux 感知（awareness）的程序可以强制文件使用不同的上下文（当然，SELinux 策略必须要允许它）。这些代码在程序中，这类行为通常无法配置。
 * `restorecond` 可以通过 SELinux 的上下文规则，以基于路径的方式，强制上下文。
 * SELinux 策略具有一些转换规则（transition rule），会考虑进程的上下文和要创建的文件的名称，来设置文件的上下文。
 

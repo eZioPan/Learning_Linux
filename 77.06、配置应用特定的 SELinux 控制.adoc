@@ -1,0 +1,126 @@
+= 配置应用特定的 SELinux 控制
+
+== 微调 systemd 服务、日志和设备管理
+
+**systemd** 不仅能感知 SELinux，而且其自身（而非依赖 Linux 内核）也会对特定的 SELinux 类别和权限施加强制访问控制，这种程序被称为**用户空间对象管理器**（userspace object manager）
+
+由于 systemd 会执行强制访问控制，因此它也有自己的 AVC。而这类从用户空间对象管理器产生的 AVC 日志，被称为 **USER_AVC** 事件。
+
+=== systemd 中的服务支持
+
+==== 为一个服务设置 SELinux 上下文
+
+systemd 的__部分__ Unit 文件支持**设置**该服务运行时需要切换到的 SELinux 上下文。
+
+比如 **chronyd-restricted.service** 就具有对应的 SELinux 上下文设置。
+
+[source, sh]
+.查看 chronyd-restricted.service 的配置文件
+----
+systemctl cat chronyd-restricted.service
+----
+
+返回值中，**[Service]** 节有一行
+
+----
+SELinuxContext=system_u:system_r:chronyd_restricted_t:s0
+----
+
+即为 chronyd 在运行的时候__应该__具有的 SELinux 上下文。
+
+需要注意的是，即便我们不为某个服务设置 SELinux 上下文，SELinux 也有规则切换服务的上下文。而且，即便我们通过 **SELinuxContext=** 设置了我们希望的 SELinux 上下文，也需要对应的 SELinux 规则允许这样的上下文切换。
+
+[NOTE]
+====
+* 关于 **SELinuxContext=** 参见 link:https://www.freedesktop.org/software/systemd/man/latest/systemd.exec.html#SELinuxContext=[]
+* 如何你需要启动 chronyd-restricted.service，那么会有两个调整：
+** chronyd.service 和 chronyd-restricted.service 相冲突，启用后者之前需要**禁用前者**
+** 直接启用 chronyd-restricted.service 会产生一个不影响服务启动的错误
++
+----
+Could not open command socket on 127.0.0.1:323
+Could not open command socket on [::1]:323
+----
++
+这是由于 chronyd 会启动一个网络端口来执行外部命令（monitoring）。chronyd-restricted.service 是以 chrony 用户运行的，而非 root 用户，它是不可以绑定“特权端口”的。因此，我们需要禁用 chrony 的远程控制，或者修改命令端口至一个非特权端口（当然，要添加额外的 SELinux 规则将新端口囊括在 chronyd 可用端口中）。
++
+这里我们选择直接关掉命令端口： +
+编辑 **/etc/chrony.conf**，添加如下内容
++
+[source, sh]
+./etc/chrony.conf
+----
+# Disable commandline access
+cmdport 0
+----
+====
+
+[NOTE]
+====
+当我们**出于某种特殊的目的（比如临时测试某个功能）**__自定义了__ **SELinuxContext=** 之后，systemd 会尝试在所有执行命令相关的任务（Unit 文件中，所有以 Exec 开头的配置条目）中使用这个上下文，但并非所有 Exec* 的命令行都能符合__我们自定义的__下文。此时我们可以为 Exec* 条目的值（也就是命令行内容）的最前端添加一个 `+` 号，让这个命令以“全权限”的形式执行。
+
+一般来说，默认的系统上的软件和该系统上的 SELinux 是自洽的，是不需要 `+` 这个前缀符号的。
+
+关于各种前缀符号的含义，见 link:https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html#Command%20lines[]
+====
+
+==== 使用暂态服务（transient service）
+
+`systemd-run` 可以将某个程序临时加载为由 systemd 管理的守护进程。systemd 会自动为该守护进程生成一个临时的 Unit 文件，而且这个文件会在用户执行 `systemctl stop` 后自动被移除。要为该守护进程设置参数，则必须通过`systemd-run` 的命令行参数进行设置。就守护进程所处的 SELinux 上下文来说，可以使用 `--property SELinuxContext=<...>` 指定。
+
+[TIP]
+====
+需要注意的是，若一个二进制文件具有 unconfined_t 上下文（比如用户自行编译的程序），则它大概率不能被 `systemd-run` 正确加载（systemd 以 init_t 加载守护进程）。此时可以尝试将二进制文件的 SELinux 类别修改为 bin_t。
+====
+
+==== 配置需要 SELinux 的服务
+
+有一些服务需要确定 SELinux 存在才可以运行，比如为系统自动重标签的 **selinux-autorelabel.service** 服务，就要求系统启用了 SELinux。
+
+在 systemd 服务的 unit 文件的 **[Unit]** 段中，就有一个 **ConditionSecurity=** 字段。当我们将其的值设置为 **selinux** 的时候，启动该服务的时候，就会预先检测 SELinux 是否正在运行，仅当 SELinux 正在运行时，才会之际执行这个服务。
+
+[NOTE]
+====
+关于 **ConditionSecurity=** 和各种以 Condition 开头的配置，见 link:https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html#Conditions%20and%20Asserts[]
+====
+
+有一个与 selinux-autorelabel.service 的前序的服务，被称为 selinux-autorelabel-mark.service。若这个服务处于激活状态，且 SELinux 没有在系统上运行，则它会在文件系统根目录上创建 **.autorelabel** 文件。这样，在之后的某次激活了 SELinux 的启动过程中，就会启用 selinux-autorelabel.service 为整个文件系统重新标记 SELinux 上下文。 +
+它的巧妙设计在于，selinux-autorelabel-mark.service 的 **ConditionSecurity=** 被设置成了 **!selinux**，这样我们就只会在某次没有启用 SELinux 的情况下生成 **.autorelabel**。在正常的启动中，若我们检查 selinux-autorelabel-mark.service 的状态，就能看到下面的字眼：
+
+----
+systemd[1]: selinux-autorelabel-mark.service - Mark the need to relabel after reboot was skipped because of an unmet condition check (ConditionSecurity=!selinux).
+----
+
+==== 在服务启动时执行文件重标签
+
+标题所指的“服务”，主要就是指 **systemd-tmpfiles** 软件，以及其对应的 **systemd-tmpfiles-XXXX.serivce** 服务。正如其名所指，这个服务最常见的作用，就是设置临时文件系统中的文件和文件夹，以及这些文件和文件夹的相关设置。
+
+**systemd-tmpfiles** 与 SELinux 关联的地方，在于 **systemd-tmpfiles** 可以恢复目录和文件的 SELinux 上下文。
+
+比如，在 **/usr/lib/tmpfiles.d/selinux-policy.conf** 中，我们可以发现，行首的 `z` 或者 `Z` 在告诉 **systemd-tmpfiles** 恢复或递归恢复指定路径的 SELinux 上下文。
+
+==== 管理对 unit 的操作
+
+通过 systemctl 管理守护进程这件事情本身也是非常重要的。因此，这类操作也受到 SELinux 的限制，SELinux 为控制服务运行的各种操作单独设置了一个名为 **service** 的 class。这个 class 下有六个权限，正好对应了 `systemctl` 对于服务的六种操作：禁用、启用、重载、开始、终止和查询状态。
+
+而且，在 SELinux 看来，service class 是赋予给 XXX_unit_file_t 的。也就是说，在 SELinux 看来，`systemctl` 是通过 unit 文件来控制服务的。
+
+=== systemd 的日志
+
+查询自本次启动之后，日志中提及了 SELinux 的内容
+
+[source, sh]
+----
+journalctl -b | grep -i selinux
+----
+
+查询与特定 SELinux 上下文相关的日志
+
+[source, sh]
+----
+journalctl _SELINUX_CONTEXT=<SELinux 上下文>
+----
+
+注意，上面这个上下文，是可以通过 bash 的自动补全来输入的。
+
+setroubleshoot 也可以与 systemd-journald 协作。当某个服务被 SELinux 阻止后，setroubleshoot 会将相关的信息写入该服务的日志中，方便管理员排错。

@@ -23,9 +23,13 @@ SELinux，第 77 章
 * 主线流程
 ** 鸟哥的 Linux 私房菜 第四版（CentOS7） https://linux.vbird.org/linux_basic/centos7/
 
-* SELinux 《SELinux System Administration, 3rd Edition》
+* SELinux
+** 《SELinux System Administration, 3rd Edition》
+** SELinux 帮助文档 https://selinuxproject.org/page/NewUsers
+** SELinux 源码 https://github.com/SELinuxProject/
 
-* Kea DHCP 官方文档 https://kea.readthedocs.io/
+* Kea DHCP
+** 官方文档 https://kea.readthedocs.io/
 
 * SQLite
 ** 学习自 https://www.sqlitetutorial.net/

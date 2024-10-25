@@ -58,7 +58,7 @@ setsebool -P secure_mode_policyload 1
 
 以 grub 为例：
 
-修改 **/etc/default/grub** ，在 linux commandline 对应的行的行尾添加 `selinux=0` 或者 `enforcing=0`，并调用 `grub2-mkconfig`，可以彻底关闭 SELinux 或者将 SELinux 设置为 
+修改 **/etc/default/grub** ，在 linux commandline 对应的行的行尾添加 `selinux=0` 或者 `enforcing=0`，并调用 `grub2-mkconfig`，可以彻底关闭 SELinux 或者将 SELinux 设置为
 
 对于 systemd-boot，则需要修改的文件为 **/etc/kernel/cmdline**，需要调用的命令为 ``kernel-install add-all``
 
@@ -189,7 +189,7 @@ type=AVC msg=audit(09/29/2024 23:11:20.188:262) : avc:  denied  { read } for  pi
 
 type=AVC::
 记录的类型，当值为 `AVC` 则表示内核事件 +
-还有一种为 `USER_AVC`，表示 user-space object manager events
+还有一种为 `USER_AVC`，表示用户空间对象管理器事件（user-space object manager events）
 
 msg=audit(09/29/2024 23:11:20.188:262)::
 这里主要是时间戳和一个序列号，形式为 **audit(__timestamp__:__serial_number__)** +
