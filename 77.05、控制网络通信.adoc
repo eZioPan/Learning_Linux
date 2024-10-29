@@ -68,8 +68,11 @@ sepolicy network --port 22
 +
 [source, sh]
 ----
+# 查看 ssh 当前允许的端口
+firewall-cmd --permanent --info-service=ssh
+
 # 将 tcp/2222 添加到防火墙的 ssh 规则中
-firewall-cmd --permanent --zone=public --service=ssh --add-port=tcp/2222
+firewall-cmd --permanent --service=ssh --add-port=tcp/2222
 
 # 重载规则，让防火墙放行 tcp/2222
 firewall-cmd --reload
@@ -130,16 +133,7 @@ Port 2222
 systemctl reload sshd
 ----
 
-. 配置 SELinux
-+
-[source, sh]
-----
-# 将 22 tcp 端口从 ssh_port_t 中移除
-semanage port --delete --type ssh_port_t --proto tcp 22
-
-# 检查 22 端口的分配情况
-sepolicy network --port 22
-----
+. 由于 tcp/22 为 ssh_port_t 是在 SELinux 策略中定义的，因此这里我们不可以将其从该 SELinux 类型中移除。这里不删除也无妨，因为我们已经从 sshd 监听端口和防火墙中移除了 tcp 22 端口了。
 
 . 配置防火墙
 +
