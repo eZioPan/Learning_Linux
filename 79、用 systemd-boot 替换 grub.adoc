@@ -9,6 +9,13 @@ systemd-boot 是 systemd 推出的仅支持 UEFI 模式启动的 boot loader，�
 . 下面的操作仅支持 **非 Secure Boot** 模式，已经开启 **Secure Boot** 的机器切勿尝试
 ====
 
+[NOTE]
+====
+若你打算在安装 Fedora 的时候直接使用 systemd-boot 作为引导程序，那么可以直接在安装盘的引导的 `linuxefi` 行的行尾添加 `inst.sdboot`，并启动 Anaconda 并完成安装。
+
+`inst.sdboot` 参数会被 Anaconda 读取，从而设置安装参数。关于 Anaconda 支持的启动参数，参见 link:https://anaconda-installer.readthedocs.io/en/latest/boot-options.html[]
+====
+
 == 操作概述
 
 我们这里使用的系统为 Fedora 39，实际上，即便是默认使用 grub 安装的 Fedora 39，也是默认就安装了 systemd-boot 所需要的配置文件的，因此我们的操作就简化为了
