@@ -5,6 +5,33 @@ systemd-boot 是 systemd 推出的仅支持 UEFI 模式启动的 boot loader，�
 
 [IMPORTANT]
 ====
+**非常重要**
+
+若你在 Fedora 41 上进行替换，请预先禁用 kernel-install 配置文件 **/usr/lib/kernel/install.d/92-tuned.install**，再执行替换操作。**92-tuned.install** 会为 systemd-boot 管理的 entries 的 conf 文件的 **initrd** 行添加 `$tuned_initrd`,还会为 options 行添加 `$tuned_param`，但 systemd-boot 并不支持在配置条目中使用 `$` 标记的变量，因此会导致引导失败（主要是找不到 initrd）。
+
+[source, sh]
+----
+# 禁用 92-tuned.install
+ln -s /dev/null /etc/kernel/install.d/92-tuned.install
+----
+
+如果你__**不幸与笔者一样**__，在使用了 systemd-boot 的情况下，更新到了 Fedora 41，那么你立刻就可以在启动时体验到窗口只剩一行 **Error preparing initrd: not found** 的恐惧。
+
+此时，你能做的就是，使用临时 shell 进行急救（当然，若你有 rescue image 启动项或者 livecd，也是不错的选择）
+
+. 在启动到 systemd-boot 的时候，按 e 键，编辑启动参数，在行尾添加 `rd.break`，并按 Ctrl + x 引导。
+. 输入 root 密码，进入临时 shell 状态
+. 使用 blkid 命令列举当前的块设备，我们这里要查找的是文件系统为 **vfat**，标签为 **EFI system partition** 的设备
+. 将该该设备挂在到 **/sysroot/boot** 下
+. 进入 **/sysroot/boot/loader/entries/** 找到其中文件名具有 fc41 的 .conf 文件
+. 将该 .conf 文件中 initrd 行的行尾的 `$tuned_initrd` 删除，保存，重启。
+. 从我们刚刚修改过的启动项启动
+. 然后执行上面提到的禁用 **92-tuned.install** 并重新生成启动项的操作。
+
+====
+
+[IMPORTANT]
+====
 . 本文仅在 x64 架构上测试成功，其它架构（如 AArch64）请确认是否需要额外的操作步骤
 . 下面的操作仅支持 **非 Secure Boot** 模式，已经开启 **Secure Boot** 的机器切勿尝试
 ====
