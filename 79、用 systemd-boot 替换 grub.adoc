@@ -17,22 +17,33 @@ v2 版改版说明：
 
 [NOTE]
 ======
-为了保证 chroot 后可以使用大部分工具，除了 mount 对应的目录之外，还需要额外挂载一些关键目录
+为了保证 chroot 后可以使用大部分工具，除了 mount 根目录之外，还需要额外挂载一些关键目录
 
 [source, sh]
 ------
-mount --bind /proc <chroot根目录>/proc
-mount --bind /sys <chroot根目录>/sys
-mount --bind /dev <chroot根目录>/dev
-mount --bind /run <chroot根目录>/run
+# 这里做如下假设
+# 1. EFI 分区在 sda1 上
+# 2. 根目录具有 btrfs 文件系统，其在 sda2 上
+# 3. 根目录挂载点设置在 /mnt 下
 
-# fedora 默认使用 btrfs 管理 / 和 /home，这里将 /home bind 到对应的位置
-mount --bind <挂载根目录的目录>/home <chroot根目录>/home
+# 挂载根目录
+mount /dev/sda2 /mnt
+
+# 挂载常见的虚拟文件系统
+# 由于 btrfs 的存在，根目录的路径实际为 /mnt/root
+mount --bind /proc /mnt/root/proc
+mount --bind /sys /mnt/root/sys
+mount --bind /dev /mnt/root/dev
+mount --bind /run /mnt/root/run
+
+# 特别的，由于 bootctl install 需要修改 UEFI 变量，因此，我们需要额外挂载 efivars 文件夹
+mount --bind /sys/firmware/efi/efivars /mnt/root/sys/firmware/efi/efivars
+
+# 【可选】fedora 默认使用 btrfs 管理 / 和 /home，这里将 /home bind 到对应的位置
+mount --bind /mnt/home /mnt/root/home
 ------
 
-需要注意的点是， +
-`kernel-install add-all` 是需要在 chroot 的环境下，才能自动识别和注入启动项的； +
-而 `bootctl install` 则正相反，它不能在 chroot 环境下执行，必须使用 `--esp-path=` 修改写入的路径，因为它需要修改 UEFI 变量。
+这样设置之后，我们就有了一个基本可用的 chroot 环境了。
 ======
 ====
 
