@@ -1,34 +1,74 @@
 = 用 systemd-boot 替换 grub
 
-systemd-boot 是 systemd 推出的仅支持 UEFI 模式启动的 boot loader，相较于 grub，systemd-boot 的配置更简单，使用也更加方便 +
-如果你的机器支持 UEFI 启动，且你的系统也仅需 UEFI 启动，那么可以考虑使用 systemd-boot 替换 grub
+== 新增内容
+
+[NOTE]
+====
+v2 版改版说明：
+
+* 在第一版中，笔者没有遵循 Fedora 对于 BOOT 分区和 EFI 分区的建议，导致了一些兼容性问题。在这一版中统一按照 Fedora 的规划进行设置。
+* 优化了部分操作过程，尽量使用现有的工具
+* 明确了部分用语
+====
 
 [IMPORTANT]
 ====
-**非常重要**
+请务必准备一个可以启动的 Fedora Workstation LiveCD，万一在下面的调整中出现任何错误，我们还有从 LiveCD 启动，并挂载硬盘 chroot 进行补救的操作。
 
-若你在 Fedora 41 上进行替换，请预先禁用 kernel-install 配置文件 **/usr/lib/kernel/install.d/92-tuned.install**，再执行替换操作。**92-tuned.install** 会为 systemd-boot 管理的 entries 的 conf 文件的 **initrd** 行添加 `$tuned_initrd`,还会为 options 行添加 `$tuned_param`，但 systemd-boot 并不支持在配置条目中使用 `$` 标记的变量，因此会导致引导失败（主要是找不到 initrd）。
+[NOTE]
+======
+为了保证 chroot 后可以使用大部分工具，除了 mount 对应的目录之外，还需要额外挂载一些关键目录
 
 [source, sh]
-----
-# 禁用 92-tuned.install
-ln -s /dev/null /etc/kernel/install.d/92-tuned.install
-----
+------
+mount --bind /proc <chroot根目录>/proc
+mount --bind /sys <chroot根目录>/sys
+mount --bind /dev <chroot根目录>/dev
+mount --bind /run <chroot根目录>/run
 
-如果你__**不幸与笔者一样**__，在使用了 systemd-boot 的情况下，更新到了 Fedora 41，那么你立刻就可以在启动时体验到窗口只剩一行 **Error preparing initrd: not found** 的恐惧。
+# fedora 默认使用 btrfs 管理 / 和 /home，这里将 /home bind 到对应的位置
+mount --bind <挂载根目录的目录>/home <chroot根目录>/home
+------
 
-此时，你能做的就是，使用临时 shell 进行急救（当然，若你有 rescue image 启动项或者 livecd，也是不错的选择）
-
-. 在启动到 systemd-boot 的时候，按 e 键，编辑启动参数，在行尾添加 `rd.break`，并按 Ctrl + x 引导。
-. 输入 root 密码，进入临时 shell 状态
-. 使用 blkid 命令列举当前的块设备，我们这里要查找的是文件系统为 **vfat**，标签为 **EFI system partition** 的设备
-. 将该该设备挂在到 **/sysroot/boot** 下
-. 进入 **/sysroot/boot/loader/entries/** 找到其中文件名具有 fc41 的 .conf 文件
-. 将该 .conf 文件中 initrd 行的行尾的 `$tuned_initrd` 删除，保存，重启。
-. 从我们刚刚修改过的启动项启动
-. 然后执行上面提到的禁用 **92-tuned.install** 并重新生成启动项的操作。
-
+需要注意的点是， +
+`kernel-install add-all` 是需要在 chroot 的环境下，才能自动识别和注入启动项的； +
+而 `bootctl install` 则正相反，它不能在 chroot 环境下执行，必须使用 `--esp-path=` 修改写入的路径，因为它需要修改 UEFI 变量。
+======
 ====
+
+[IMPORTANT]
+====
+如果你阅读了第一版文章，且更新到了 Fedora 41，那么在 systemd-boot 引导后会出现 **Error preparing initrd: not found**，请使用下方的命令进行急救：
+
+. 在临时 shell 中修改启动项
+.. 在启动到 systemd-boot 的时候，按 e 键，编辑启动参数，在行尾添加 `rd.break`，并按 Ctrl + x 引导。
+.. 输入 root 密码，进入临时 shell 状态
+.. 在 **/sysroot/boot** 下新建 **efi** 文件夹
+.. 使用 blkid 命令列举当前的块设备，我们这里要查找的是文件系统为 **vfat**，标签为 **EFI system partition** 的设备
+.. 将该该设备挂载到 **/sysroot/boot/efi** 下
+.. 进入 **/sysroot/boot/efi/loader/entries/** 找到其中文件名具有 fc41 的 .conf 文件
+.. 将该 .conf 文件中 initrd 行的行尾的 `$tuned_initrd` 删除，保存，重启。
+. 在系统中进行修改
+.. 从我们刚刚修改过的启动项启动
+.. 依照下方的“备份可能需要的文件”备份 /boot 中的文件
+.. 使用 `umount /boot` 卸载 EFI 分区
+.. 依照下方的“准备 /boot 和 /boot/efi 文件夹”还原文件
+.. 修改 **/etc/fstab**，将 EFI 分区的挂载点修改为 **/boot/efi**
+.. 使用 `systemctl daemon-reload` 让 systemd 重读 fstab 内容
+.. 使用 `mount -a` 自动挂载 BOOT 分区
+.. 安装 **sdubby** 包，在 dnf 配置目录中对该包进行保护
+.. 使用 `bootctl install` 重新生成 efi 文件，并**重新写入 UEFI 变量**
+.. 使用 `kernel-install add-all` 重新生成所有的启动项
+.. 进行最后的检查
+... 使用 `lsblk -o+PARTUUID` 获取 EFI 分区的 PARTUUID
+... 使用 `efibootmgr` 确认当前激活的 Boot 项的 PARTUUID 与上面的 PARTUUID 相同
+... 使用 `bootctl list` 确认可引导条目正确
+.. 重启系统
+====
+
+== 简述
+
+systemd-boot 是 systemd 推出的仅支持 UEFI 模式启动的 boot loader，相较于 grub，systemd-boot 的配置更简单，使用也更加方便，如果你的机器支持 UEFI 启动，且你的系统也仅需 UEFI 启动，那么可以考虑使用 systemd-boot 替换 grub。
 
 [IMPORTANT]
 ====
@@ -45,10 +85,11 @@ ln -s /dev/null /etc/kernel/install.d/92-tuned.install
 
 == 操作概述
 
-我们这里使用的系统为 Fedora 39，实际上，即便是默认使用 grub 安装的 Fedora 39，也是默认就安装了 systemd-boot 所需要的配置文件的，因此我们的操作就简化为了
+主要分以下几个步骤
 
-. 用 `bootctl` 将 systemd-boot 的 .efi 文件注入 EFI 分区中
-. 拷贝 `/boot` 中相关的文件到 EFI 分区中
+. 安装相关的包
+. 使用 `bootctl` 将 systemd-boot 的 .efi 文件注入 EFI 分区中
+. 使用 `kernel-install` 为 systemd-boot 生成启动条目
 . 让机器的 UEFI 加载 systemd-boot，并引导至操作系统
 . 移除 grub 相关的程序和配置文件
 
@@ -66,69 +107,51 @@ ln -s /dev/null /etc/kernel/install.d/92-tuned.install
 强烈建议在实际操作之前，使用虚拟机完整走一遍流程，再**考虑**是否要实际引用在 bare metal 上
 ====
 
-=== 安装 systemd-boot-unsigned
+=== 安装相关的包
 
-该包中包含了一些我们需要的文件
+[source, sh]
+----
+dnf install --allowerasing sdubby
+----
 
-[source, bash]
-----
-dnf install systemd-boot-unsigned
-----
+安装 sduddy 包会同时安装 systemd-boot-unsigned，并移除 grubby 包。
+
+sdubby 包中有不少与 systemd-boot 相关的配置文件，而 systemd-boot-unsigned 包则包含了 systemd-boot 所需的 efi 文件。
 
 === 将 systemd-boot 引导写入 EFI 分区中
 
-[source, bash]
+[IMPORTANT]
+====
+在这一步之后，`bootctl` 会调整 UEFI 的默认启动项，但由于缺少必要的操作，此时新的默认启动项是无法正确引导系统的。 +
+如果你不幸关闭了系统，那么可以在 BIOS/UEFI 中选择 **shimx64.efi** 进行启动。
+====
+
+[source, sh]
 ----
 bootctl install
 ----
 
-该操作将会在 **/boot/efi** 中释放相关的文件，主要是覆盖了 **EFI/BOOT/BBOTX64.efi**，并新增了 **EFI/systemd/systemd-boot.efi**，并在 EFI 自己的 NVRAM 里写入 systemd-boot 对应的启动项配置，我们可以通过 `efibootmgr` 命令观察到名为 `Linux Boot Manager` 的启动项
+该操作将会在 **/boot/efi** 中释放相关的文件，主要是将 **sysstemd-bootx64.efi** 拷贝至 **/boot/efi/EFI/systemd/** 下，并用相同的文件覆盖了 **/boot/efi/EFI/BOOT/BBOTX64.efi**；并在 EFI 自己的 NVRAM 里写入 systemd-boot 对应的启动项配置，我们可以通过 `efibootmgr` 命令观察到名为 `Linux Boot Manager` 的启动项。
 
-之后我们就可以通过下面的命令查看可以由 systemd-boot 引导的系统
+之后我们就可以通过下面的命令查看可以由 systemd-boot 引导的系统：
 
-[source, bash]
+[source, sh]
 ----
-bootctl - list
-----
-
-不过就默认的配置来说，它应该返回 **No boot loader entries found.**，也就是说，没有任何一个系统可以被 systemd-boot 引导。因此我们还需执行后面的操作，让 systemd-boot 有操作系统可以引导
-
-=== 拷贝所需文件到 EFI 分区中
-
-你至少需要拷贝的文件有
-
-* 内核文件 ** /boot/vmlinuz-* **
-* 加载系统时使用的 ramdisk ** /boot/initramfs-* **
-* systemd-boot 可引导系统的配置文件夹 ** /boot/loader **（注意需要拷贝整个文件夹）
-
-可以拷贝的文件有
-
-* 内核编译配置文件 ** /boot/config-* **
-* 内核的符号表 ** /boot/System.map-* **
-
-无需拷贝的文件有
-
-* grub2 配置文件 **/boot/grub2**
-
-无法拷贝的文件有
-
-* ** /boot/symvers-* **，它其实是一个符号连接，不过由于 EFI 分区的 FAT32 不支持符号链接，因此这个文件是无法拷贝的
-* **/boot/efi** 这个是我们的目标文件夹，因此也无需拷贝
-
-然后我们就可以将上面提到的文件拷贝至 **/boot/efi** 中了
-
-[source, bash]
-----
-cp -r /boot/vmlinuz-* /boot/initramfs-* /boot/loader /boot/System.map-* /boot/config-* /boot/efi
+bootctl list
 ----
 
-之后我们再次执行 `bootctl - list`，就可以看到其中列出了不少可以被引导的引导项了
+给出的信息会有各种报错，这是因为系统上默认的配置文件并不符合 systemd-boot 的配置要求，因此我们还需要使用其它工具生成正确的配置。
 
-到此，我们就可以重启电脑，通过 systemd-boot 引导系统了
+=== 使用 kernel-install 产生可用的配置文件
+
+[source, sh]
+----
+kernel-install --verbose add-all
+----
 
 === 重启后的配置
 
-在重启之后，我们再次使用 `bootctl - list` 命令，就可以看到其输出中有
+在重启之后，我们再次使用 `bootctl stataus` 命令，就可以看到其输出中有
 
 [source]
 ----
@@ -155,94 +178,131 @@ Current Boot Loader:
 ====
 在这个步骤中，我们将
 
+. 为 sdubby 包和 systemd-boot-unsigned 包添加保护
 . 删除 grub 和 shim
-. 为 systemd-boot-unsigned 包添加保护
 . 将 /boot 对应的分区删除，将其容量交给 EFI 分区
-. 调整 EFI 分区的挂载目录为 /boot，方便后续系统更新
 ====
 
-. 移除 dnf 中 grub2、shim 包相关的保护
-+
-[source, bash]
-----
-rm -f /etc/dnf/protected.d/grub2-*.conf /etc/dnf/protected.d/shim.conf
-----
-. 为 systemd-boot-unsigned 包添加保护 +
-在 **/etc/dnf/protected.d/** 下添加文件 **systemd-boot-unsigned.conf**，并在其中写入下面的内容
+. 为 sdubby 和 systemd-boot-unsigned 包添加保护 +
+在 **/etc/dnf/protected.d/** 下添加文件 **systemd-boot.conf**，并在其中写入下面的内容
 +
 [source]
+./etc/dnf/protected.d/systemd-boot.conf
 ----
+sdubby
 systemd-boot-unsigned
 ----
-. 测试 systemd-boot-unsigned 是否被保护成功
+
+. 测试 sdubby 和 systemd-boot-unsigned 是否被保护成功
 +
-[source, bash]
+[source, sh]
 ----
-dnf remove --setop=tsflags=test systemd-boot-unsigned
+dnf remove --setopt=tsflags=test sdubby systemd-boot-unsigned
 ----
 +
 如果返回错误表示要移除的是 **protected packages** 则表示保护成功
+
+. 移除 dnf 中 grub2、shim 包相关的保护
++
+[source, sh]
+----
+rm -f /etc/dnf/protected.d/grub2-*.conf /etc/dnf/protected.d/shim.conf
+----
+
 . 移除 grub 和 shim 相关的包
 +
 [IMPORTANT]
 ====
 执行移除之后，**切勿关机**，此时系统缺失 **/boot/efi/BOOT/BOOTX64.EFI** 这个文件，会无法自动引导操作系统 +
-如果此时不幸系统掉电，则请在机器启动时，进入 UEFI Shell，然后通过 FS0: 进入第一个文件系统，然后 EFI\systend\systemd-bootx64.efi 启动系统
+如果此时不幸系统掉电，则请在机器启动时，进入 UEFI Shell，然后通过 FS0: 进入第一个文件系统，然后 EFI\systemd\systemd-bootx64.efi 启动系统
 ====
 +
-[source, bash]
+[source, sh]
 ----
 dnf remove grub* shim* mactel-boot
 ----
 +
 注：我的电脑不是 mac，因此我还移除了引导 mac 相关的 mactel-boot 包
+
+. 备份可能需要的文件
 +
-之后我们再次进入到 **/boot/efi/BOOT/** 和 **/boot/fedora/** 下，就可以发现 grub 相关的 .efi 文件已经被移除了 +
-然后我们就需要将 `systemd-bootx64.efi` 拷贝为 `BOOTX64.efi`，并放到到对应的目录里
-+
-[source, bash]
+[source, sh]
 ----
-cp /boot/efi/EFI/systemd/systemd-bootx64.efi /boot/efi/EFI/BOOT/BOOTX64.EFI
+mkdir ~/boot_bk
+mv config* symvers* System.map* .vmlinuz* ~/boot_bk
 ----
-. 移除 efi 分区中 grub 残余的文件
-+
-[source, bash]
-----
-rm -rf /boot/efi/fedora
-----
+
 . 卸载 EFI 分区和 /boot 对应的分区
 +
-[source, bash]
+[source, sh]
 ----
 umount /boot/efi /boot
 ----
-. 删除 /boot 对应的分区，并将其容量扩充给 EFI 分区 +
-用 gdisk 删除 /boot 对应的分区和 EFI 分区，然后再重新建立 EFI 分区，在建立 EFI 分区的时候，其分区类型的编号为 `EF00`
-. 用 `lsblk -o+UUID` 确认 EFI 分区的文件系统的 UUID；修改 **/etc/fstab**，移除原有的 /boot 挂载点的信息，并将 EFI 分区的挂载点从 /boot/efi 修改到 /boot，并确认 EFI 分区的 UUID 和 `lsblk` 返回的一致 +
-并尝试挂载 EFI 到 /boot
+
+. 准备 /boot 和 /boot/efi 文件夹
 +
-[source, bash]
+[source, sh]
 ----
-mount /boot
+# 新建 /boot/efi，作为 EFI 分区的新挂载点
+mkdir /boot/efi
+
+# 还原我们备份的文件
+mv ~/boot_bk/* ~/boot_bk/.* /boot
+
+# 若你启用了 SELinux，这里还可以还原一下 /boot 整个目录的 SELinux 上下文
+restorecon -v -R /boot
+
+# 还可以进一步还原 SELinux 上下文
+chcon --recursive --verbose --user system_u /boot
 ----
+
+. 删除 BOOT 分区，并调整 EFI 分区的大小
+.. 用 gdisk 删除 BOOT 分区和 EFI 分区
+.. 创建新的 EFI 分区，其分区类型的编号为 `EF00`
+
+. 新建 EFI 分区的 vfat 文件系统
 +
-确认挂载正常，内容无误后
+[source, sh]
+----
+mkfs.vfat /dev/sda1
+----
+
+. 修改 **/etc/fstab**
+.. 用 `lsblk -o+UUID` 确认 EFI 分区的文件系统的 UUID
+.. 从 **/etc/fstab** 中删除 BOOT 分区的挂载配置，并将 EFI 分区的文件系统的 UUID 修改为与 `lsblk` 返回的一致。
+
+. 尝试挂载 /boot/efi
++
+[source, sh]
+----
+# systemd 似乎接管了 mount 的工作
+systemctl daemon-reload
+
+mount /boot/efi
+----
+
+. 再次重建整个 EFI 分区的内容
++
+[source, sh]
+----
+# 移除残余的 Boot 启动项
+bootctl remove
+
+# 新建 systemd-boot 引导程序
+bootctl install
+
+# 重新生成可引导内核和 initrd
+kernel-install --verbose add-all
+----
+
+. 在重启电脑前，**做最后的检查**
+.. `lsblk -o+PARTUUID` 返回的 EFI 分区的 PARTUUID 与 `efibootmgr` 中启动项的磁盘的 PARTUUID 一致
+.. `lsblk -o+UUID` 返回的 EFI 分区的文件系统的 UUID 与 **/etc/fstab** 中记录的一致
+.. `bootctl list` 中返回的可引导条目的内容无误
+.. 当然，由于我们重建了整个 EFI 分区，我们还可以继续调整 **/boot/efi/loader/lodaer.conf** 中的配置
+
 . 重启电脑
-. 通过 `fatresize` 命令扩展 EFI 分区上文件系统的大小
-+
-[source, bash]
-----
-# 取消 EFI 分区的挂载
-umount /boot
 
-# 确认 EFI 分区的总容量
-lsblk --byte /dev/<EFI 分区>
-
-# 用 fatresize 命令扩充文件系统
-# 其中容量为 lsblk 返回的容量再减去 1
-fatresize -s <容量> /dev/<EFI 分区>
-----
-. 再次重启电脑
 . 使用 `efibootmgr` 检查是否有残余的 EFI 启动项，如果有，用 `efibootmgr --bootnum <要删除的启动项编号> --delete-bootnum` 清除
 
 到此，我们就完成了使用 systemd-boot 作为唯一 boot loader 的流程
@@ -266,7 +326,7 @@ fatresize -s <容量> /dev/<EFI 分区>
 
 === 设置 Linux kernel 的命令行参数
 
-systemd 使用命令 `kernel-install` 来管理启动项，而且 kernel-install 具有 systemd-boot 的配置文件。
+systemd 使用命令 `kernel-install` 来向 EFI/BOOT 分区注入可引导内核和相关信息，且 kernel-install 具有 systemd-boot 的配置文件。
 
 kernel-install 的插件会读取 **/etc/kernel/cmdline** 来为 Linux kernel 添加命令行参数。因此我们可以修改 **/etc/kernel/cmdline** 的内容，并调用 `kernel-install` 来生成新的启动配置。
 
