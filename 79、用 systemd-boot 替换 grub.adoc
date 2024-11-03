@@ -27,23 +27,20 @@ v2 版改版说明：
 # 3. 根目录挂载点设置在 /mnt 下
 
 # 挂载根目录
-mount /dev/sda2 /mnt
+# 由于 btrfs 的存在，这里我们要指定需要挂载的是 root 子卷
+mount /dev/sda2 /mnt -o subvol=/root
 
 # 挂载常见的虚拟文件系统
-# 由于 btrfs 的存在，根目录的路径实际为 /mnt/root
-mount --bind /proc /mnt/root/proc
-mount --bind /sys /mnt/root/sys
-mount --bind /dev /mnt/root/dev
-mount --bind /run /mnt/root/run
+mount --bind /proc /mnt/proc
+mount --bind /sys /mnt/sys
+mount --bind /dev /mnt/dev
+mount --bind /run /mnt/run
 
 # 特别的，由于 bootctl install 需要修改 UEFI 变量，因此，我们需要额外挂载 efivars 文件夹
-mount --bind /sys/firmware/efi/efivars /mnt/root/sys/firmware/efi/efivars
-
-# 【可选】fedora 默认使用 btrfs 管理 / 和 /home，这里将 /home bind 到对应的位置
-mount --bind /mnt/home /mnt/root/home
+mount --bind /sys/firmware/efi/efivars /mnt/sys/firmware/efi/efivars
 ------
 
-这样设置之后，我们就有了一个基本可用的 chroot 环境了。
+这样设置之后，我们就有了一个基本可用的 chroot 环境了。使用 `chroot /mnt` 进入环境后，我们就可以使用 `mount -a` 自动加载其它的文件系统了。
 ======
 ====
 
