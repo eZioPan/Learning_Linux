@@ -1,0 +1,217 @@
+= 微调 SELinux 策略
+
+== 与 SELinux boolean 协同工作
+
+=== 列举 SELinux boolean
+
+通过 `semanage`，我们可以列举系统上所有的 SELinux boolean：
+
+[source, sh]
+----
+semanage boolean --list
+----
+
+它的返回值中，对于一个 boolean 是 on 还是 off，有两个描述：**State** 和 **Default**。其中 **State** 表示的是，在查询的时候，该 boolean 的值；**Default** 表示的是，在硬盘中的策略文件记录的该 boolean 应该具有的值。在每次系统重启之后，会使用后者的值设置 boolean 的值。
+
+也可以使用 `getsebool`：
+
+[source, sh]
+----
+getsebool -a
+----
+
+最后，SELinux boolean 是直接暴露在 **/sys/fs/selinux/booleans** 下的
+
+[source, sh]
+----
+# 检查 secure_mode_policyload 的值
+cat /sys/fs/selinux/booleans/secure_mode_policyload
+----
+
+返回值
+
+----
+0 0
+----
+
+返回的两个 0 依次表示该 boolean 值的当前状态，和 pending 的状态。
+
+使用 pending state 让管理员可以一次性修改多个 boolean 值，这种操作仅可以通过修改 **/sys/fs/selinux** 文件系统来实现。
+
+=== 修改 boolean 值
+
+`setsebool` 命令可以修改 boolean 值。
+
+[source, sh]
+----
+# 检查 httpd_can_sendmail boolean 的值
+getsebool httpd_can_sendmail
+
+# 修改 httpd_can_sendmail boolean 的值
+setsebool httpd_can_sendmail on
+
+# 再次检查 httpd_can_sendmail boolean 的值
+getsebool httpd_can_sendmail
+
+# 我们也可以使用 semanage 检查这个 boolean 的状态
+semanage boolean --list | grep httpd_can_sendmail
+----
+
+特别的，若我们为 `semanage boolean --list` 添加额外的 `--locallist` 参数（表示仅显示本地修改）时，返回值中不会包含我们修改的 httpd_can_sendmail。因为 `setsebool` 默认仅修改 boolean 的运行时的值。
+
+要让我们设置的 boolean 的值可以在重启之后保留，可以使用 `setsebool` 的 `-P` 参数：
+
+[source, sh]
+----
+setsebool -P httpd_can_sendmail on
+----
+
+在这个操作之后，硬盘上的 SELinux 策略库会被重建，并载入内存中。
+
+之后，我们就可以通过 `semanage boolean --list --locallist` 看到本地修改条目了。
+
+[source, sh]
+----
+semanage boolean --list --locallist | grep httpd_can_sendmail
+----
+
+事实上，`semanage` 本身也可以修改 boolean 的值
+
+[source, sh]
+----
+semanage boolean --modify --on httpd_can_sendmail
+----
+
+通过 `semanage` 修改 boolean 是会直接修改硬盘上的 SELinux 策略，并重载至内存的。
+
+特别的，虽然我们可以通过 `setsebool -P` 将指定的 boolean 值“固化”到 SELinux 策略中，但是其不能从 SELinux 删除我们设置的“固化”的修改。要删除我们在本地的修改，恢复发行方给出的默认值，还是需要使用 `semanage`
+
+[source, sh]
+----
+semanage boolean --delete httpd_can_sendmail
+----
+
+除了通过专用工具设置 SELinux boolean，我们也可以直接操作 **/sys/fs/selinux** 下的文件来进行设置：
+
+[source, sh]
+----
+# 获取 httpd_can_sendmail boolean 的当前值
+cat /sys/fs/selinux/booleans/httpd_can_sendmail
+
+# 修改 httpd_can_sendmail 的值
+echo 1 > /sys/fs/selinux/booleans/httpd_can_sendmail
+----
+
+特别的，这种修改方式不会直接让这个值起效，而是让这个 boolean 进入 pending 状态。这个 pending 状态可以通过 getsebool 发现。
+
+[source, sh]
+----
+getsebool httpd_can_sendmail
+----
+
+返回值
+
+----
+httpd_can_sendmail --> off pending: on
+----
+
+当我们完成了所有的 boolean 的值的修改之后，我们就可以执行下面的命令统一提交修改：
+
+[source, sh]
+----
+echo 1 > /sys/fs/selinux/commit_pending_bools
+----
+
+=== 检查 boolean 的影响
+
+通过 `sesearch` 既可以检查 boolean 与对某些条目的影响
+
+[source, sh]
+----
+sesearch --allow --bool httpd_can_sendmail
+----
+
+这条命令的返回值中有一条为
+
+----
+allow httpd_t system_mail_t:process transition; [ httpd_can_sendmail ]:True
+----
+
+其中，方括号 `[]` 中包裹的就是我们要查找的 boolean，之后的冒号的后面会跟随 **True** 和 **False** 两种值。这两种值分别表示，当方括号中的 boolean 的值为真的时候，该条规则应该**激活**还是**关闭**。（若方括号中有多个 boolean 值，则求取最终结果后，比对冒号后的值）。
+
+== 处理策略模块
+
+=== 列举策略模块
+
+SELinux 策略模块是一组可以被加载和卸载的 SELinux 规则，它们具有 **.pp** 或 **.cil** 后缀名。一旦加载，它们就成为 SELinux 策略存储库的一部分，并会在每次重启之后自动加载。SELinux 策略模块的加载总是持久的。
+
+要列举当前加载的 SELinux 策略模块，使用 `semodule` 命令：
+
+[source, sh]
+----
+semodule -l
+----
+
+SELinux 策略模块是可以以不同优先级加载的。对于两个具有相同名称的策略模块，高**策略模块优先级**的会优先于低的。要查看优先级，使用 `--list-modules=full` 参数：
+
+[source, sh]
+----
+semodule --list-modules=full
+----
+
+优先级数值越大，其优先级就越高。
+
+当然，我们也可以通过文件系统查看当前激活的模块：
+
+[source, sh]
+----
+ls /var/lib./selinux/<SELinux 类型>/active/modules
+----
+
+=== 加载和移除策略模块
+
+从策略模块安装
+
+[source, sh]
+----
+semodule --install <模块文件>
+----
+
+默认情况下，管理员安装的模块的优先级值为 400，可以使用 `-X`/`--priority` 参数指定优先级值。
+
+[source, sh]
+----
+# 以优先级值 500 安装模块
+semodule -X 500 -i <模块文件>
+----
+
+将指定的模块完全移除
+
+[source, sh]
+----
+semodule --remove <模块名称>
+----
+
+默认情况下，单纯的 `--remove` 会移除所有优先级下的同名模块。若我们同时给定 `-X`，则可以仅移除给定级别的模块
+
+[source, sh]
+----
+# 移除优先级值 500 的指定模块
+semodule -X 500 -r <模块名称>
+----
+
+当然，我们也可以在不移除模块的情况下，禁用这个模块
+
+[source, sh]
+----
+semodule --disable <模块名称>
+----
+
+反之，我们也可以将禁用的模块启用
+
+[source, sh]
+----
+semodule --enable <模块名称>
+----
+
+由于系统自带的模块也是可以被删除的，因此，若希望系统自带的模块不起效，相较于直接移除它们，禁用他们是更好的选择。
