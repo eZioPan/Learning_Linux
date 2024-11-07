@@ -43,6 +43,29 @@ wsl --update
 wsl --set-default-version 2
 ----
 
+另外还有一些主机配置
+
+[source, conf]
+.${HOME}/.wslconfig
+----
+# 如果你自行编译了 WSL 的 Linux 内核
+#kernel="X:\\wsl\\MSLK-HEAD"
+
+# 限制每个虚拟磁盘的最大大小，单位是 byte
+# 默认是 1TiB，这里我们限制为 64 GiB
+defaultVhdSize=68719476736
+
+# 每个 WSL 实例启动时，显示 debug 窗口（打印启动时的内核信息）
+debugConsole=true
+
+# WSL 默认启用 cgroup v1，禁用它，强制使用 cgroup v2
+kernelCommandLine = cgroup_no_v1=all
+
+[experimental]
+# 启动 sparse 存储
+sparseVhd=true
+----
+
 == 手动导入 Guest 系统
 
 === 下载 lxc 镜像
