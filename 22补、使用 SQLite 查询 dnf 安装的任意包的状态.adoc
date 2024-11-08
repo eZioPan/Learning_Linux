@@ -1,5 +1,15 @@
 = 使用 SQLite 查询 dnf 安装的任意包的状态
 
+[TIP]
+====
+下面的做法麻烦了， `dnf` 其实提供了一个方法可以查询/列举包的安装理由
+
+[source, sh]
+----
+dnf repoquery --installed --queryformat "%{name} <=> %{reason}\n" [包名称]
+----
+====
+
 . 将下面的 SQL 语句保存为文件，比如 `query_state.sql`
 +
 [source, sql]
@@ -64,9 +74,9 @@ SELECT
         WHEN 2 THEN 'Error'
     END
     AS state
-FROM 
+FROM
     added_row_number
-WHERE 
+WHERE
     row_number IS 1 AND action NOT IN (4, 5, 8); -- 行号为 1，且不应该是删除类的操作
 ----
 
