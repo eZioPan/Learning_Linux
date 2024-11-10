@@ -199,7 +199,7 @@ mount -o rootcontext="system_u:object_r:tmp_t:s0" -t tmpfs none /var/tmp
 
 === 使用上下文表达式
 
-SELinux 使用这则表达式的方式记录路径与对应的上下文。这些信息存储在 **/etc/selinux/{SELinux 类型}/contexts/files/** 下的各种 **file_contexts.*** 文件。我们也可以使用 `semanage fcontext -l` 来罗列所有的文件上下文。
+SELinux 使用这则表达式的方式记录路径与对应的上下文。这些信息存储在 **/etc/selinux/{SELinux 类型}/contexts/files/** 下的各种 **++file_contexts.*++** 文件。我们也可以使用 `semanage fcontext -l` 来罗列所有的文件上下文。
 
 .semanage fcontext -l 的返回值
 ----

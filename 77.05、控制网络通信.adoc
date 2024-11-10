@@ -172,5 +172,13 @@ allow sshd_t ssh_port_t:tcp_socket name_bind;
 
 [NOTE]
 ====
-关于各种 SELinux 权限的描述，见 link:https://selinuxproject.org/page/NB_ObjectClassesPermissions[]
+* 关于各种 SELinux 权限的描述，见 link:https://selinuxproject.org/page/NB_ObjectClassesPermissions[]
+* 就上面的 sesearch 查询命令来说，若你就想匹配指明了 **sshd_t** 和 **ssh_port_t** 的条目，则可以追加 `-ds` 和 `-dt` 参数
++
+[source, sh]
+----
+sesearch --allow -ds --source sshd_t -dt --target ssh_port_t
+----
++
+此时就只会返回 **name_bind** 那一个条目了。`-ds` 和 `-dt` 可以解读为“Direct Source”和“Direct Target”
 ====

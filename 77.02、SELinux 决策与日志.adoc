@@ -89,6 +89,11 @@ semanage permissive -d <域名称>
 
 注意到 **AVC** 这个词常常出现在 audit.log 的 **type=** 字段，它指的就是这条 log 来自于 access vector cache。
 
+[TIP]
+====
+**auditd** 是可以接受 **SIGUSR1** 执行日志轮转的。（`kill -s USR1 $(pidof auditd)`）
+====
+
 === 微调 AVC
 
 AVC 本身是可以微调的。
@@ -135,6 +140,10 @@ sesearch --auditallow
 [source, sh]
 ----
 semodule --disable_dontaudit --build
+
+# 或
+
+semanage donotaudit off
 ----
 
 若我们要恢复原始状态，则不加任何参数，再次编译一边策略。
@@ -142,6 +151,10 @@ semodule --disable_dontaudit --build
 [source, sh]
 ----
 semodule --build
+
+# 或
+
+semanage donotaudit off
 ----
 
 === 配置 Linux 审计
@@ -157,7 +170,7 @@ Fedora 默认没有安装任何 auditd 插件，要安装 auditd 自带的插件
 
 注意，SELinux 是在 DAC 之后执行的，若一个访问已经被 DAC 阻止了，那么就轮不到 SELinux 的执行任何动作。
 
-我们可以使用 `ausearch` 提取 audit.log 中有关 AVC 的条目：
+我们可以使用 `ausearch` 提取 auditd 日志（包含已轮转日志）中有关 AVC 的条目：
 
 [source, sh]
 ----
@@ -290,13 +303,50 @@ ausearch --checkpoint <checkpoint 路径> --start checkpoint
 --start checkpoint::
 以 checkpoint 中的记录作为搜索起始点
 
+[TIP]
+====
+当然，除了使用 checkpoint，还有另一种方法，那就是结合 auditd 的日志轮转功能，与 ausearch 可以指定 audit 日志文件的功能，来达成类似于捕获特定范围内日志的效果：
+
+[source, sh]
+----
+# 在触发 AVC 阻止前进行 audit 日志轮转
+kill -s USR1 $(pidof auditd)
+
+# 触发 AVC 阻止
+
+# 【可选】触发后再次进行 audit 日志轮转
+kill -s USR1 $(pidof auditd)
+
+# 使用指定文件的方式查询 AVC 错误
+ausearch --input /var/log/audit.log.1 --message avc --interpret
+# 或者你没有做最后的日志轮转
+ausearch --input /var/log/audit.log --message avc --interpret
+----
+
+相较于直接使用 checkpoint，我们就不担心 ausearch 会自动更新 checkpoint 文件了。
+====
+
 == 为拒绝寻求帮助
+
+[IMPORTANT]
+====
+遇到了 SELinux 问题，必然是要查询 SELinux 帮助的。有很多域是有自己的 manpage 的，这些 manpage 中包含了与该域相关的各种类型的说明。而这些 manpage 的名称均具有如下的形式 **<域名称>_selinux**，比如 **httpd_selinux** 就是介绍 **httpd** 这个域相关的 selinux 信息的。
+
+这些文档都是由包 **selinux-policy-doc** 提供的。（很可惜，这个包不是任何包的依赖，若系统在安装的时候没有额外安装这个包，就只能管理员自己安装了）。
+
+我们可以使用 `man -k selinux` 模糊搜索所有提及 selinux 的文档。
+====
 
 === 使用 setroubleshoot
 
 **setroubleshoot** 是 RHEL 相关的发行版本具有的额外的 SELinux 策略排错软件包。这个软件包包含两大部分：`setroubleshootd` 和 `sealert`。其中 `setroubleshootd` 用来接受来自 D-bus 的 SELinux denial，通过分析插件分析这个信息，并给出用户友好的错误分析和建议。之后它会记录这个分析，并提示其它客户端程序产生了一个 alert。`sealert` 就是上文提到的客户端之一，它既是一个 GUI 程序，也是一个 commandline 程序，它的作用就是告知用户 `setroubleshootd` 的分析结果。
 
 整个流程为，SELinux denial 触发 `auditd` 记录事件，`auditd` 触发 `audispd`，而 `audispd` 会使用来自 setroubleshoot 的插件 `sedispatch`，后者会通过 D-Bus 将这个 denial 发送到 `setroubleshootd` 中，`setroubleshootd` 分析，之后让 `seapplet` 发送桌面通知，用户就可以通过这个桌面通知启动（或自行启动）`sealert` 来查看分析结果。
+
+[TIP]
+====
+使用 `sealert -l "*"` 在命令行中检索信息
+====
 
 === 其它方法
 
