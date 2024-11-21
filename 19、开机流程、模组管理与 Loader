@@ -150,6 +150,8 @@ initrmafs 文件的结构为 Early_CPIO.img + ramfs.img.gz
 
 可以通过以下步骤解开
 
+NOTE: 下面手动解开的步骤复杂了，直接使用 lsinitrd --unpack 即可
+
 <0> 将 <initramfs>.img 从 /boot 文件夹下拷贝出来
 
 <1> 使用 file 检测 <imitramfs>.img 的文件类型

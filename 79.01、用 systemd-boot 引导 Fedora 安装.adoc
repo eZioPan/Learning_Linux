@@ -1,0 +1,199 @@
+= 用 systemd-boot 引导 Fedora 安装
+
+== 总述
+
+本次实验的目标是将 Fedora Netinstall iso 光盘和 Fedora Workstation Live iso 的内容转换为一个可启动的 U 盘/硬盘。并且使用 systemd-boot 作为 U 盘/硬盘的启动项。
+
+实际上转换的过程非常简单，因为光盘安装介质都使用 SquashFS 作为其根文件系统，因此我们几乎只需要拷贝文件，并让文件可以正确被正确找到即可。
+
+在实际的摸索过程中，比较费时间研究的地方反而是 systemd-boot 和 grub2 的不同之处，导致引导相同的文件，所使用的 kernel comandline parameter 并不完全相同。
+
+== 步骤
+
+=== 准备 iso 文件
+
+从官网下载 Fedora Netinstall iso 和 Fedora Workstation iso 即可
+
+=== 准备挂载点
+
+这里，我么需要在 /mnt 下创建两个文件夹，一个 `custom_disk`，一个 `vanilla_iso`。前者用于挂载我们的目标磁盘，方便我们写入文件；后者则挂载官方镜像，方便我们拷贝文件。
+
+=== 创建并挂载回环设备
+
+这里我们不直接操作目标 U 盘或硬盘，而是尽量使用回环设备（loop）创建整个磁盘。在配置好了之后，再执行 dd 命令将磁盘数据写入目标 U 盘或硬盘。尽量减少目标硬件的写入。
+
+[source, sh]
+----
+# 创建一个 4GiB 大小的空白文件
+dd bs=100M count=40 status=progress if=/dev/zero of=./install_media.img
+
+# 将其挂载为支持分区的回环设备
+# 这里 --find 是让系统自动找到一个空余的 loop 设备
+# --partscan 是在底层文件加载为回环设备时，读取文件上具有的分区，
+#   这里它不仅会作用在读取底层文件时，还会在我们分区后，让内核自动响应分区的修改（而不用重新创建回环设备）
+losetup --find --partscan ./install_media.img
+
+# 查看回环设备的路径
+losetup
+----
+
+此后，我们均假设目标磁盘对应的回环设备为 **/dev/loop0**
+
+=== 为回环设备分区，并创建文件系统
+
+使用 gdisk 为回环设备分区。
+
+需要注意的是，/dev/loop0 的第一个分区必须为 ESP 分区（有时称为 EFI 分区，分区类型 `EF00`），容量在 400 MiB 以上（我这里设置为 512MiB），剩余空间分配给另一个分区，分区类型为普通的 Linux filesystem 即可。
+
+这里，由于我们要在 ESP 分区放下两组 vmlinuz 和 initrd.img 文件，以及一些其它的配置文件，因此它要具有一定的空间。而之后的普通分区则要承载根文件系统的 SquashFS 镜像，因此也不能太小。
+
+我们可以通过 `lsblk` 观察新创建的分区的名称
+
+之后，创建文件系统
+
+[source, sh]
+----
+# ESP 分区必须创建为 FAT 格式
+mkfs.vfat /dev/loop0p1
+
+# 存放根文件系统镜像的分区则随意，这里我们选择兼容性较好的 ext4
+mkfs.ext4 /dev/loop0p2
+
+# 我们可以给第二个分区一个文件系统标签，方便我们后续指定该文件系统
+# 当然，你也可以不指定这个标签，那么后面就可以使用文件系统的 UUID 来指向该文件系统
+e2label /dev/loop0p2 FEDORA-INSTALL
+----
+
+我们可以接着通过 `lsblk -o+LABEL,FSTYPE` 来查看我们刚刚创建的文件系统
+
+=== 逐步挂载并创建基础的目录
+
+[source, sh]
+----
+# 将 /dev/loop0p2 挂载到 /mnt/custom_disk 下
+# 注意，这里挂载的是第二个分区，也就是未来我们目标磁盘的根目录所在的分区
+mount /dev/loop0p2 /mnt/custom_disk
+
+# 创建 efi 文件夹
+mkdir /mnt/custom_disk/efi
+
+# 将 /dev/loop0p1（也就是 ESP 分区）挂载到 efi 目录下
+mount /dev/loop0p1 /mnt/custom_disk/efi
+----
+
+继续通过 `lsblk` 检查挂载情况。
+
+=== 注入 systemd-boot 引导器自身所需文件
+
+[source, sh]
+----
+# 通过 bootctl 写入必要的引导文件
+# --root=/mnt/custom_disk，指定根目录为我们目标磁盘的顶层位置，让文件写入的位置正确
+# --no-variable，不要将这个启动项写入到当前系统的 UEFI 变量中，因为它不是固定在本机上使用的引导器
+bootctl install --root=/mnt/custom_disk --no-variables
+----
+
+之后我们可以通过 `bootctl status --root=/mnt/custom_disk` 检查引导程序的写入状态。（此时没有可引导项是非常正常的）
+
+=== 挂载 iso 文件，并拷贝各项文件
+
+首先是 Fedora Netinstall iso
+
+[source, sh]
+----
+# 挂载 Netinstall iso
+# Linux 非常贴心的为我们创建了回环设备，并进行了挂载
+mount Fedora-Netinstall.iso /mnt/vanilla_iso
+
+# 我们需要拷贝的文件有三个
+# 一个是 images/pxeboot 下的内核文件 vmlinuz，以及 initramfs initrd.img
+# 另一个是 images 下的安装用镜像 install.img
+
+# vmlinuz 和 initrd.img 必须放置在 ESP 分区中，因为 systemd-boot 需要从该分区中加载这两个文件
+# pxeboot 是 pre-install execution environment boot 的缩写，
+# 由于我们需要将多组 pxeboot 放置在一起，因此我们额外创建一个 install 文件夹，用来存放当前的 pxeboot 文件
+mkdir -p /mnt/custom_disk/efi/pxeboot/install
+cp /mnt/vanilla_iso/images/pxeboot/{vmlinuz,initrd.img} /mnt/custom_disk/efi/pxeboot/install
+
+# 至于 install.img 就比较随意了，因为加载的 initramfs 中已经具有不少功能，放在 /mnt/custom_disk/images 下也是不错的
+mkdir /mnt/custom_disk/images
+cp /mnt/vanilla_iso/images/install.img /mnt/custom_disk/images/
+
+# 最后我们卸载 Netinstall iso，为挂载 Live 的 iso 做准备
+umount /mnt/vanilla_iso
+----
+
+接着是 Fedora Live iso
+
+[source, sh]
+----
+# 挂载 iso
+mount Fedora-Live.iso /mnt/vanilla_iso
+
+# 这里也类似，也是三个文件
+# 第一组依旧是 vmlinuz 和 initrd.img
+# 另一个是 Live 的根文件系统镜像 squashfs.img
+
+# 这一组 pxeboot 放在 live 目录下
+mkdir /mnt/custom_disk/efi/pxeboot/live
+cp /mnt/vanilla_iso/images/pxeboot/{vmlinuz,initrd.img} /mnt/custom_disk/efi/pxeboot/live
+
+# squashfs.img 放置的目录比较特殊，initramfs 中的 dracut 模块默认会从根文件夹下的 LiveOS 文件夹读取名为 squashfs.img 的文件
+# 为了减少我们后面输入的 Linux kernel 命令行参数的长度，这里我们就按照默认的路径安排
+mkdir /mnt/custom_disk/LiveOS
+cp /mnt/vanilla_iso/LiveOS/squashfs.img /mnt/custom_disk/LiveOS/squashfs.img
+
+# 最后我们可以卸载 Live 的 iso
+umount /mnt/vanilla_iso
+----
+
+=== 配置 systemd-boot 的加载项
+
+编写两个 entry conf
+
+所有的 entry conf 都处于 **ESP 分区/loader/entries/** 下
+
+[source, conf]
+./mnt/custom_disk/efi/loader/entries/install.conf
+----
+title Install Fedora 41
+linux /pxeboot/install/vmlinuz
+initrd /pxeboot/install/initrd.img
+options systemd.gpt_auto=0 inst.stage2=hd:LABEL=FEDORA-INSTALL:/images/install.img
+----
+
+上面这条是为 Fedora Netinstall 准备的，linux 和 initrd 没有什么好解释的，它们的顶层目录就是 ESP 分区。options 可以说明一下：
+
+**systemd.gpt_auto=0**：由于 systemd-boot 与 grub2 的不同，导致 systemd-boot 会直接让 initramfs 中的 systemd 侦测磁盘分区。而 Netinstall 很特殊，它不需要一个 rootfs，因此也不存在一个让 systemd 可以侦测到的正常的 rootfs，进而导致一个名为 **dev-gpt\x2dauto\x2droot.device** 的设备超时（触发程序 **systemd-gpt-auto-generator**）。所以我们要通过 systemd.gpt_auto=0 关闭 systemd 的自动磁盘侦测。
+
+**inst.stage2=hd:LABEL=FEDORA-INSTALL:/images/install.img**：这个参数改写自 iso 的 grub.cfg。它定义自 anaconda boot options，它是 initramfs 中的 anconda 模块会读取的一个参数，用来确定安装程序所使用的 runtime 的 image 的文件地址。`hd`表示该文件来自硬盘，`LABEL=FEDORA-INSTALL` 表示存放 img 的文件系统的标签为 `FEDORA-INSTALL`，之后就是指向该文件的路径。
+
+[source, conf]
+./mnt/custom_disk/efi/loader/entries/live.conf
+----
+title Start Fedora Workstation Live 41
+linux /pxeboot/live/vmlinuz
+initrd /pxeboot/live/initrd.img
+options root=live:LABEL=FEDORA-INSTALL rd.live.image
+----
+
+上面这条是为 Fedora Live 准备的，同样的，我们来说明一下 options 中的内容：
+
+**root=live:LABEL=FEDORA-INSTALL**：这个参数改写自 iso 的 grub.cfg。虽然 root= 参数定义在 kernel command-line parameters 中，但这里的写法（**root=live:XXX**）来自于 dracut.cmdline。在 dracut 中，这种写法表示的是，从后面指定的路径中读取 live image。当然，我们这里仅指定了文件系统，至于从文件系统中找到对应的路径和文件，则是 dracut 自动完成的。因为在上面的拷贝文件的操作中，我们将 live image 拷贝为了 /LiveOS/squashfs.img。这个是 dracut 寻找文件系统中的 live image 的默认路径，因此我们不再需要额外指定 live image 的位置。
+
+**rd.live.image**：虽然 dracut.cmdline 的文档里没有细说，但实际测试后，发现在加了这一段后，Live 系统就不会进入初始配置界面，而是直接给出一个桌面供使用。
+
+之后，我们修改一下 **/mnt/custom_disk/efi/loader/loader.conf** 将其中的 `timeout 3` 取消注释。
+
+最后我们可以用 `bootctl list --root=/mnt/custom_disk` 检查一下启动项是否被正确挂载。
+
+=== 卸载回环设备，并将数据写入磁盘中
+
+[source, sh]
+----
+umount -R /mnt/custom_disk
+
+losetup --detach /dev/loop0
+
+dd if=install_media.img of=/dev/<目标磁盘> bs=4k status=progress
+----
