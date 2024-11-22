@@ -1,0 +1,54 @@
+= 使用 systemd-gpt-auto-generator
+
+== 提要
+
+通常情况下，Linux 操作系统会使用 kernel commandline parameter 指定根文件系统对应的文件系统（btrfs 还包含 subvol 信息）。之后，kernel 会根据挂载的 **/etc/fstab** 继续挂载其它文件系统。
+
+不过，由于 UEFI 中定义了 link:https://uapi-group.org/specifications/specs/discoverable_partitions_specification/[Discoverable Partitions Specification (DPS)]，而 initfamfs 中的 systemd 通过 link:https://www.freedesktop.org/software/systemd/man/latest/systemd-gpt-auto-generator.html[systemd-gpt-auto-generator] 支持了 DPS。因此我们可以**尝试**配置系统，让 systemd 自动判定 root 所在的位置，从而实现自动加载。
+
+[IMPORTANT]
+====
+使用 systemd-gpt-auto-generator 有两个硬性要求：
+
+. 磁盘分区表必须是 GPT
+. ESP 分区、root 文件系统，以及其它任何需要自动侦测的文件系统的分区，必须在同一个磁盘上
+====
+
+[NOTE]
+====
+就引导的准确性来说，使用文件系统的 UUID 是更加精准的，而且支持跨硬盘引导，是否要进行修改全凭兴趣。
+====
+
+先说明一下我这里的配置：
+
+* ESP 在 /dev/sda1 上，rootfs 在 /dev/sda2 上
+* /dev/sda2 上是一个 btrfs 文件系统，其下有两个 subvolume "root" 和 "home"
+
+目标：
+移除 kernel commandline parameter 中（几乎）所有与 root 相关的配置
+
+== 步骤
+
+. 修改 /dev/sda2 的分区类型，以符合 DPS 对于根分区的要求。 +
+使用 gdisk 打开 /dev/sda，默认情况下 /dev/sdb2 的 type code 应该是 `8300`。通过 `t` 命令修改第二个分区的 partition type，type code 为 `8304`，对应 “Linux x86-64 root (/)”
+
+. 【可选】将 /dev/sdb2 上的 btrfs 文件系统的默认挂载 subvolume 从 “ID 5 (FS_TREE)” 修改为 “root”
++
+--
+.. 通过 `btrfs subvolume list /` 检查当前挂载在根目录上的 btrfs 文件系统所包含的所有 sub volume。并从中获取 “root” 的 ID，在我这里是 257。
+.. 通过 `btrfs subvolume get-default /` 检查当前的 default sub volume，默认情况下，它应该返回 “ID 5 (FS_TREE)”。
+.. 通过 `btrfs subvolume set-default 257 /` 修改 default sub volume 到 “root” 下。在做完这一步操作之后，在我们不加参数挂载 /dev/sdb2 的时候，默认挂载的就不再是 btrfs 的顶层 sub volume，而是 “root” sub volume 了。
+.. 通过 `btrfs subvolume get-default /` 检查当前的 default sub volume，应该就是 “root” 了
+--
++
+当然，若你希望还原原始的 subvolume 配置，那么通过 `btrfs subvolume set-default 5 /` 就可以将 default sub volume 设置为 “ID 5 (FS_TREE)” 了。
+
+. 重启，临时检测 systemd-gpt-auto-generator 的运行状态 +
+在 systemd-boot 引导界面，按 `e` 修改 kernel commandline parameter，删除 `root=XXX`（若设置了 btrfs default sub volume，则还可以删除 `rootflags=XXX`）参数。并回车执行启动，若整个加载过程完全正常，则说明我们上面的操作都正确。
+
+. 固化上面的结果 +
+备份 **/etc/kernel/cmdline**。 +
+将 **/etc/kernel/cmdline** 中 `root=`（同上，以及 `rootflags=XXX`）的部分删除。 +
+通过 `kernel-install --verbose add-all` 重新生成 initramfs 和 entry conf 文件。
+
+. 重启进行，观察引导状态
