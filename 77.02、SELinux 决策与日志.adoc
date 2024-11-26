@@ -91,7 +91,15 @@ semanage permissive -d <域名称>
 
 [TIP]
 ====
-**auditd** 是可以接受 **SIGUSR1** 执行日志轮转的。（`kill -s USR1 $(pidof auditd)`）
+**auditd** 是可以接受 **SIGUSR1** 执行日志轮转的。
+
+[source, sh]
+----
+kill -s USR1 $(pidof auditd)
+
+# 当然，auditctl 除了接受 USR1 以外，还可以使用更人性化的信号名：
+auditctl --signal rotate
+----
 ====
 
 === 微调 AVC
@@ -310,12 +318,12 @@ ausearch --checkpoint <checkpoint 路径> --start checkpoint
 [source, sh]
 ----
 # 在触发 AVC 阻止前进行 audit 日志轮转
-kill -s USR1 $(pidof auditd)
+auditctl --signal rotate
 
 # 触发 AVC 阻止
 
 # 【可选】触发后再次进行 audit 日志轮转
-kill -s USR1 $(pidof auditd)
+auditctl --signal rotate
 
 # 使用指定文件的方式查询 AVC 错误
 ausearch --input /var/log/audit.log.1 --message avc --interpret

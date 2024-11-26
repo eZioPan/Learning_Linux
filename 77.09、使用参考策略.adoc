@@ -1,0 +1,299 @@
+= 77.09、使用参考策略（reference policy）
+
+== 介绍参考策略
+
+SELinux 官方的参考策略仓库为 link:https://github.com/SELinuxProject/refpolicy[]。Fedora 在官方参考策略的基础上，进行了自己的修改和扩充，link:https://github.com/fedora-selinux/selinux-policy[]
+
+[TIP]
+====
+就系统上已经安装的策略源码文件，**/usr/share/doc/selinux-policy/html** 中有 html 形式的文档。
+====
+
+=== 浏览策略
+
+在策略的源码仓库中，**policy** 文件夹下是定义策略的文件夹，其中有三个重要的文件夹
+
+* **flask** 文件夹，包含了 SELinux 的最基础的定义，比如支持的类（class）、创建 initial SID（security identifier），等等。
+* **modules** 文件夹，包含了 SELinux 策略的源码，是策略的主要存放地点。
+* **support** 文件夹，包含了与任何模块无关的、可以在整个策略中复用的宏和定义。
++
+[TIP]
+====
+这个文件下的定义可以浏览一遍，里面有很多常见的权限被定义为了宏，可以被简易地使用。
+====
+
+在 **modules** 文件夹下，又分为了几个文件夹
+
+* **admin** 文件夹包含了与系统管理员相关的策略模块
+* **apps** 文件夹包含了常规的应用策略模块
+* **kernel** 文件夹包含了核心系统策略模块（不仅仅是与内核相关的）
+* **roles** 文件夹包含了 SELinux 角色定义和默认用户域模块
+* **services** 文件夹包含了常规的服务策略模块
+* **system** 文件夹包含了通用的系统相关的策略模块
+
+鉴于每个策略文件必须具有独一无二的名称，因此查找一个策略模块所在的文件夹也是很简单的：
+
+[source, sh]
+----
+# 查找 dhcp 模块的定义
+ls policy/modules/*/dhcp.*
+----
+
+=== 策略模块的结构
+
+以 dhcp 模块举例，它的三个文件的用内容如下：
+
+* **dhcp.te** 包含了类型强制规则，也是大部分修改发生的位置
+* **dhcp.fc** 包含了文件上下文的定义，告诉策略与 dhcp 相关的文件或资源对应的标签
+* **dhcp.if** 包含接口（interface）定义，是 SELinux 策略中可以复用的函数或宏
+
+==== 理解类型强制文件
+
+以 **dhcp.te** 为例
+
+==== 声明 SELinux 对象（SELinux object）
+
+观察 **Declarations** 部分：
+
+首先是使用 `gen_tunable()` 声明了一个名为 **dhcp_use_ldap** 的 SELinux boolean，且将这个 boolean 的默认值设置为了 false。
+
+[source, te]
+----
+## <desc>
+##	<p>
+##	Determine whether DHCP daemon
+##	can use LDAP backends.
+##	</p>
+## </desc>
+gen_tunable(dhcpd_use_ldap, false)
+----
+该 boolean 值在模块载入之后，就可以被所有的模块所使用，且可以被 `semanage boolean` 所修改。当然，目前相当于声明了一个变量，这个变量目前还没有控制任何语句。 +
+另外，该语句的上方有以 `##` 开头的注释，这种以 `##` 开头的注释非常特殊，它们是会输出为帮助文档的注释。
+
+接着是一堆类型的定义
+
+[source, te]
+----
+type dhcpd_t;
+type dhcpd_exec_t;
+init_daemon_domain(dhcpd_t, dhcpd_exec_t)
+
+type dhcpd_initrc_exec_t;
+init_script_file(dhcpd_initrc_exec_t)
+
+type dhcpd_runtime_t alias dhcpd_var_run_t;
+files_runtime_file(dhcpd_runtime_t)
+
+type dhcpd_state_t;
+files_type(dhcpd_state_t)
+
+type dhcpd_tmp_t;
+files_tmp_file(dhcpd_tmp_t)
+
+type dhcpd_unit_t;
+init_unit_file(dhcpd_unit_t)
+----
+
+以
+
+[source, te]
+----
+type dhcpd_t;
+type dhcpd_exec_t;
+init_daemon_domain(dhcpd_t, dhcpd_exec_t)
+----
+
+举例，`type dhcpd_t` 和 `type dhcpd_exec_t` 表示声明了两个类型。从文本上推断，`dhcpd_t` 对应 dhcpd 的域，`dhcpd_exec_t` 对应 dhcpd 的可执行文件。实际将两个类型关联上域和文件类型，并为两者设置入口等功能的，则为 `init_daemon_domain()` 接口。这个接口的定义来自 **policy/modules/system/init.if**，接口的说明指出了所有通过 init 脚本（实际包含 systemd 管辖的）启动的常驻进程，都应该通过该接口创建。而且，它会分别为两个类型配置 domain 和 file。
+
+[TIP]
+====
+SELinux reference policy 借用了 M4 宏的语法来复用定义。`init_daemon_domain()` 的定义语法就是依照 M4 语法书写的。
+====
+
+==== 为域添加本地规则
+
+本地规则是在自身规则模块内定义的规则。
+
+第一部分为不受外部控制，始终启动的规则，举例：
+
+[source, te]
+----
+allow dhcpd_t self:capability { chown dac_override net_raw setgid setuid sys_chroot sys_resource };
+
+manage_files_pattern(dhcpd_t, dhcpd_state_t, dhcpd_state_t)
+
+kernel_read_system_state(dhcpd_t)
+
+userdom_dontaudit_search_user_home_dirs(dhcpd_t)
+----
+
+第二部分为受 SELinux boolean 控制的规则，举例：
+
+[source, te]
+----
+tunable_policy(`dhcpd_use_ldap',`
+	sysnet_use_ldap(dhcpd_t)
+')
+----
+
+上面段表示，若 `dhcpd_use_ldap` 为 true，则启用 `sysnet_use_ldap(dhcpd_t)` 解析出来的内容。
+
+第三部分为受到其它可加载策略而启动的规则，举例：
+
+[source, te]
+----
+optional_policy(`
+	bind_read_dnssec_keys(dhcpd_t)
+')
+----
+
+上面这段表示，若 `bind_read_dnssec_keys(dhcpd_t)` 可以被成功解析，就解析为规则，否则忽略。
+
+==== 声明文件上下文
+
+文件上下文定义问价，具有后缀 **.fc**，每行是一个定义条目，形如：
+
+[source, fc]
+----
+/etc/rc\.d/init\.d/dhcpd(6)?	--	gen_context(system_u:object_r:dhcpd_initrc_exec_t,s0)
+----
+
+其中，第一段为文件系统资源路径，（可选的）第二段为文件系统资源的类型，第三段为需要赋予的上下文。
+
+值得注意的是， +
+第一段的路径是正则表达式匹配的路径。
+若没有第二段，则表示该路径匹配任何文件系统资源。若有给出类型，则 `--` 匹配常规文件，`-d` 匹配目录，`-s` 匹配套接字，`-l` 匹配符号连接。
+第三段的上下文，总是使用 `gen_context()`，其会根据当前系统是否支持 MLS 和 MCS 来确定最终生成的文件上下文。
+
+== 使用并理解策略宏
+
+=== 使用单类别（single-class）权限组
+
+**单类别权限组**（**single-class permission group**）允许开发者忽略 SELinux 未来可能扩展支持的权限。
+
+比如，就域对文件的执行权限来说，除了 **execute** 以外，还可能需要 **open**、**read**、**map** 等等。由于这种权限的组合非常的常见，因此，SELinux 提供了一个简易的宏来统一管理和替换这个权限：**policy/modules/support/obj_perm_sets.spt** 下有一个名为 **mmap_exec_file_perms** 的宏（`define(\`mmap_exec_file_perms', ' { 各种权限 } ')`）。这个宏会扩展为一组与执行文件相关的权限。这样，既简化了模块编写者的工作（`allow dhcp_t dhcpd_exec_t:file { mmap_exec_file_perms };` 即可），又简化了 SELinux 整体的扩展的难度（只要修改宏定义即可）。 +
+当然，由于 dhcpd 常常作为守护进程的一部分，因此，实际实现上面的允许语句的是在 `init_daemon_domain` 内部的 `domain_entry_file` 的内部实现的（当然还额外增加了 **ioctl** 和 **lock** 两个权限）。
+
+=== 调用权限组
+
+当然，在很多时候，我们不仅需要对某个文件内容的各种权限，还需要对该文件的元数据的各种权限。这个时候，我们就需要对多个类别（这里是 **file** 和 **dir**）设置权限。SELinux 实际上提供了一些宏来处理这些常见的权限，比如 **policy/modules/support/file_patterns.spt** 中的一个宏 **manage_files_pattern**，就同时为 **file** 和 **dir** 定义了允许条目。 +
+dhcpd 中就使用了这个宏为各种相关的目录和文件设置权限。
+
+== 创建应用级别的策略
+
+[NOTE]
+====
+若一个应用主要面向的是终端用户，那么它的策略会常常调用各种 **++userdom_*++** 命名的接口（这些接口集中定义在 **policy/modules/system/userdomain.if** 中），这些接口用于处理与访问用户数据相关的权限。这类面向终端用户的应用大多存储在 **policy/modules/app/** 下。
+====
+
+=== 构建面向网络的服务的策略
+
+面向网络的服务是第一类需要被限制的服务。由于它们需要与外部进行交互，因此这类程序是首先需要设置 SELinux 策略的。
+
+以 **policy/modules/services/openvpn.te** 为例
+
+==== 确定该服务需要交互的（系统上的）资源
+
+最常见的为五大类：
+
+* 主程序的域，以及入点文件的类型。依照触发类型的不同，可以调用接口 `init_daemon_domain()`（系统服务）或 `dbus_system_domain()`（D-Bus 系统总线）。
+
+* 服务的配置文件（比如 **openvpn_etc_t**），以及可读写配置文件（比如 **openvpn_etc_rw_t**）等。
+
+* 运行时文件（比如 **openvpn_runtime_t**，以及它的别名 **openvpn_var_run_t**）
+
+* 临时文件（比如 **openvpn_tmp_t**）
+
+* 日志文件（比如 **openvpn_var_log_t**）
+
+每类文件类型的后面都有相应的接口调用，以便正确配置类型。
+
+==== 处理内部 SELinux 规则
+
+这一部分主要是处理域与自有的资源之间的交互。这一部分大致分为两类：
+
+首先是域自身具有的权限，比如域可以具有的 capability，以及是否可以创建套接字，等等。这类规则基本上基于试错来创建：在程序无任何权限的情况下运行，看 AVC 的错误，然后依照错误添加需要的权限。
+
+之后是域与上面定义的那些规则之间的交互。这里不仅包含了域对资源的权限设置，还包含了各类可能发生的 transition。
+
+需要注意的是，transition 不仅仅包含 domain transition，还包含文件的 type transition。比如，openvpn 希望自己在 **/tmp** 下创建的临时文件具有 **openvpn_tmp_t** 类型，而非默认的 **tmp_t** 类型。其规则文件具有如下的内容：
+
+[source, te]
+----
+allow openvpn_t openvpn_tmp_t:file manage_file_perms;
+files_tmp_filetrans(openvpn_t, openvpn_tmp_t, file)
+----
+
+第二行表示，当 openvpn_t 要创建一个具有 tmp_t 的 file 的时候，将文件的类型设置为 openvpn_tmp_t。
+
+[TIP]
+====
+这类 `file_*_filetrans()` 的接口集中定义在 **policy/modules/kernel/files.if** 中
+====
+
+当然，若要对多个 class 的对象执行 type transition，也可以使用花括号 `{ }` 将多个对象包裹，例：
+
+[source, te]
+----
+files_runtime_filetrans(openvpn_t, openvpn_runtime_t, { sock_file file dir })
+----
+
+当然，我们也可以额外指定文件路径，仅对特定的文件执行 type transition：
+
+[source, te]
+----
+allow openvpn_t openvpn_status_t:file manage_file_perms;
+logging_log_filetrans(openvpn_t, openvpn_status_t, file, "openvpn-status.log")
+----
+
+上面这条仅会匹配 **openvpn-status.log**。
+
+总的来说，我们最先应该考虑的就是各种 type transition，如果 type transition 可以解决问题，那么我们就不用扩大域的权限，这样就可以更精准地限制域的权限。
+
+==== 内核相关的权限
+
+这一段大多是域与内核交互相关的权限，它们具有 **++kernel_*++** 的形式。这一部分权限大致也是通过 AVC 报错来逐一添加。
+
+==== 添加网络相关的权限
+
+有一些基础的权限：
+
+[source, te]
+----
+allow openvpn_t self:tcp_socket server_stream_socket_perms;
+
+corenet_tcp_bind_generic_node(openvpn_t)
+corenet_udp_bind_generic_node(openvpn_t)
+
+corenet_tcp_bind_openvpn_port(openvpn_t)
+corenet_udp_bind_openvpn_port(openvpn_t)
+----
+
+`allow openvpn_t self:tcp_socket server_stream_socket_perms;` 并非书写在这一段中的，但是它也是很重要的。`server_stream_socket_perms` 包含了 openvpn_t 域对于该 tcp socket 的创建、监听、接受新连接等等基础的权限。
+
+`corenet_tcp_bind_generic_node(openvpn_t)` 和 `corenet_udp_bind_generic_node(openvpn_t)` 表示 openvpn_t 域在 TCP 和 UDP 可以绑定任意的主机（IP 地址），这条权限是必备的。当然，如果你定义了一个特别的 node_type，并通过 `nodecon` 或者 `semanage node` 将特定的网络段赋予了该 node_type，那么这里就不能使用这个接口，而需要允许域使用自己定义的 node_type。
+
+`corenet_tcp_bind_openvpn_port(openvpn_t)` 和 `corenet_udp_bind_openvpn_port(openvpn_t)` 表示 openvpn_t 域可以绑定与 openvpn 关联的端口。这条权限并非必要的，如果我们不关心一个服务绑定的端口，让系统自动分配，则不需要该权限。但是，没有固定端口的网络服务几乎没有什么实际的用途。因此，对于一个服务来说，这类 bind port 的接口几乎就是必须要使用的。同上，若定义出了特殊的 port_type，并用 `portcon` 或者 `semanage port` 将特定的端口赋予了该 port_type，那么这里也需要允许域使用自己定义出来的 port_type。
+
+如果不使用 socket 抽象，而直接控制网络接口，则还需要类似如下的权限：
+
+[source, te]
+----
+corenet_tcp_sendrecv_generic_node(openvpn_t)
+corenet_tcp_sendrecv_generic_if(openvpn_t)
+----
+
+添加对于 NetLabel 的支持：
+
+[source, te]
+----
+corenet_all_recvfrom_netlabel(openvpn_t)
+----
+
+添加对于 SECMARK 的支持：
+
+[source, te]
+----
+corenet_sendrecv_openvpn_server_packets(openvpn_t)
+corenet_sendrecv_http_client_packets(openvpn_t)
+----
