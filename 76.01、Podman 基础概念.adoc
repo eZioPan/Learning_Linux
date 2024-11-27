@@ -1,0 +1,104 @@
+= Podman 基础概念
+
+== 三个易混淆的术语
+
+* __container orchestrators__ 容器编排器——将容器编排至多个机器或节点上的软件项目或产品。编排器通过与容器引擎（container engines）通信来运行容器。常见的容器编排器有 Kubernetes、Docker Swarm 和 Apache Mesos 等。
+
+* __container engines__ 容器引擎——主要用于配置容器化的（containerized）应用在单一节点上运行。它们可以直接被用户、管理员或开发之运行，它们也可以作为 systemd unit 在系统启动时被一同启动，当然，它们也可以被容器编排器启动。Docker 和 Podman 是最常用于单一机器上的容器化应用的开发、管理和运行。相较来说 Kubernetes 会使用 CRI-O 和 containerd 作为其容器引擎，但后两者几乎不考虑让用户直接运行，这里暂且不表。Buildah 是另一种容器引擎，但它仅用于构建容器镜像（container image）。
+
+* __Open Container Initiative (OCI) container runtimes__ 开放容器倡议（OCI）容器运行时——配置 Linux 内核的各个部分，并最终启动容器化的应用。最常见的容器运行时是 **runc** 和 **crun**，其它的容器运行时还包括 Kata 和  gVisor。
+
+[TIP]
+====
+* __Podman__ 是 __Pod Manager__ 的缩写。__pod__ 是 Kubernetes 项目的一个概念，它表示一个或多个分享相同命令空间和 **cgroups**（资源约束）的容器。Podman 既可以运行单一的容器，也可以运行 pod。
++
+Podman 的 logo 绘制的是一组 Selkies（爱尔兰语中的“海豹妖精”），而在英语中，形容一组海洋哺乳动物就可以称为 pod。
+====
+
+Podman 和其相关的工具（比如 Buildah 和 Skopeo）的 github 组织为 link:https://github.com/containers[]
+
+Podman 的一个主要目标就是在单节点环境下运行容器化的应用。Podman 与 systemd 一道让你管理节点上的应用的整个生命周期，而不用手动控制它们。
+
+== 容器速览
+
+__containers__ 多组运行在 Linux 系统上的相互隔离的进程。容器保证了一组进程不会干扰系统上的另一组进程。流氓程序不会侵占系统资源，从而防止它们干扰其它程序的运行。它会阻止恶意容器攻击其它容器，或者偷取数据，或是导致拒绝服务攻击。容器的最后一个目标就是，允许一个系统上的多个程序使用自己需要的版本的共享库，而不与其它需要相同名称但不同版本共享库的程序产生冲突。
+
+容器通过下面的方法进行隔离：
+
+* __resource constraints (cgroups)__——Linux 内核的功能，将进程编排为由层级的组，组所使用的系统资源可以被限制和监控。cgroups 可以控制的资源如下：
++
+--
+** 一组进程可以使用的内存
+** 可以占用的 CPU 资源量
+** 一个进程可以使用的网络资源量
+** 等等
+--
++
+cgroups 的基础思想就是阻止某组进程完全占用特定的系统资源，从而导致其它组的进程无法在系统上运行。
+
+* __security constraints__——容器通过内核中的多种安全工具相互隔离。它的目标是阻止特权逃脱（privilege escalation），并阻止流氓进程攻击系统。这些隔离工具包含：
+** 移除部分 capability 来限制 root 的权限
+** SELinux 控制文件系统的访问
+** 对内核文件系统的只读访问
+** seccomp 限制可以使用的系统调用
+** 将主机上的一组 UID 映射为另一组的用户空间，以访问有限的 root 环境
+
+* __virtualization technologies (namespace)__——Linux 内核使用了一种称为 namespace 的概念，它让一组进程看到资源的一部分，而让另一组进程看到资源的另一部分。这种虚拟化的环境让进程无法观察系统的其余部分，让进程处于类似虚拟机的状态，但没有那么多额外开销。例如：
+** __network namespace__——消解对主机网络的访问，但可以访问虚拟网络设备
+** __mount namespace__——消解对于全部文件系统的访问，仅保留容器文件系统
+** __PID namespace__——消除可对于系统上其它进程的访问，容器化的进程仅能看见容器内的进程
+
+=== 容器镜像：分发软件的新方法
+
+容器镜像将软件所需的所有文件——库、可执行文件和配置文件——都打包到一起了，从而解决了依赖冲突的问题。通常情况下，容器化应用仅需要和主机的内核进行交互。开发者、质检员、用户都会在相同的容器化环境下运行软件。它确保了一致性，限制了错误配置导致的问题。
+
+相较于虚拟机，容器不需要额外的虚拟硬件、虚拟内核、虚拟各种系统组件的开销。因此相较于虚拟机，容器更加轻量。
+
+=== 容器镜像引发的微服务（microservices）
+
+当一个服务需要多个软件的时候，传统方法是在一个系统上安装多个软件来实现。有了容器，我们就可以让这些软件分别运行在自己独立的环境中，接着通过容器间通信来协调多个软件。
+
+=== 容器镜像的格式
+
+一个容器镜像有三部分组成：
+
+* 一个包含了运行应用所需要的所有软件的目录树（该目录树称为 __rootfs__）
+* 一个用于描述 rootfs 的内容的 JSON 文件 +
+这个文件包含了用于描述镜像的可执行文件、工作目录、环境变量、可执行文件的维护者、用于区分镜像的标签等的信息。 +
+通过 `podman inspect` 命令可以查看该 JSON 文件。
+* 一个称为清单文件（manifest list）的 JSON 文件，将多个镜像链接在一起，来支持多种架构。 +
+实际上，一个远程镜像文件地址可以对应多种架构，Podman 会自动根据宿主机器的架构拉去匹配的镜像。 +
+我们可以使用 `skopeo inspect --raw` 来查看 registry 服务器上的某个镜像所支持的所有架构。
+
+在创建容器的时候，容器引擎会从 registy 服务器上按照要求拉取多个镜像文件，并将这些镜像文件解压到主机的文件系统上，之后引擎会将镜像的 JSON 文件、引擎内建的默认值、以及用户的输入合并到一起，创建一个新的 OCI 运行时规范（runtime specificaion）JSON 文件。这个 JSON 文件会描述如何运行容器化的应用。
+
+在最后一步，容器引擎会启动一个容器运行时程序。该运行时会读取上面产出的 JSON 文件，并依照系统上的各种设置，最终启动容器内的主进程。
+
+=== 容器标准
+
+OCI 标准组织定义了存储和定义容器的标准格式。它们也定义了运行容器的容器引擎的标准。OCI 创建了 OCI Image Format，它标准化了容器镜像和镜像 JSON 文件的格式。它们也创建了 OCI Runtime Specofocation，它标准化了用于 OCI 运行时的容器的 JSON 文件。
+
+== 有了 Docker 为什么还需要 Podman？
+
+由于 Podman 的产生远晚于 Docker，因此 Podman 的开发者可以从完全不同的视角优化 Docker 的设计。由于 Docker 的开源性质，Podman 可以借用它的一些源码，并且让自己符合新标准（比如 OCI）。
+
+Podman 的一个最突出的特点就是它是 rootless 的。Podman 本身不在 root 下运行。这样即便容器内的恶意软件逃离了容器的控制，它也仅仅具有运行它的用户的权限。
+
+Docker 是基于类似 客户端-服务端 的软件架构的，用户通过 Docker 的命令行与 Docker Daemon 通信，而 Docker Daemon 则负责启动容器引擎（containerd），进而启动容器运行时。同时 Docker Daemon 还负责容器内进程的标准输入输出的转发等等工作。Docker Daemon 是 Docker 的“中枢”。 +
+Podman 则是基于 Unix 的 fork/exec 理念的。Podman 在启动了一个容器运行时之后，其本身就会退出运行。这种工作模式被称为 daemonless 模式。
+
+Podman 的命令行与 Docker 兼容，大部分的 Docker 子命令都有等价的 Podman 的子命令。
+
+Podman 可以作为受字节套激活的（socket-activated）REST API 服务。这样它就允许远程客户端管理和运行 Podman 容器。
+
+Podman 希望与 systemd 有很强的集成度。在 Podman 的概念中，任何一个容器都可以通过对应的 systemd unit 启动。而且，systemd 也可以作为某个容器内部的启动进程（init process），从而管理该容器中的各种进程的启动与停止。
+
+Podman，正如其名称所言，可以启动 pod。pod 的概念来自 Kubernetes，它的愿景是：每个程序都有自己独自的容器，这些容器称为“微服务”；而我们可以将多个微服务统一管理，来组成一个更大的“服务”；一个 pod 就是用来统筹一组微服务的概念。一个 pod 内的所有容器分享存储和网络资源，而且我们可以指定容器该如何运行。
+
+使用短名称（不含 registry 前缀的镜像名）拉取镜像时，Podman 会提示所有可能的 registry 以供选择。在用户选择了 registry 之后，Podman 会将该短名与对应的完整名称关联。之后的拉取就不会再提示选择。
+
+Podman 支持通过各种方法拉取镜像。从 registry 拉取、读取 OCI 格式文件、读取 OCI Tar 格式文件、Docker Tar 文件、文件夹、从 Docker Daemon 获取镜像文件。
+
+Podman 可以使用 __/usr/share/containers/containers.conf__、__/etc/containers/containers.conf__、__$HOME/.conf/containers/containers.conf__ 作为配置文件。Podman 有大量的设置可以调整。
+
+Podman 可以使用多个 user namespace 隔离容器。实际上，Podman 依赖 user namespace 隔离容器。这样，宿主机上的一个用户 UID 可以在不同的 user namespace 映射为不同的 UID。
