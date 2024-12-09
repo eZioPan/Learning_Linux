@@ -1,0 +1,655 @@
+= Podman 命令行
+
+== 使用容器
+
+=== 快速体验一个容器
+
+[source, sh]
+----
+podman run --tty --interactive --rm fedora bash
+----
+
+`podman run` 会尝试在指定的容器（这里是 `fedora`）中执行指定的命令（这里是 `bash`）。
+
+`--tty`::
+创建了一个 TTY 设备（实际上是 PTY 设备）来处理与键盘输入和屏幕输出相关的事务。 +
+关于 TTY 到底做了什么，见博客 link:https://waynerv.com/posts/how-tty-system-works/[Shall We Code? - Unix 终端系统（TTY）是如何工作的]
++
+[TIP]
+====
+当我们的终端连接至一个容器的时候，若我们想断开我们的终端与容器的连接，但不关闭该容器，则我们可以使用被称为“detach-keys”的功能。默认情况下，我们使用 Ctrl+P 接着 Ctrl+Q 即可执行 detach。但这个操作需要 tty 的支持。若我们没有启动 `--tty`，则上述组合键不会被 podman 处理。
+====
+
+`--interactive`::
+会将容器的 stdin 连接至 podman 所在的终端的 stdin，让我们可以向容器输入数据。 +
+这是在创建容器，以及每次启动容器的时候，都可以指定的选项。 +
+若不指定该选项，则容器的 stdin 会在启动的时候开启，并由于读取到了 EOF 而被立刻关闭。
++
+[TIP]
+====
+* 对于使用 bash 这类程序作为主入口的容器来说，若没有指定 tty 设备，且关闭 stdin，会导致 bash 直接退出，从而立刻关闭容器。
+
+* 若我们指定了 `--tty` 但没有指定 `--interactive`，由于 stdin 没有开启，我们就获得了一个“只读”版的 shell，此时我们无法操作容器，也无法发出脱离容器的指令，或者关闭容器。只能另开一个窗口，通过外部方法关闭容器（`podman container stop`）。
+
+* 若我们仅指定 `--interactive`，但不指定 `--tty`，则我们不会获得 shell prompt，但 bash 的基础功能都正常。 +
+此时 bash 处于类似“执行脚本”的模式。因此，要退出该模式，我们需要使用 EOF 来结束 bash 从 stdin 读取数据。（在 Linux 上是 Ctrl+D，Windows 上是 Ctrl+Z） +
+
+* 若我们仅指定 `--interactive`，但不指定 `--tty`，且 podman 是通过 remote 方式从 Windows 上控制 Linux 上的 podman container 的，由于缺少 tty 对于输入字符的解析，Windows 的换行指令 `\r\n` 中的 `\r` 会被解析为命令的一部分而导致命令报错。因此，在这种特殊的情况下，我们每次启动命令实际上只能输入一行命令，并且在回车之前就需要按 Ctrl+Z 输入 EOF，再回车，才能正常执行命令。
+====
+
+`--rm`::
+在当前运行结束的时候，移除该容器（但不移除对应的镜像）。
+
+`fedora`::
+镜像的短名。 +
+它是在创容器的时候指定的。
+
+`bash`::
+入口程序。 +
+它是在容器创建的时候指定的。
++
+[TIP]
+====
+在 `fedora` 这个镜像上，其实我们不需要手动指 `bash` 这个入口程序，因为该镜像的入口程序默认就是 /bin/bash。
+====
+
+=== 运行容器化应用
+
+假设我们启动一个运行 nginx 的容器：
+
+[source,sh]
+----
+podman run --name my_nginx --detach --publish 8080:80 docker.io/library/nginx
+----
+
+与前一个命令对比，我们这里移除了 `--tty` 和 `--interactive`，因为该容器以 nginx 作为入口程序，而 nginx 在正常运行的时候，不需要从 stdin 读取数据。
+
+[TIP]
+====
+虽然 nginx 本身不需要 `--tty` 就能运行，但是我们也可以给它一个 tty，这样在我们 attach 到该容器上之后，至少我们还可以用 detach-keys 离开该容器。
+====
+
+同时我们也不使用 `--rm`，因为我们希望这个容器在结束当前运行之后，依旧保留下来，供我们再次运行。
+
+`--name my_nginx`::
+手动为容器指定一个名字。为容器命名总是一个好习惯，否则我们就只能依赖 podman 自动为容器赋予随机名字。
+
+`--detach`::
+在运行容器的时候，不要把容器的 stdin 连接至我们的终端上。在当前的配置下，一旦我们连接上了，除了使用 Ctrl+C 发送 SIGINT 中断 nginx 运行，我们是没有办法脱离该容器的。
+
+`--publish 8080:80`::
+由于我们运行的是网络服务，因此，我们希望这个网络服务在容器外部也能被访问到。默认情况下，容器具有自己的 network namespace，因此容器内的网络服务也不会暴露给 Host 主机。使用 `--public <主机端口>:<容器端口>`，我们就可以将指定的容器端口连接到指定的主机端口上，以完成对外服务的功能。 +
+可以通过 `podman port <运行中的容器的名称>` 来查看一个容器实际映射的端口和协议。
++
+[NOTE]
+====
+由于我们在 rootless 模式下运行容器，因此主机不允许我们绑定主机上的特权端口（端口号小于 1024），所以我们挑了主机的 8080 端口来连接。
+====
+
+好的，到目前为止，我们就可以在主机上访问 **http://127.0.0.1:8080** 来查看我们通过 nginx 运行的网站了。
+
+=== 停止容器
+
+要停止一个正在运行的容器，可以使用如下的命令
+
+[source, sh]
+----
+podman stop <正在运行的容器的名称>
+----
+
+在执行这条命令之后，podman 向对应的容器的主进程（PID=1）发送停止信号（默认是 SIGTERM），并等待一段时间（默认是 10s）。若在这个期间主进程未能退出，则发送强制终止信号（也就是 SIGKILL）来终止主进程的运行。 +
+可以在命令行中使用 `--stop-signal` 设置实际发送的停止信号。
+
+[NOTE]
+====
+特别的，若我们的容器的主进程是 systemd，那么默认情况下，停止信号将被修改为 systemd 接受的 SIGRTMIN+3（systemd 将其解读为 “Halts the machine”），而非普通的 SIGTERM。
+====
+
+`podman stop` 还有几个常用的参数
+
+`--time <秒数>`::
+在发送停止信号和 SIGKILL 之间会等待的秒数。默认值为 10，设置为 0 的时候直接发送 SIGKILL 而不发送终止信号。设置为 -1 时，永不超时。
+
+`--latest`::
+停止最后一个启动的容器。
++
+[NOTE]
+====
+由于 podman 支持多种方式启动，因此 `--latest` 不一定指向我们通过命令行启动的最后一个容器。
+====
+
+`--all`::
+停止所有正在运行的容器
+
+=== 启动容器
+
+通过下面的命令启动现有的容器
+
+[source, sh]
+----
+podman start <容器名>
+----
+
+默认情况下，`podman start` 以 detach 的模式启动容器。我们可以使用 `--attach` 将容器的 stdout 和 stderr 导向当前的终端，或/且 使用 `--interactive` 将容器的 stdin 导向当前的终端。
+
+与 `podman stop` 类似，使用 `--all` 可以启动所有现存的容器。
+
+=== 罗列容器
+
+使用下面的命令罗列**正在运行的**容器。
+
+[source, sh]
+----
+podman ps
+----
+
+[TIP]
+====
+`podman ps`、`podman container ps`、`podman container list`、`podman container ls` 是同一个命令
+====
+
+要列举所有的容器（也即包含未运行的），使用 `--all` 参数。
+
+=== 检查容器
+
+若想获得容器的详细信息，使用
+
+[source, sh]
+----
+podman inspect <容器名>
+----
+
+该命令会以 JSON 的格式打印容器的详细信息，若我们想仅打印特定的 JSON 键值，可以使用 `--format` 参数：
+
+假设我们想知道容器的主程序的命令行，而我们提前知道它处于 Config 下的 Cmd 对象，则可以使用如下的命令
+
+[source, sh]
+----
+podman inspect --format '{{.Config.Cmd}}' <容器名>
+----
+
+=== 移除容器
+
+[source, sh]
+----
+podman rm <容器名>
+----
+
+移除容器要求容器不在运行状态。使用 `--force` 可以强制移除容器，若容器正在运行，则会先终止该容器，再执行移除。
+
+=== 在容器中执行命令
+
+以上面的 nginx 容器为例，若你希望在 nginx 运行时修改一些文件，那么我们就可以使用 `podman exec` 命令，在容器中启动另一个程序。 +
+比如这里我们想启动一个 bash 来修改网页的内容：
+
+[source, sh]
+----
+podman exec --tty --interactive <容器名> /bin/bash
+----
+
+这里的 `exec` 的参数与 `run` 的很相似，也是要启动一个 bash，也是要分配一个 tty，也是要将 stdin 关联。唯一的差别在 `exec` 本身，`run` 会将我们指定的程序作为主进程运行，而 `exec` 则是另开一个进程来运行。这样即便我们退出了这个进程，也不影响主进程的运行。
+
+比如，我们要修改上面的 nginx 页面的内容：
+
+[source, sh]
+----
+podman exec --tty --interactive my_nginx /bin/bash
+
+# 在容器的 shell 中
+cp /usr/share/nginx/html/index.html /usr/share/nginx/html/index.html.bk
+
+sed '/<body>/,/<\/body>/c <body>\n<h1>Hello, container!<\/h1>\n<\/body>' index.html
+----
+
+=== 从容器创建一个镜像
+
+我们在上面修改了 nginx 的初始页面，此时我们可以将这个容器的状态打包为一个新的镜像，这样我们就可以简单地将当前的状态部署为一个个新的容器了。
+
+[source, sh]
+----
+podman commit <现有容器名> <新镜像名称>
+----
+
+[NOTE]
+====
+通过 `podman commit` 构建容器并非常见的做法。一般来说，构建容器镜像会使用特定的脚本和 `podman build`，这里暂且不表。
+====
+
+== 操作容器镜像
+
+=== 探索镜像内容
+
+==== 复杂方案：手动逐步从 registry 请求一个镜像文件
+
+要理解一个镜像文件，我们可以手动下载一个镜像，在这个过程中，我们就可以发现一个镜像的底层细节。
+
+假设我们知道 https://registry.fedoraproject.org 是一个 container registry。现在我们要从其中下载一个 fedora 的镜像。
+
+* 获取 registry 能使用的 API
++
+--
+[source, sh]
+----
+curl -i 'https://registry.fedoraproject.org/v2/'
+----
+
+使用 `-i` 让 curl 显示 HTTP response header。
+
+返回的 header 有两行，
+
+----
+content-type: application/json; charset=utf-8
+docker-distribution-api-version: registry/2.0
+----
+
+分别表示返回的数据类型是 json，而且该服务器支持 registry/2.0
+--
+
+
+* 获取 registry 中记录的 repository（也就是应该有 fedora 字样）
++
+--
+[source, sh]
+----
+curl -i 'https://registry.fedoraproject.org/v2/_catalog'
+----
+
+列举所有的 repository，返回的 header 中有
+
+----
+link: </v2/_catalog?last=exaile&n=100>; rel="next"
+----
+
+表示还有 repository 没有列举完成，可以使用上面的 API 继续访问
+
+使用
+
+[source, sh]
+----
+curl -i 'https://registry.fedoraproject.org/v2/_catalog?last=exaile&n=100'
+----
+
+我们可以一只重复这个操作，直到看到 fedora 这个 repository。
+--
+
+* 在上一步中，我们获取了 fedora repository 的镜像的名字，也就是 fedora。 +
+在这一步，我们查询 fedora repository 所有的 tag，也就是“版本”。
++
+--
+[source, sh]
+----
+# 从这一步开始，http response header 就没有那么重要了
+curl 'https://registry.fedoraproject.org/v2/fedora/tags/list'
+----
+
+返回的 json 中有大量的 tag，这里我们可以选择 "41"，作为我们镜像的 tag。这个 tag 指向 Fedora Linux 41
+--
+
+* 要拉取一个完整的镜像，我们需要拉取“组装这个镜像的菜单”，也就是 manifest。 +
+在这一步，我们就要拉取这个 manifest。
++
+--
+[source, sh]
+----
+curl -H 'Accept: application/vnd.oci.image.index.v1+json' 'https://registry.fedoraproject.org/v2/fedora/manifests/41'
+----
+
+这行命令中，值得注意的是，首先我们要为 registry 提供我们可接受的媒体类型（mediaType）。由于一个 tag 下可以有多个容器，它们分别支持不同的计算机架构，因此这里我们获取的是一个叫做 manifest index 的东西。所以我们的 http request header 为 `Accept: application/vnd.oci.image.index.v1+json`。
+
+请求的 URL 的构成为 **++https://<registry 地址>/<API 版本>/<reposity 名称>/manifests/<tag 名称>++**
+
+返回值：
+
+----
+{
+    "schemaVersion": 2,
+    "mediaType": "application/vnd.oci.image.index.v1+json",
+    "manifests": [
+        {
+            "mediaType": "application/vnd.oci.image.manifest.v1+json",
+            "digest": "sha256:cd6acb30d3487ba1d0aae709e05a88c1e5f3d94b604c36847c6d3297c1b58cdd",
+            "size": 504,
+            "platform": {
+                "architecture": "arm64",
+                "os": "linux"
+            }
+        },
+        {
+            "mediaType": "application/vnd.oci.image.manifest.v1+json",
+            "digest": "sha256:6988c22f5a10dfc1848031a56048377358fd366fd145dc3059c6926966ffbb29",
+            "size": 504,
+            "platform": {
+                "architecture": "ppc64le",
+                "os": "linux"
+            }
+        },
+        {
+            "mediaType": "application/vnd.oci.image.manifest.v1+json",
+            "digest": "sha256:2be74c9f06555b67c419a2cd56b14287fcf12d100209c8f1986c8192d93223c6",
+            "size": 504,
+            "platform": {
+                "architecture": "s390x",
+                "os": "linux"
+            }
+        },
+        {
+            "mediaType": "application/vnd.oci.image.manifest.v1+json",
+            "digest": "sha256:b438a0b8dcee4f6d5420d3fb63eababb9b9212f000826c77164fb191fca0e70e",
+            "size": 504,
+            "platform": {
+                "architecture": "amd64",
+                "os": "linux"
+            }
+        }
+    ]
+}
+----
+
+返回值的 "manifests" 是一个列表，每个元素都对应一个计算机架构所需的文件。其中有几个值得我们关注的内容：
+
+* 整个文件的顶部具有一个 `mediaType`，这个 mediaType 正是我们上面的 http request header 的 `Accept: ` 后面跟随的值
+* 在 `manifests` 字段的列表中：
+** `mediaType` 字段是该内容的 mediaType，也是我们要获取该资源的时候应该给出的 request header
+** `digest` 字段是该内容的 SHA 值，它是我们获取该资源的 url 的一部分
+--
+
+* 依照 manifest index，这里我们要实际获取 manifest 了
++
+--
+按照上一步的说明，amd64 架构对应的 mediaType 和 digest 分别写入至请求头和 URL 中。
+
+[%collapsible]
+.使用jql过滤关键信息
+====
+[source, sh]
+----
+<前面的 curl 命令> | jql '"manifests"|={"platform""architecture"="amd64"}|>{"mediaType", "digest"}'
+----
+
+稍稍解释一下：
+
+"manifests"::
+从原始数据中过滤出键 `manifests` 对应的值
+
+|={"platform.architecture""arm64"}::
+一个管道命令，具体含义如下
+|=:::
+管道过滤，对每个元素（这里是 `manifests` 的列表的元素）进行筛选，仅输出匹配上的对象
+{"platform""architecture"="amd64"}:::
+匹配内部元素，`platform` 下的 `architecture` 的键值为 `amd64`
+
+|>{"mediaType", "digest"}::
+另一个管道命令，具体含义如下
+|>:::
+管道操作，将其后的命令作用于每个元素（这里是过滤后的对象）
+{"mediaType", "digest"}:::
+提取 "mediaType" 和 "digest" 的键和值
+====
+
+[source, sh]
+----
+curl -H 'Accept: application/vnd.oci.image.manifest.v1+json' 'https://registry.fedoraproject.org/v2/fedora/manifests/sha256:b438a0b8dcee4f6d5420d3fb63eababb9b9212f000826c77164fb191fca0e70e'
+----
+
+返回值（经过格式化）：
+
+----
+{
+    "schemaVersion": 2,
+    "mediaType": "application/vnd.oci.image.manifest.v1+json",
+    "config": {
+        "mediaType": "application/vnd.oci.image.config.v1+json",
+        "digest": "sha256:6e5b821b6dd0ac1b9695ffa67b428ec9748721975097dabd263d23868d65a007",
+        "size": 859
+    },
+    "layers": [
+        {
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "digest": "sha256:cdca5b76381679ee893f32c1debee95187206563c459b94ae32e761a1d9b99e8",
+            "size": 60745636
+        }
+    ],
+    "annotations": {
+        "org.opencontainers.image.base.digest": "",
+        "org.opencontainers.image.base.name": ""
+    }
+}
+----
+
+这个返回包含了三组重要的信息：
+
+* 第一，`config` 指向的是这个镜像的配置文件，它包含将该镜像启动为容器的时候的默认参数。
+* 第二，`layers` 指向实际构建容器的文件系统的打包文件，它是一个列表，说明构建容器可以使用多个层来构成。
+* 第三，`annotations` 记录了一些标记数据，其中与 **base** 相关的数据表示的是本镜像是基于哪个镜像制作而来的。这里留空，表示该镜像没有基于任何其它的镜像。
+
+最后，如果你把原始的 HTTP 报文体数据（这里是缩减的 json 数据）通过 sha256sum 进行摘要计算，就能发现该散列值必然与我们上一步请求中的散列值保持一致。（下同，不再赘述）
+--
+
+* 同理，依照 manifest 的结果，获取 config 和 layers
++
+--
+[%collapsible]
+.使用jql过滤关键信息
+====
+[source, sh]
+----
+# 提取 config
+<前面的 curl 命令> | jql '"config"{"mediaType", "digest"}'
+
+# 提取 layers
+<前面的 curl 命令> | jql '"layers"|>{"mediaType", "digest"}'
+----
+====
+
+* 首先要注意的是，对于 registry 而言，config 和 layers 都是数据类型，因此 URL 中的 `manifest` 部分要替换为 `blobs`。
+* 其次可能需要注意的是，由于 blob 文件通常较大，因此 fedoraproject 的 registry 将这些文件做了 CDN，因此我们实际访问数据的时候，会触发重导向，因此我们使用 `-L` 让 curl 自动进行重导向。
+
+** 获取并解析 config
++
+[source, sh]
+----
+curl -L -H 'Accept: application/vnd.oci.image.config.v1+json' 'https://cdn.registry.fedoraproject.org/v2/fedora/blobs/sha256:6e5b821b6dd0ac1b9695ffa67b428ec9748721975097dabd263d23868d65a007'
+----
++
+返回值（经过格式化）：
++
+----
+{
+    "created": "2024-12-05T17:33:30.63839139Z",
+    "author": "Fedora Project Contributors <devel@lists.fedoraproject.org>",
+    "architecture": "amd64",
+    "os": "linux",
+    "config": {
+        "Env": [
+            "container=oci"
+        ],
+        "Cmd": [
+            "/bin/bash"
+        ],
+        "WorkingDir": "/",
+        "Labels": {
+            "io.buildah.version": "1.38.0",
+            "license": "MIT",
+            "name": "fedora",
+            "org.opencontainers.image.license": "MIT",
+            "org.opencontainers.image.name": "fedora",
+            "org.opencontainers.image.url": "https://fedoraproject.org/",
+            "org.opencontainers.image.vendor": "Fedora Project",
+            "org.opencontainers.image.version": "rawhide",
+            "vendor": "Fedora Project",
+            "version": "rawhide"
+        }
+    },
+    "rootfs": {
+        "type": "layers",
+        "diff_ids": [
+            "sha256:aa6df4d6015bc8a96b74475828122d4a5630d2743e5614ab190aa0de8d3e203b"
+        ]
+    },
+    "history": [
+        {
+            "created": "2024-12-05T17:33:32.990998934Z",
+            "created_by": "KIWI 10.2.3",
+            "author": "Fedora Project Contributors <devel@lists.fedoraproject.org>"
+        }
+    ]
+}
+----
++
+主要包含的都是镜像的配置信息，一些标签等信息。对于我们来说稍微重要的信息是 rootfs 下的 diff_ids，这个字段下的每一个 id，都对应者每一个 layer 解包到 tar 格式的时候，tar 文件本身的散列值。
+
+** 获取并解析 layer
++
+[source, sh]
+----
+curl -L -H 'Accept: application/vnd.oci.image.layer.v1.tar+gzip' 'https://registry.fedoraproject.org/v2/fedora/blobs/sha256:cdca5b76381679ee893f32c1debee95187206563c459b94ae32e761a1d9b99e8' --output 'cdca5b76381679ee893f32c1debee95187206563c459b94ae32e761a1d9b99e8.tar.gz'
+----
++
+这里相对简单，由于该镜像仅有一层，我们下载下来就可以了。 +
+通过 `gzip -d` 解压后得到的 tar 文件，我们依旧可以通过 `sha256sum` 与 config 文件中的 **diff_ids** 进行对比，其结果因该完全一致。 +
+最后，我们解开 tar 文件，就能发现其就是该容器的 rootfs。
+--
+
+==== 常规方案：通过 podman 提供的工具下载并检验镜像文件
+
+上面说的复杂方案，是为了了解镜像文件是如何逐一被获取的。在实际的使用过程中，我们可以通过 `podman image pull` 命令简单地获取一个镜像。
+
+[source, sh]
+----
+podman image pull registry.fedoraproject.org/fedora:41
+----
+
+打印的信息
+
+----
+Trying to pull registry.fedoraproject.org/fedora:41...
+Getting image source signatures
+Copying blob sha256:cdca5b76381679ee893f32c1debee95187206563c459b94ae32e761a1d9b99e8
+Copying config sha256:6e5b821b6dd0ac1b9695ffa67b428ec9748721975097dabd263d23868d65a007
+Writing manifest to image destination
+6e5b821b6dd0ac1b9695ffa67b428ec9748721975097dabd263d23868d65a007
+----
+
+这里我们比较一下 blob 行的 sha256 值就是我们上面获取 tar.gz 是给出的 sha256 值。config 行的 sha256 值就是我们上面获取 config 时所使用的值。而 manifest 的 sha256 就是 config 的 sha256 值。
+
+我们可以通过
+
+[source, sh]
+----
+podman image tree <镜像名>
+----
+
+来快速了解一个镜像的层
+
+[MOTE]
+====
+若镜像的 tag 不是 `latest`，则必须指定 tag，比如这里我们就需要指定 `fedora:41`
+====
+
+我们可以通过下面的命令对比两个镜像之间的文件的变化
+
+[source, sh]
+----
+podman image diff <新镜像> [<旧镜像>]
+----
+
+=== 列举镜像
+
+[source, sh]
+----
+podman images list
+----
+
+返回值
+
+----
+REPOSITORY                         TAG         IMAGE ID      CREATED       SIZE
+registry.fedoraproject.org/fedora  41          6e5b821b6dd0  26 hours ago  164 MB
+----
+
+REPOSITORY 是镜像的远程位置
+TAG 是镜像的版本号
+IMAGE ID 是镜像的 ID，它其实来自于镜像文件的 sha256 值
+CREATED 是镜像文件的创建时间，podman 据此排序镜像
+SIZE 镜像文件所使用的存储空间的大小
+
+=== 检查镜像
+
+[source, sh]
+----
+podman images inspect <镜像>
+----
+
+这个命令会打印一张很长的 JSON 数据，若我们仅对某些内容感兴趣，我们可以使用 `--format` 参数对输出的内容进行筛选。 +
+`--format` 后接受的语法是 Go 的 text/template 包的语法。
+
+[source, sh]
+----
+# 获取 JSON 顶层的数据，比如镜像的操作系统
+podman image inspect --format '{{ .Os }}' <镜像名>
+
+# 获取 JSON 非顶层的数据，比如镜像默认的命令
+podman image inspect --format '{{ .Config.Cmd }}' <镜像名>
+
+# 若要获取的键的键名含有点号，则需要使用 index 函数来访问，且特殊的键名需要用引号包含
+# 比如，获取镜像的制造商（vendor）
+podman image inspect --format '{{ index .Config.Labels "org.opencontainers.image.vendor" }}' <镜像名>
+----
+
+[%collapsible]
+.使用 jql 的版本
+====
+[source, sh]
+----
+# 注意 inspect 返回的顶层是一个列表，因此首先就需要选择第一个元素
+podman image inspect <镜像名> | jql '[0]"Config""Labels""org.opencontainers.image.vendor"'
+----
+====
+
+=== 为镜像添加一个新标签
+
+[source, sh]
+----
+podman image tag <现有镜像名>[:<现有 TAG>] <新镜像名>[:<新 TAG>]
+----
+
+同一个镜像可以具有多个标签，当一个镜像文件具有的所有标签均被移除，对应的存储文件才会被移除。
+
+=== 移除镜像
+
+[source, sh]
+----
+podman image rm <镜像名>
+----
+
+实际上，我们移除的是镜像的标签，当一个镜像的存储文件的所有标签均被移除，那么该存储文件就会被自动垃圾回收，而从文件系统上消失。
+
+除了逐个移除镜像，podman 还提供了另一个子命令来移除所有未使用的镜像存储文件。
+
+[source, sh]
+----
+podman image prune
+----
+
+该命令会移除所有不与任何标签关联的镜像存储。
+
+该命令还接受一个 `--all` 参数，使用之后，除了移除上面说的不与任何标签关联的镜像存储，还会移除所有不与任何容器关联的镜像。
+
+=== 挂载一个镜像
+
+有时候，我们需要检查一个镜像中的文件，除了启动一个容器以外，我们还可以直接使用 podman 的挂载镜像功能。挂载镜像相较于启动容器，有两个优点：
+
+* 不随意运行镜像，能防止恶意容器运行
+* 可以使用主机上具有工具检查镜像文件的内容
+
+[source, sh]
+----
+podman image mount <镜像名>
+----
+
+如果你以 rootless 模式运行镜像，则直接执行上面的操作会报错。此时，我们需要使用 `podman unshare` 创建一个新的进程（一般是 shell），该进程具有一个新的 namespace。在这个新进程/新的 namespace 中，再执行 `podman image mount`，就可以挂载镜像了。
+
+[NOTE]
+====
+Linux 系统上也自带一个创建 namespace 的工具——它也叫“unshare”；Linux 上还有一个程序叫做“nsenter”是用来进入一个以前创建的 namespace 的。podman 的 unshare 与 Linux 系统上的 unshare 类似，使用了类似的 Linux 内核功能。
+====
