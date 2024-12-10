@@ -541,7 +541,7 @@ podman image tree <镜像名>
 
 来快速了解一个镜像的层
 
-[MOTE]
+[NOTE]
 ====
 若镜像的 tag 不是 `latest`，则必须指定 tag，比如这里我们就需要指定 `fedora:41`
 ====
@@ -622,7 +622,7 @@ podman image tag <现有镜像名>[:<现有 TAG>] <新镜像名>[:<新 TAG>]
 podman image rm <镜像名>
 ----
 
-实际上，我们移除的是镜像的标签，当一个镜像的存储文件的所有标签均被移除，那么该存储文件就会被自动垃圾回收，而从文件系统上消失。
+实际上，podman 首先移除的是镜像的标签，之后 podman 会检查与之关联的存储文件，若与该存储文件关联的所有标签均被移除，那么该存储文件就会被删除。
 
 除了逐个移除镜像，podman 还提供了另一个子命令来移除所有未使用的镜像存储文件。
 
@@ -631,7 +631,7 @@ podman image rm <镜像名>
 podman image prune
 ----
 
-该命令会移除所有不与任何标签关联的镜像存储。
+该命令会移除所有不与任何标签关联的镜像存储。在我们在本地构建镜像的时候，这个命令常用于移除不需要的存储层。
 
 该命令还接受一个 `--all` 参数，使用之后，除了移除上面说的不与任何标签关联的镜像存储，还会移除所有不与任何容器关联的镜像。
 
@@ -653,3 +653,87 @@ podman image mount <镜像名>
 ====
 Linux 系统上也自带一个创建 namespace 的工具——它也叫“unshare”；Linux 上还有一个程序叫做“nsenter”是用来进入一个以前创建的 namespace 的。podman 的 unshare 与 Linux 系统上的 unshare 类似，使用了类似的 Linux 内核功能。
 ====
+
+== 构建镜像
+
+`podman build` 可以依照 Containerfile 指示的内容构建一个镜像。
+
+
+=== Containerfile 的格式
+
+Containerfile 支持很多指令（directive），它们大致可以分为两大类：向容器镜像中添加内容，或描述和记录镜像该如何使用。
+
+==== 将内容添加至镜像
+
+每个 Containerfile 必须包含一个 `FROM` 行。该行指定新镜像基于的镜像——这个镜像又称为基镜像。`podman build` 支持一种特殊的、名为 `scratch` 的镜像，该镜像中什么内容也没有。之后我们可以通过 `COPY` 指令向空的 rootfs 中添加内容。不过更常见的情况是，我们会基于一个已有内容的镜像，比如 `FROM registry.fedoraproject.org/fedora:41`，就会拉取 Fedora 41 的镜像，之后的操作就会基于该镜像。 +
+在底层上 `FROM registry.fedoraproject.org/fedora:41` 会拉取 Fedora 41 的镜像，在本地解包，并通过 OverlayFS 挂载解包后的 rootfs。此时拉取的 Fedora 41 就会作为一个基层，其它的操作将基于这个不可变基层执行。
+
+除了 `FROM` 指令，还有两个常见的执行 `COPY` 和 `RUN`，前者用于将文件从主机拷贝至镜像，后者用于在镜像中运行命令。
+
+比如，我们要在 Fedora 41 的容器上安装一个 nginx，我们可以这么做：
+
+[source, Containerfile]
+----
+FROM registry.fedoraproject.org/fedora:41
+RUN dnf -y update && dnf -y install nginx && dnf -y clean all
+----
+
+需要注意的是 `RUN` 中的命令是不与终端进行交互的，因此在使用 dnf 的时候，需要加上 `-y`/`--assumeyes` 来确认所有的操作。
+
+另外，Containerfile 中的每一条指令都会创建一个 layer，因此，我们可以尽量将 shell 命令缩减在一条指令中执行。
+
+与 `COPY` 相关的指令还有一个 `ADD`，`ADD` 支持从 URL 下载文件，并且在识别到 .tar 文件的时候，会自动执行解压操作。`COPY` 就是简单的复制命令，不能从 URL 下载数据，而且遇见 .tar 文件不会执行解压。
+
+==== 记录镜像该如何使用
+
+* `ENTRYPOINT` 和 `CMD`：两者都可以用来指定默认运行的程序。`CMD` 与 `ENTRYPOINT` 的差异是：若用户不自定义启动参数，则两者无差别；若用户自定义启动参数，用户给出的自定义参数会附加在 `ENTRYPOINT` 定义的命令之后，但会覆盖 `CMD` 中指定的内容。当 `ENTRYPOINT` 和 `CMD` 均存在时，`CMD` 的内容会附加在 `ENTRYPOINT` 的内容之后。
+* `ENV` 指令设置容器的环境变量
+* `EXPOSE`：设置将要被 `podman` 的 `--publish-all` 参数暴露的网络端口。注意，即便我们这里什么也不设置，在创建容器的时候，我们可以通过 `--publish` 强制暴露指定的端口。
+
+=== 实际构建一个镜像
+
+完成这样一个目标：基于 Fedora:41 镜像，安装 nginx 软件，写入一个我们自定义的页面，并让 nginx 作为默认运行的软件。
+
+[source, sh]
+----
+# 创建必要的文件夹
+mkdir my_custom_nginx
+mkdir my_custom_nginx/file
+
+# 创建我们自定义的首页
+cd my_custom_nginx/file
+cat > index.html << EOF
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>My Custom Nginx</title>
+    </head>
+    <body>
+        <h1>Hello, custom Nginx image!</h1>
+    </body>
+<html>
+EOF
+
+# 创建 Containerfile 文件
+cd ..
+cat > Containerfile << EOF
+FROM 'registry.fedoraproject.org/fedora:41'
+
+RUN dnf -y update && dnf -y install nginx && dnf -y clean all
+COPY ./file/index.html /usr/share/nginx/html/index.html
+
+STOPSIGNAL SIGQUIT # 将容器的退出信号修改为 nginx 需要的 SIGQUIT
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+EOF
+
+# 实际构建镜像
+podman build -f Containerfile -t my_custom_nginx
+----
+
+之后我们可以简单测试一下
+
+[source, sh]
+----
+podman run --publish 8080:80 --rm localhost/my_custom_nginx
+----
