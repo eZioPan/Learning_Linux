@@ -188,7 +188,12 @@ ausearch --message avc --start recent --interpret
 其中，
 
 --message avc::
-会从众多 audit 日志中筛选出具有 AVC 信息类型（message type）的日志。 +
+会从众多 audit 日志中筛选出具有 AVC 信息类型（message type）的日志。
++
+[TIP]
+====
+如果想查看所有类型的 audit 日志，则需要将 `avc` 修改为 `all`
+====
 
 --start recent::
 仅罗列给定的时间之后的日志，`recent` 表示近十分中的日志 +

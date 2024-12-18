@@ -1,0 +1,79 @@
+= Podman Volume
+
+我们可以将容器的应用的数据与容器分离开来，可能的原因包含以下几条：
+
+* 防止将实际的数据（比如数据库）嵌入应用
+* 使用相同的容器镜像运行多个环境
+* 减少读写开销，增加读写性能——volume 是直接写入文件系统的，而镜像本身使用 overlay 来管理内容，overlay 是有额外开销的
+* 可以访问网络存储上的共享内容
+
+需要注意的是，容器技术花费了大量的心思在隔离容器文件系统和宿主机文件系统上，但是 volume 允许容器访问宿主机文件系统，会有潜在的安全风险，需要小心对待。
+
+== 在容器中使用 volume
+
+podman 可以通过 `--volume <宿主机目录>:<容器内目录>` 参数将宿主机的文件系统中的内容挂载（准确说是 bind mount）至容器内。
+
+[NOTE]
+====
+* podman 还支持其它形式的 volume，bind mount 只是其中之一
+* bind mount 其实是 Linux 内核的一个功能，`mount --bind` 使用类似的内核功能，将一个文件绑定至另一个路径下
+====
+
+比如，对于我们于 xref:76.02、Podman 命令行.adoc[] 中创建的 my_custom_nginx 镜像，若我们移除拷贝 index.html 的行，我们就可以得到一个干净的、不含我们自定义数据的安装了 nginx 的 fedora 镜像。之后，我们可以通过下面的命令在创建容器的时候，将 index.html 挂载至其中：
+
+[source, sh]
+----
+podman run --rm --volume ./file:/usr/share/nginx/html:ro,z --publish 8080:80 localhost/my_custom_nginx
+----
+
+`--volume` 的参数中，前一个分号分隔了宿主机路劲和容器内路径，后一个分号之后的 `ro,z` 是挂载选项：`ro` 表示只读（read-only）；`z` 表示在即将 bind 时修改宿主机文件系统上的项目的 SELinux 标签，且小写的 `z` 表示设置的 SELinux 标签允许该文件在多个容器间共享，若设置为 `Z` 则为该容器独占的。
+
+[NOTE]
+====
+* 使用 `z` 和 `Z` 时，podman 修改宿主机文件系统的项目的 SELinux 标签是较为“简单而粗暴的”。在每个容器被创建的时候，容器的 SELinux 上下文就会被确定，进而修改关联的宿主机文件系统上的文件项的 SELinux 标签。每次 podman 执行这个操作的时候，并不会关注已经存在的容器的状态。举例来说，若先后创建了两个容器挂载了同一个资源，且后创建的那个容器使用 `Z` 参数挂载资源，则该资源会**立即**成为后一个容器**独占**的资源（SELinux 标签被修改），而前序所有的容器都无法访问该资源。 +
+当然若我们确实希望多个容器具有完全一致的 SELinux 上下文，从而在我们希望的多个容器间共享同一组文件资源，且阻止其它容器访问这个数据。则我们可以在创建容器的时候使用形如 `--security-opt label=level:s0:c<自定义的类别数字1>,c<自定义的类别数字1>` 的参数，手动设置容器的 SELinux level & category。
+
+* 依照我的测试，`--volume` 是可以直接映射指定的文件的。但在直接映射文件的情况下，在宿主机上更新文件，并不能实时反映在容器中，而且容器中的映射状态也并非简单的 bind mount。
+====
+
+=== 具名 volume
+
+除了将目录挂载至容器中，我们也可以创建名为“volume”的存储机制。它们可以通过 `podman volume create` 创建，比如，创建一个名为 `webdata` 的 volume：
+
+[source, sh]
+----
+podman volume create webdata
+----
+
+之后，我们就可以将这个 volume 挂载到容器中，比如：
+
+[source, sh]
+----
+podman run --rm --volume webdata:/usr/share/nginx/html:ro,z --publish 8080:80 localhost/my_custom_nginx
+----
+
+[NOTE]
+====
+* 从底层实现来说，挂载我们预先准备好的目录，和挂载 podman 创建的 volume 之间并没有任何的不同，它们都是从宿主机的文件系统上挂载目录（通过 `podman volume inspect` 可以看到路径）。而且这两种目录均可以直接在宿主机上访问。从操作逻辑上来说，podman 创建的 volume 更像是用来接收容器产生的数据的地方，而我们预先准备的目录则更像是为容器准备的数据存放的地方。
+
+* 在上面的例子中，若我们的工作目录下恰好有一个名为 `webdata` 的文件夹，那么 podman 在解析 `--volume webdata:<blahblahblah>` 参数的时候：
++
+--
+.. 会优先选用 podman 中已有的 volume，在 volume 不存在的时候
+.. 检查是否有文件夹/文件路径符合要求，若也不存在
+.. 创建一个名称指定的 volume，若也无法创建，则
+.. 产生错误
+--
++
+当然，若我们将路径指定为 `./webdata`，则最终的效果就是尝试挂载现有目录而已。因为 `./webdata` 不可以作为 volume 的名称存在。
+
+* podman 管理的 volume 还有另一个特性，在 volume **首次** 被挂载至一个容器的时候，若 volume 为空，则将容器挂载点中已有的内容拷贝至 volume 中。 +
+底层细节见 `$HOME/.local/share/containers/storage/db.sql` 这个 sqlite3 数据库中的 `VolumeState` 表中的 JSON 键 `notYetMounted`；以及 link:https://github.com/containers/podman[podman 源码] 中关于 `NeedsCopyUp` 的说明。
+====
+
+当我们希望移除一个 podman 管理的 volume，我们需要确认所有挂载了该 volume 的容器均已经被移除。或者我们使用 `--force` 参数，则所有挂载了该 volume 的容器会被自动移除。
+
+[source, sh]
+----
+podman volume rm webdata
+----
