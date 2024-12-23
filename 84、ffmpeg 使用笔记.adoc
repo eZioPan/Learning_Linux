@@ -40,3 +40,27 @@ ffmpeg  -i .\bg.png -i .\fg.png `
         [bg_bw][fg]overlay[out0];[bg][fg_bw]overlay[out1]' `
     -map '[out0]' out0.png -map '[out1]' out1.png
 ----
+
+== 音频处理
+
+`-filter_complex` 可以方便的对音频进行处理，下面这段操作，就是将一个具有一条视频流、一条双声道音频流、两条数据轨道的视频，转换为具有一个视频流、四条单声道音频流、两个数据轨道的文件
+
+[source]
+----
+ffmpeg -i <输入视频文件> `
+    -filter_complex `
+        '[0:a]channelsplit=channel_layout=stereo[FL][FR];
+        [FL]asplit=2[L1][L2];
+        [FR]asplit=2[R1][R2]' `
+    -c:v copy -map 0:v `
+    -c:a aac -ac 1 -map "[L1]" -map "[R1]" -map "[L2]" -map "[R2]" `
+    -c:d copy -map 0:d `
+    <输出视频文件>
+----
+
+`[0:a]channelsplit=channel_layout=stereo[FL][FR]` 将视频 0 的音频流进行通道分离，输入为立体声，分化为 `[FL]` `[FR]` 两个数据流。 +
+`[FL]asplit=2[L1][L2]` 将 `[FL]` 拷贝为两个音频流 `[L1]` 和 `[L2]`。 +
+`[FR]asplit=2[R1][R2]` 类似上一步，但是拷贝的是右声道。 +
+`-c:v copy -map 0:v` 拷贝视频流至输出。 +
+`-c:a aac -ac 1 -map "[L1]" -map "[R1]" -map "[L2]" -map "[R2]"` 指定输出音频编码为 aac，输出的每个音频流的声道为单声道（-ac 1），映射的通道为 左、右、左、右，也就是复制一份。 +
+`-c:d copy -map 0:d` 拷贝数据流。
