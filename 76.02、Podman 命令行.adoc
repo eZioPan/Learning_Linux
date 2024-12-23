@@ -720,9 +720,16 @@ cat > Containerfile << EOF
 FROM 'registry.fedoraproject.org/fedora:41'
 
 RUN dnf -y update && dnf -y install nginx && dnf -y clean all
+
+# 将 nginx 的日志输出到 stdout 和 stderr，以便 podman logs 收集
+RUN sed -i -E 's|(error_log) +.* +(\w+;)|\1 /dev/stderr \2|' /etc/nginx/nginx.conf && \\
+sed -i -E 's|(access_log) +.* +(\w+;)|\1 /dev/stdout \2|' /etc/nginx/nginx.conf
+
 COPY ./file/index.html /usr/share/nginx/html/index.html
 
-STOPSIGNAL SIGQUIT # 将容器的退出信号修改为 nginx 需要的 SIGQUIT
+# 将容器的退出信号修改为 nginx 需要的 SIGQUIT
+STOPSIGNAL SIGQUIT
+
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
 EOF

@@ -1,0 +1,99 @@
+= Podman Pod
+
+Podman 是 Pod Manager 的缩写。pod 的概念来源于 Kubernetes，它表示一组为同一个目标而协同工作的容器，且它们具有相同的 namespace 和 cgroup（也就是资源约束）。在启用了 SELinux 的机器上，Podman 保证了一个 pod 中的所有容器的进程具有相同的 SELinux 上下文。
+
+== pod 的运行机制
+
+Podman 的 pod，与 Kubernetes Pod 类似，总是包含一个叫做 __infra__ 的容器——有时也可称为 __pause__ 容器。它的作用是从内核中持续持有 namespace 和 cgroup，这样 pod 内的容器就可以自由的启停。当 Podman 向一个 pod 中添加容器的时候，它会同时将容器的进程添加至 namespace 和 cgroup 中。
+
+除了 __infra__ 容器，还有三种容器的**设计理念**（使用理念），分别为 init container，primary container 和 sidecar container。
+
+其中 init container 在 primary container 之前运行，用于初始化环境（比如初始化一个空的数据库）；primary container 则是主应用运行的容器；sidecar container 则会执行诸如监控主容器、或者在主容器运行时更新相关资料的工作。
+
+== 创建并运行 pod
+
+下面我们将简单举例，创建一个 pod，pod 中有两个 container，第一个 container 是一个单纯的 nginx 服务器，它会挂载磁盘上的一个 index.html 文件。第二个 container 会反复运行一个 shell 文件，该文件会每秒向 html 文件中写入一行新数据。
+
+. 前期准备
+** 修改 index.html 通过 json 每两秒刷新一下网页
++
+[source, html]
+.file/index.html
+----
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>My Custom Nginx</title>
+        <style>
+            body {
+                color: whitesmoke;
+                background-color: darkgray;
+            }
+        </style>
+        <script>
+            setTimeout(function() {
+                window.location.reload();
+            }, 2000);
+        </script>
+    </head>
+    <body>
+        <h1>Hello, custom Nginx image</h1>
+        <p>Fri Dec 20 12:44:15 UTC 2024</p>
+    </body>
+</html>
+----
+
+** 构建一个 timestamp.sh 文件，它每秒更新一下网页内容
++
+[source, sh]
+.timestamp.sh
+----
+HTML_FILE=/usr/share/nginx/html/index.html
+
+# 检测 HTML 中是否已经存在对应得行，若不存在则添加
+if ! grep -q '<p>.*</p>' ${HTML_FILE}; then
+        sed -i '/<\/body>/i \        <p>'"$(date)"'</p>' ${HTML_FILE}
+        sleep 1
+fi
+
+# 每秒都修改这个行，更新为当前得时间戳
+while true; do
+    echo Modify...
+    sed -i 's|<p>.*</p>|<p>'"$(date)"'</p>|' ${HTML_FILE}
+    sleep 1
+done
+----
+
+** fedora nginx 镜像还是使用我们在 xref:76.03、Podman Volume.adoc[] 中构建的镜像
+
+. 创建 pod
++
+[source, sh]
+----
+podman pod create --name my_web_pod --volume ./file:/usr/share/nginx/html --publish 8080:80
+----
++
+这里有两点需要注意。首先，该 pod 中所有需要映射的网络端口，全部需要在创建 pod 时指定。第二，所有在创建 pod 时挂载的文件和映射的网络端口，均会被所有加入该 pod 的挂载和使用。 +
+这里就引入了第三个问题，若一个 pod 中有多个容器想绑定同一个端口，此时，第一个尝试绑定该端口的容器会成功，其它的会失败。因此，容器的编辑者必须负责规划同一个 pod 中的不同容器所使用的端口。
+
+. 在创建容器时，加入 pod
++
+[source, sh]
+----
+# 注意，由于我们已经在创建 pod 的时候设置了 volume 和 publish，因此主容器的命令行大大简化了
+podman create --name my_nginx --pod my_web_pod localhost/fedora_nginx
+
+# 这个容器的入口程序为 bash /timestamp.sh，同上由于创建 pod 的时候已经挂载了 volume，因此这里我们也不用设置
+podman create --name timestamper --pod my_web_pod --volume ./timestamp.sh:/timestamp.sh fedora:41 bash /timestamp.sh
+----
+
+. 启动 pod
++
+[source, sh]
+----
+podman pod start my_web_pod
+----
++
+在这一步之后，我们就可以访问网页观察结果了

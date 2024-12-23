@@ -87,6 +87,17 @@ Podman 的一个最突出的特点就是它是 rootless 的。Podman 本身不�
 Docker 是基于类似 客户端-服务端 的软件架构的，用户通过 Docker 的命令行与 Docker Daemon 通信，而 Docker Daemon 则负责启动容器引擎（containerd），进而启动容器运行时。同时 Docker Daemon 还负责容器内进程的标准输入输出的转发等等工作。Docker Daemon 是 Docker 的“中枢”。 +
 Podman 则是基于 Unix 的 fork/exec 理念的。Podman 在启动了一个容器运行时之后，其本身就会退出运行。这种工作模式被称为 daemonless 模式。
 
+[TIP]
+====
+虽然 Podman 没有和 Docker Daemon 一样的单一“中枢”，但是每个 Podman 容器还是会由一个名为 `conmon` 的轻量化 C 语言程序，来处容器的整个生命周期中的事务。 +
+这个 `conmon` 会负责：
+
+* 执行 OCI 运行时，解析 OCI 文件，并挂载容器的层文件
+* 监控容器的整个运行，直到其退出，并返回容器的退出码
+* 当用户 attach 一个容器的时候，提供一个套接字来串流容器的标准输出和标准错误
+* 容器的标准输出和标准错误也会被记录为 Podman 日志
+====
+
 Podman 的命令行与 Docker 兼容，大部分的 Docker 子命令都有等价的 Podman 的子命令。
 
 Podman 可以作为受字节套激活的（socket-activated）REST API 服务。这样它就允许远程客户端管理和运行 Podman 容器。

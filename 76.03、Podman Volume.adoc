@@ -19,7 +19,26 @@ podman 可以通过 `--volume <宿主机目录>:<容器内目录>` 参数将宿�
 * bind mount 其实是 Linux 内核的一个功能，`mount --bind` 使用类似的内核功能，将一个文件绑定至另一个路径下
 ====
 
-比如，对于我们于 xref:76.02、Podman 命令行.adoc[] 中创建的 my_custom_nginx 镜像，若我们移除拷贝 index.html 的行，我们就可以得到一个干净的、不含我们自定义数据的安装了 nginx 的 fedora 镜像。之后，我们可以通过下面的命令在创建容器的时候，将 index.html 挂载至其中：
+比如，对于我们于 xref:76.02、Podman 命令行.adoc[] 中创建的 my_custom_nginx 镜像，若我们**移除拷贝 index.html 的指令**，我们就可以得到一个干净的、不含我们自定义数据的安装了 nginx 的 fedora 镜像。
+
+[source, Containerfile]
+----
+FROM 'registry.fedoraproject.org/fedora:41'
+
+RUN dnf -y update && dnf -y install nginx && dnf -y clean all
+
+# 将 nginx 的日志输出到 stdout 和 stderr，以便 podman logs 收集
+RUN sed -i -E 's|(error_log) +.* +(\w+;)|\1 /dev/stderr \2|' /etc/nginx/nginx.conf && \\
+sed -i -E 's|(access_log) +.* +(\w+;)|\1 /dev/stdout \2|' /etc/nginx/nginx.conf
+
+# 将容器的退出信号修改为 nginx 需要的 SIGQUIT
+STOPSIGNAL SIGQUIT
+
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+----
+
+在我们重新构建镜像之后，我们可以通过下面的命令，在创建容器的时候，将 index.html 挂载至其中：
 
 [source, sh]
 ----
