@@ -1,0 +1,80 @@
+= systemd.timer
+
+== 名称
+
+systemd.timer - 定时器 unit 配置
+
+== 语法
+
+__timer__.timer
+
+== 描述
+
+一个以 `.timer` 结尾的 unit 配置文件，编码了由 systemd 管控的定时激活的定时器。
+
+该帮助页面列举的配置选项是该 unit 类型特定的。见 link:https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html[systemd.unit(5)] 了解所有 unit 配置文件通用的选项。通用配置项在 `[Unit]` 节和 `[Install]` 节中进行配置。定时器特定的配置选项在 `[Timer]` 节中配置。
+
+对于每一个定时器文件，必须存在一个 unit 文件，后者描述了定时器到点时会激活的 unit。默认情况下，与定时器同名（除了后缀名）的服务 unit 会被激活。举例来说，一个定时器文件 `foo.timer` 会激活匹配的 `foo.service`。可以通过 `Unit=` 配置要被激活的 unit（见下方）。
+
+注意，当定时器到点时，若待激活的 unit 已经处于激活状态，那么定时器不会重启它，而是让其继续运行。不会有创建新服务实例的情况。鉴于这种情况，一个设置了 `RemainAfterExit=yes` 的服务（即便服务的主进程退出，服务本身也保持活跃）通常来说并不适合通过重复定时器激活，因为它们仅会被激活一次，之后它们就会一致保持活跃。目标 unit 默认情况下不会自行解激活，可以通过在目标 unit 上设置 `StopWhenUnneeded=yes`，让 timer 反复激活它。这会导致目标 unit 在激活之后立刻停止，除非它时另一个运行中的 unit 的依赖项。
+
+== 自动依赖
+
+=== 隐式依赖
+
+隐式添加下面的依赖：
+
+* 定时器 unit 自动获得一个 `Before=` 依赖，其内容为会被该定时器激活的服务。
+
+=== 默认依赖
+
+除非设置 `DefaultDependencies=no`，否则会添加下面的依赖：
+
+* 定时器 unit 会自动在 `Requires=` 和 `After=` 上添加 `sysinit.target`，在 `Before=` 上添加 `timer.target`，在 `Conflicts=` 和 `Before=` 上添加 `shutdown.target`，来保证在系统关闭时，它们被安全的清除了。仅有在早期启动阶段和晚期系统关闭期间调用的定时器需要关闭 `DefaultDependencies=`。
+
+* 具有至少一个 `OnCalendar=` 指令的定时器 unit，需要额外在 `After=` 中添加 `time-set.target` 和 `time-sync.target`，以防止其在系统时钟被正确设置之前启动。见 link:https://www.freedesktop.org/software/systemd/man/latest/systemd.special.html[systemd.special(7)] 了解这两个 target 的详情。
+
+== 选项
+
+定时器 unit 可以具有 `[Unit]` 和 `[Install]` 节，见 link:https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html[systemd.unit(5)]。
+
+定时器 unit 必须包含一个 `[Timer]` 节，它记录了所定义的定时器的信息。定时器 unit 的 `[Timer]` 节特有的选项如下：
+
+OnActiveSec=, OnBootSec=, OnStartupSec=, OnUnitActiveSec=, OnUnitInactiveSec=::
++
+--
+定义了一个基于各种启动时间点的单调计时器（monotonic timer）:
+
+[cols="1,5"]
+.设置与其起始点
+|===
+| 设置 | 含义
+
+| OnActiveSec=
+| 定义了一个相对于定时 unit 本身被激活的时刻的定时器。
+
+| onBootSec=
+| 定义了一个相对于机器启动的时刻的定时器。在容器环境下，对于系统管理器实例，它被映射为 `OnStartupSec=`，此时两者等同。
+
+| OnStartupSec=
+| 定义了一个相对于服务管理器启动的时刻的定时器。对于系统级别的定时器 unit，它与 `OnBootSec=` 类似，因为系统级别的服务管理器通常在启动的早期就运行了。通常，它对于每用户服务管理器管理的 unit 很有用，因为用户级别的服务管理器时在首次登录时启动，而非在机器启动时启动。
+
+| OnUnitActiveSec=
+| 定义了一个，相对于被该定时器激活的服务的，上次被激活的时刻的，定时器。
+
+| OnUnitInactiveSec=
+| 定义了一个，相对于被该定时器激活的服务的，上次被停用的时刻的，定时器。
+|===
+
+可以同时定义多个同类别或不同类别的指令，此时任意一个指令到点都会产生触发动作。举例来说，同时使用 `OnBootSec=` 和 `PnUnitActiveSec=`，它可能会可以定义一个图固定间隔触发的服务。而且，单调时间表达式可以与 `OnCalendar=` 日历表达式一同使用。
+
+这些指令后的数据是以秒数表示的时间跨度。举例来说，`OnBootSec=50` 表示启动后的 50 秒。参数同样可以具有时间单位。比如：`OnBootSec=5h 30min` 表示启动后 5 小时 30 分钟。更多关于时间跨度的语法，见 link:https://www.freedesktop.org/software/systemd/man/latest/systemd.time.html[systemd.time(7)]。
+
+若一个定时器配置了 `OnBootSec=` 或 `OnStartupSec=`，且激活定时器 unit 的时候，已经超过了前两者设置的时间跨度，则定时器会立刻执行触发动作。其它的指令不会有这种效果。
+
+这些是单调定时器，它们与实际时间和时区无关。若计算机被临时挂起，那么单调时钟通常也会停止。注意，若使用了 `WakeSystem=`，在计算机挂起时，另一个单调时钟会用于继续计算时间，因此其可以用于触发系统的唤醒。
+
+若空字符串赋予了任何一个上面的选项，则整个定时器列表（包含单调定时器和 `OnCalendar=` 定时器）会被重置，任何前序的赋值不会有任何的效果。
+
+注意，定时器不一定会精确地在配置的时间点上触发，它们也受到 `AccuraySec=` 的影响，见下方。
+--
