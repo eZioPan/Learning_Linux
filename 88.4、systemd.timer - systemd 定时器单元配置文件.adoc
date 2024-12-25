@@ -1,5 +1,14 @@
 = systemd.timer
 
+:systemd-man: https://www.freedesktop.org/software/systemd/man/latest
+:systemd-unit-5: link:{systemd-man}/systemd.unit.html[systemd.unit(5)]
+:systemd-special-7: link:{systemd-man}/systemd.special.html[systemd.special(7)]
+:systemd-time-7: link:{systemd-man}/systemd.time.html[systemd.time(7)]
+:systemd-system-config-5: link:{systemd-man}/systemd-system.conf.html[systemd-system.conf(5)]
+:systemctl-1: link:{systemd-man}/systemctl.html[systemctl(1)]
+
+:prctl-2: link:https://man7.org/linux/man-pages/man2/prctl.2.html[prctl(2)]
+
 == 名称
 
 systemd.timer - 定时器 unit 配置
@@ -12,11 +21,11 @@ __timer__.timer
 
 一个以 `.timer` 结尾的 unit 配置文件，编码了由 systemd 管控的定时激活的定时器。
 
-该帮助页面列举的配置选项是该 unit 类型特定的。见 link:https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html[systemd.unit(5)] 了解所有 unit 配置文件通用的选项。通用配置项在 `[Unit]` 节和 `[Install]` 节中进行配置。定时器特定的配置选项在 `[Timer]` 节中配置。
+该帮助页面列举的配置选项是该 unit 类型特定的。见 {systemd-unit-5} 了解所有 unit 配置文件通用的选项。通用配置项在 `[Unit]` 节和 `[Install]` 节中进行配置。定时器特定的配置选项在 `[Timer]` 节中配置。
 
-对于每一个定时器文件，必须存在一个 unit 文件，后者描述了定时器到点时会激活的 unit。默认情况下，与定时器同名（除了后缀名）的服务 unit 会被激活。举例来说，一个定时器文件 `foo.timer` 会激活匹配的 `foo.service`。可以通过 `Unit=` 配置要被激活的 unit（见下方）。
+对于每一个定时器文件，必须存在一个 unit 文件，后者描述了定时器超时时会激活的 unit。默认情况下，与定时器同名（除了后缀名）的服务 unit 会被激活。举例来说，一个定时器文件 `foo.timer` 会激活匹配的 `foo.service`。可以通过 `Unit=` 配置要被激活的 unit（见下文）。
 
-注意，当定时器到点时，若待激活的 unit 已经处于激活状态，那么定时器不会重启它，而是让其继续运行。不会有创建新服务实例的情况。鉴于这种情况，一个设置了 `RemainAfterExit=yes` 的服务（即便服务的主进程退出，服务本身也保持活跃）通常来说并不适合通过重复定时器激活，因为它们仅会被激活一次，之后它们就会一致保持活跃。目标 unit 默认情况下不会自行解激活，可以通过在目标 unit 上设置 `StopWhenUnneeded=yes`，让 timer 反复激活它。这会导致目标 unit 在激活之后立刻停止，除非它时另一个运行中的 unit 的依赖项。
+注意，当定时器超时时，若待激活的 unit 已经处于激活状态，那么定时器不会重启它，而是让其继续运行。不会有创建新服务实例的情况。鉴于这种情况，一个设置了 `RemainAfterExit=yes` 的服务（即便服务的主进程退出，服务本身也保持活跃）通常来说并不适合通过重复定时器激活，因为它们仅会被激活一次，之后它们就会一致保持活跃。目标 unit 默认情况下不会自行解激活，可以通过在目标 unit 上设置 `StopWhenUnneeded=yes`，让 timer 反复激活它。这会导致目标 unit 在激活之后立刻停止，除非它时另一个运行中的 unit 的依赖项。
 
 == 自动依赖
 
@@ -32,11 +41,11 @@ __timer__.timer
 
 * 定时器 unit 会自动在 `Requires=` 和 `After=` 上添加 `sysinit.target`，在 `Before=` 上添加 `timer.target`，在 `Conflicts=` 和 `Before=` 上添加 `shutdown.target`，来保证在系统关闭时，它们被安全的清除了。仅有在早期启动阶段和晚期系统关闭期间调用的定时器需要关闭 `DefaultDependencies=`。
 
-* 具有至少一个 `OnCalendar=` 指令的定时器 unit，需要额外在 `After=` 中添加 `time-set.target` 和 `time-sync.target`，以防止其在系统时钟被正确设置之前启动。见 link:https://www.freedesktop.org/software/systemd/man/latest/systemd.special.html[systemd.special(7)] 了解这两个 target 的详情。
+* 具有至少一个 `OnCalendar=` 指令的定时器 unit，需要额外在 `After=` 中添加 `time-set.target` 和 `time-sync.target`，以防止其在系统时钟被正确设置之前启动。见 {systemd-special-7} 了解这两个 target 的详情。
 
 == 选项
 
-定时器 unit 可以具有 `[Unit]` 和 `[Install]` 节，见 link:https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html[systemd.unit(5)]。
+定时器 unit 可以具有 `[Unit]` 和 `[Install]` 节，见 {systemd.unit-5}。
 
 定时器 unit 必须包含一个 `[Timer]` 节，它记录了所定义的定时器的信息。定时器 unit 的 `[Timer]` 节特有的选项如下：
 
@@ -66,9 +75,9 @@ OnActiveSec=, OnBootSec=, OnStartupSec=, OnUnitActiveSec=, OnUnitInactiveSec=::
 | 定义了一个，相对于被该定时器激活的服务的，上次被停用的时刻的，定时器。
 |===
 
-可以同时定义多个同类别或不同类别的指令，此时任意一个指令到点都会产生触发动作。举例来说，同时使用 `OnBootSec=` 和 `PnUnitActiveSec=`，它可能会可以定义一个图固定间隔触发的服务。而且，单调时间表达式可以与 `OnCalendar=` 日历表达式一同使用。
+可以同时定义多个同类别或不同类别的指令，此时任意一个指令超时都会产生触发动作。举例来说，同时使用 `OnBootSec=` 和 `OnUnitActiveSec=`，它可能会可以定义一个图固定间隔触发的服务。而且，单调时间表达式可以与 `OnCalendar=` 日历表达式一同使用。
 
-这些指令后的数据是以秒数表示的时间跨度。举例来说，`OnBootSec=50` 表示启动后的 50 秒。参数同样可以具有时间单位。比如：`OnBootSec=5h 30min` 表示启动后 5 小时 30 分钟。更多关于时间跨度的语法，见 link:https://www.freedesktop.org/software/systemd/man/latest/systemd.time.html[systemd.time(7)]。
+这些指令后的数据是以秒数表示的时间跨度。举例来说，`OnBootSec=50` 表示启动后的 50 秒。参数同样可以具有时间单位。比如：`OnBootSec=5h 30min` 表示启动后 5 小时 30 分钟。更多关于时间跨度的语法，见 {systemd-time-7}。
 
 若一个定时器配置了 `OnBootSec=` 或 `OnStartupSec=`，且激活定时器 unit 的时候，已经超过了前两者设置的时间跨度，则定时器会立刻执行触发动作。其它的指令不会有这种效果。
 
@@ -76,5 +85,89 @@ OnActiveSec=, OnBootSec=, OnStartupSec=, OnUnitActiveSec=, OnUnitInactiveSec=::
 
 若空字符串赋予了任何一个上面的选项，则整个定时器列表（包含单调定时器和 `OnCalendar=` 定时器）会被重置，任何前序的赋值不会有任何的效果。
 
-注意，定时器不一定会精确地在配置的时间点上触发，它们也受到 `AccuraySec=` 的影响，见下方。
+注意，定时器不一定会精确地在配置的时间点上触发，它们也受到 `AccuraySec=` 的影响，见下文。
+--
+
+OnCalendar=::
++
+--
+用日历事件表达式定义实时时间（比如挂钟）定时器。关于日历事件表达式，见 {systemd-time-7}。其它情况下，其语法与 `OnActiveSec=` 及其相关设置类似。
+
+注意，定时器不一定会精确地在配置的时间点上触发，它们也受到 `AccuraySec=` 的影响，见下文。
+
+该选项可以同时定义多个，此时任意一个表达式超时都会产生触发动作。而且，日历定时器和单调定时器（见上文）一同使用。
+
+若空字符串赋予了任何一个选项，则整个定时器列表（包含`OnCalendar=` 定时器和单调定时器，见上文）会被重置，任何前序的赋值不会有任何的效果。
+
+若系统的实时事件不正确，日历定时器可能会在以外的时间点产生触发动作。特别的，在没有电池作为后备电源的实时时钟（RTC）的系统上，可能需要启用 `systemd-time-wait-sync.service` 来保证时钟与一个网络时间源校对后，再设置定时器事件。有至少一个 `OnCalender=` 表达式的定时器 unit，会自动排布在 `time-sync.target` 之后，而 `systemd-time-wait-sync.service` 在该 target 之前。
+
+当系统临时进入睡眠时（比如系统挂起或休眠）实时时钟不会暂停。当系统睡眠且日历定时器超时时，触发不会立刻被执行，但是一旦系统被唤醒，就会处理所有在系统睡眠时定时器的触发事件。注意，若一个日历定时器在系统的一次连续睡眠中多次超时，该定时器仅会单次触发。若启用了 `WakeSystem=`（见下文），则当系统在挂起中定时器超时会唤醒系统（只要系统的硬件支持由时间触发的唤醒功能）。
+
+添加自 197 版本。
+--
+
+AccuracySec=::
++
+--
+定义定时器可以超时的精度。默认为 1 分钟。定时器会在特定的时间窗口中产生超时，时间窗口的起始点为 `OnCalendar=`、`OnActiveSec=`、`OnBootSec=`、`OnStartupSec=`、`OnUnitActiveSec=`、`OnUnitInactiveSec=` 设置的超时，结束点为起始点加上 `AccuracySec=` 指定的时间跨度。在这个时间窗口之内，实际的超时时间会确定在主机特定的、随机化的、但是稳定的位置，这个位置在所有本机的定时器 unit 间同步。这个设置时为了优化能耗，抑制不必要的 CPU 唤醒。要获得最高的精度，将这个选项设置为 1 微秒。注意，定时器依旧受控于通过 {systemd-system-config-5} 的 `TimerSlackNSec=` 配置的定时器对齐。见 {prctl-2} 了解详情。要优化能耗，这个值应该在可接受的范围内设置的足够高。
+
+注意，这个选项主要是提供了一种降低能耗的选项，允许合并 CPU 唤醒。它不应该与 `RandomizedDelaySec=`（见下文）混淆，后者会随机为定时器添加一个额外的时间跨度，定时器会在哪个时间点上产生触发动作。后者的作用与前者刚好相反：它的作用是分散定时器触发动作，以降低工作负载尖峰。要了解更多详情，并知晓两者如何协同工作，见下文。
+
+添加自 209 版本。
+--
+
+RandomizedDelaySec=::
++
+--
+在 0 到该选项指定的时间值之内，均匀随机选择一个延迟时间，用于延迟定时器超时的时间。默认值为 0，表示不会施加任何随机延迟。每个定时器在每次迭代前都会随机确定一个延迟值，这个值会简单叠加在确定的超时值上。这个参数的具体行为还会受到 `FixedRandomDelay=` 的影响，见下文。
+
+这个设置会让具有类似配置的定时器的时间均匀分布在特定的时间段之内，防止它们在相同的时间点触发动作，从而导致可能的资源过分占用。
+
+注意其与上文中 `AccuraySec=` 的关系：后者允许服务管理器，在指定的时间间隔中，合并定时器事件，以减少系统唤醒。而本设置则相反：它将定时器事件分散至指定的事件范围之内，让它们不容易同时发生。若同时使用 `RandomizedDelaySec=` 和 `AccuracySec=`，首先会添加随机延迟，所获得的结果可能会进一步推迟，与系统上的其它定时器事件合并。如上文所述，`AccuracySec=` 默认为 1 分钟，而 `RandomizedDelaySec=` 默认为 0，因此是鼓励合并定时器事件的。要在特定时间范围只能优化定时器事件的分布，将 `AccuracySec=` 和 `RandomizedDelaySec=` 设置为较高的值。
+
+添加自 229 版本。
+--
+
+FixedRandomDelay=::
++
+--
+接受布尔值参数。当启用时，由 `RandomizedDelaySec=` 产生的随机化偏移会重复用于同一个定时器上。对于给定的定时器 unit，偏移基于机器 ID、用户 ID 以及定时器名称，也就是说，它在管理器的每次重启前后保持稳定。它为每个单独的定时器创建了一个固定的偏移，减少了定时器触发的抖动，同时也尽量避免了同时触发多个类似配置的定时器。
+
+当 `RandomizedDelaySec=` 设置为 0 时，该参数无效。默认值为 `false`。
+
+添加自 247 版本。
+--
+
+DeferReactivation=::
++
+--
+接受布尔值参数。当启用时，定时器基于被触发的 unit 进入 inactive 状态的时间点计算超时时间点，而非基于上次触发的时间进行计算。它最常用于服务 unit 的运行时间比定时器的定时间隔时常还要长的时候。若不启用本选项，则默认行为会导致服务运行结束的时候立刻被定时器触发。
+
+若没有设置任何 `OnCalendar=` 时，该参数不起作用。默认值为 `false`。
+
+添加自 257 版本。
+--
+
+OnClockChange=, OnTimezoneChange=::
++
+--
+这些选项接受布尔值。设置为真时，当系统时钟（`CLOCK_REALTIME`）相较于单调时钟（`CLOCK_MONOTONIC`）发生跳变，或本地系统时区改变时，触发服务 unit。这些选项可以单独使用，或与上面的其它表达式一同使用。默认值为 `false`。
+
+添加自 242 版本。
+--
+
+Unit=::
++
+--
+定时器超时时要触发的 unit。参数是一个 unit 名称，且其后缀不是 `.timer`。若不指定，它的值默认为与定时器 unit 同名（但不同后缀名）的服务（见上文）。推荐关联的定时器和服务的 unit 除了后缀名不同之外，具有相同的名称。
+--
+
+Persistent=::
++
+--
+接受一个布尔值。若为真，则上次触发服务 unit 的时间会被记录在硬盘上。假设一个定时器从非激活状态进入激活状态，而且该定时器在非激活的时间中应该至少触发一次，那么就立刻触发对应的 unit。该触发机制不受 `RandomizedDelaySec=` 影响。它常用于补上系统关闭时应该触发的服务。该设置仅对具有 `OnCalendar=` 的定时器有效。默认值为 `false`。
+
+使用 `systemctl clean --what=state <定时器 unit>` 清理定时器 unit 存放在硬盘上的时间戳文件。准确来说，在移除定时器 unit 前，需使用本命令。见 {systemctl-1} 了解详情。
+
+添加自 212 版本。
 --
