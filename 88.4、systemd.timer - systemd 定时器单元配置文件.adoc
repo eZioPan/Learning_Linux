@@ -6,8 +6,17 @@
 :systemd-time-7: link:{systemd-man}/systemd.time.html[systemd.time(7)]
 :systemd-system-config-5: link:{systemd-man}/systemd-system.conf.html[systemd-system.conf(5)]
 :systemctl-1: link:{systemd-man}/systemctl.html[systemctl(1)]
+:systemd-exec-5: link:{systemd-man}/systemd.exec.html[systemd.exec(5)]
+:systemd-kill-5: link:{systemd-man}/systemd.kill.html[systemd.kill(5)]
+:systemd-1: link:{systemd-man}/systemd.html[systemd(1)]
+:systemd-service-5: link:{systemd-man}/systemd.service.html[systemd.service(5)]
+:systemd-directives-7: link:{systemd-man}/systemd.directives.html[systemd.directives(7)]
+:systemd-system-conf-5: link:{systemd-man}/systemd-system.conf.html[systemd-system.conf(5)]
 
-:prctl-2: link:https://man7.org/linux/man-pages/man2/prctl.2.html[prctl(2)]
+
+:man7org: https://man7.org/linux/man-pages/
+:prctl-2: link:{man7org}/man2/prctl.2.html[prctl(2)]
+:clock-getres-2: link:{man7org}/man2/clock_getres.2.html[clock_getres(2)]
 
 == 名称
 
@@ -171,3 +180,31 @@ Persistent=::
 
 添加自 212 版本。
 --
+
+WakeSystem=::
++
+--
+接受一个布尔值。若为真，则定时器超时会让系统从挂起中恢复（若系统已经挂起，且系统支持这个操作）。注意，该选项仅保证系统会在合适的时间恢复，但不关心工作完成时是否要再次进入挂起。默认值为 `false`。
+
+注意该功能要求特权，因此它通常仅在系统级别的服务管理器上存在。
+
+注意，单调时钟定时器（由 `OnActiveSec=`、`OnBootSec=`、`OnStartupSec=`、`OnUnitActiveSec=`、`OnUnitInactiveSec=` 配置的定时器，见上文）的行为受该参数的影响。若该参数为否，则系统挂起时单调时钟会停止（使用 `CLOCK_MONOTONIC`），若为真，则使用另一个在系统挂起时依旧会走时的单调时钟（也即 `CLOCK_BOOTTIME`），见 {clock-getres-2} 了解详情。
+
+添加自 212 版本。
+--
+
+RemainAfterElapse=::
++
+--
+接受一个布尔值。若为真，即便定时器本身超时，且关联的 unit（通过 `Unit=` 配置的，见上文）停止了，定时器依旧保持加载，且它的状态依旧可以查询。若为假，让关联的 unit 停止了，且已超时的定时器 unit 无法再次超时时，定时器 unit 会被 unload。将该选项关闭有助于暂态（transient）定时器单元。注意该选项会影响重复启动一个定时器 unit 的结果：若启用了 `RemainAfterElapse=`，再次启用一个定时器不会产生效果。但是，若关闭了 `RemainAfterElapse=`，而且定时器 unit 处于 unloaded 状态，那么它就可以再次被启动，如此服务就可以被多次触发。默认为 `true`。
+
+添加自 229 版本。
+--
+
+查阅 {systemd-unit-5}、{systemd-exec-5}、{systemd-kill-5} 了解更多设置。
+
+== 另见
+
+触发器上具有特定细节的环境变量会设置在被触发的 unit 上。见  {systemd-exec-5} 的“Environment Variables Set or Propagated by the Service Manager”节了解更多信息。
+
+{systemd-1}、{systemctl-1}、{systemd-unit-5}、{systemd-service-5}、{systemd-time-7}、{systemd-directives-7}、{systemd-system-conf-5}、{prctl-2}
