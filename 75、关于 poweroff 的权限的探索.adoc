@@ -1,0 +1,43 @@
+= 关于 poweroff 的权限的探索
+
+== 起因
+
+我发现，如果在本机终端中登录，那我们直接执行 `poweroff` 就可以关机；而如果我是从 SSH 中登录的，那么我就必须要执行 `sudo poweroff` 才可以执行关机。对于这一现象，我十分的好奇，于是尝试进行解释。
+
+== 结论
+
+由于 PolKit 的存在，依照 systemd-logind 写入的 PolKit 规则，本地控制台登录的用户可以直接执行 poweroff 指令，而无需提权。
+
+== 简易解释
+
+这里简要说明一下处理流程，参照了 systemd 的源码
+
+. **/usr/sbin/poweroff** 其实是指向 **/usr/bin/systemctl** 的软链接
+. 运行后，会进入 **src/systemctl/systemctl.c** 中的 `run()` 函数，接着进入 `systemctl_dispatch_parse_argv()` 函数，解析命令行参数
+. `systemctl_dispatch_parse_argv()` 函数会设置全局变量 `arg_action` 为 `ACTION_POWEROFF`，接着返回 `run()` 函数
+. 执行至 `switch (arg_action)`，`ACTION_POWEROFF` 会调用函数 `halt_main()`
+. `halt_main()` 中，由于我们要求的是立刻关机，因此这里会执行 `logind_check_inhibitors()` 看系统中有没有阻止 `ACTION_POWEROFF` 的因素存在。 +
+若没有，则执行函数 `logind_reboot()`
+. `logind_reboot()` 主要负责通过 D-Bus 向 systemd-logind 发送信息。这里需要注意的有
+** `ACTION_POWEROFF` 被映射为了 `PowerOff`，并在下方的代码中追加了 `WithFlags`，成为了 `PowerOffWithFlags`
+** 下方的 `bus_call_method()` 函数访问的是 `bus_login_mgr`，它的 destination 是 `org.freedesktop.login1`
+. 之后便通过 D-Bus 跳转至 **src/login/login-dbus.c** 下
+. **logind** 向 D-Bus 注册的用于处理 `PowerOffWithFlags` 的函数为 `method_poweroff()`，该函数会进一步调用 `method_do_shutdown_or_sleep()` 进行处理
+. `method_do_shutdown_or_sleep()` 中，会执行
+.. `handle_action_lookup(action)` 将 `HANDLE_POWEROFF` 映射为一个 `HandleActionData`，其中比较重要的是 **.polkit_action** 为 `org.freedesktop.login1.power-off`
+.. 之后将执行一行**与我们的问题息息相关**的函数 `verify_shutdown_creds();`
+. `verify_shutdown_creds()` 中会执行 `bus_verify_polkit_async_full()` 来调用 PolKit 进行权限检查。 +
+这里我们解析 PolKit 的规则文件的内容，来说明最终的判定结果：
+.. **systemd** 包提供了了一个文件 **/usr/share/polkit-1/actions/org.freedesktop.login1.policy**，它是一个 xml 格式的文件
+.. 其中有一个 `action id` 为 `org.freedesktop.login1.power-off` 的条目，它的默认行为中
++
+--
+*** 有一个是 `<allow_active>yes</allow_active>` +
+它表明，在本机终端登录的用户，默认情况下可以执行 `org.freedesktop.login1.power-off` 动作。
+*** 还有一个是 ` <allow_any>auth_admin_keep</allow_any>` +
+它表明，在其它（非本机登录）情况下（包含从 SSH 登录），默认需要 `auth_admin_keep`，也就是需要管理员权限，若之前验证过管理员权限，则在一定时间之内（默认是 5 分钟）不必再次验证。
+--
++
+我们可以用 `pkcheck --action-id org.freedesktop.login1.power-off --process $$` 命令检查最终的结果，若没有任何返回，则表示 PolKit 允许这个操作。
+. 当 `verify_shutdown_creds()` 检测通过，会继续执行 `bus_manager_shutdown_or_sleep_now_or_later()`
+. 在 `bus_manager_shutdown_or_sleep_now_or_later()` 内部执行 `execute_shutdown_or_sleep()` 来实际执行关机操作

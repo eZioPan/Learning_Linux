@@ -59,11 +59,14 @@ Podman，第 76 章
 *** dnsmasq 的官方帮助 https://thekelleys.org.uk/dnsmasq/docs/
 *** dnsmasq 的用法： https://fedoramagazine.org/dnsmasq-provide-dns-dhcp-services/
 
+* systemd 相关
+** freedesktop 的帮助文档 https://www.freedesktop.org/software/systemd/man/
+** systemd 的源码 https://github.com/systemd/systemd
+
 * 时间久远或不成体系
 ** Linux 自带的各种 man page
 ** https://linux.die.net/ 上提供的 man page
 ** https://www.man7.org/linux/man-pages/index.html 上提供的各种 man page
 ** Proxmox VE 的官方帮助文档 https://pve.proxmox.com/wiki/Main_Page
-** systemd 相关内容来自 freedesktop.org https://www.freedesktop.org/software/systemd/man/
 
 __未完待续__
