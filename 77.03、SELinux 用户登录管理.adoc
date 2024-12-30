@@ -112,7 +112,6 @@ seinfo --role logadm_r --expand
 
 返回值可能如下：
 
-[source, text]
 ----
 Roles: 1
    role logadm_r types { auditctl_t logadm_t };
@@ -172,7 +171,7 @@ Roles: 1
 Fedora 默认没有 **newrole** 命令，需要通过 **policycoreutils-newrole** 包安装
 ====
 
-比如我们有一个上下文为 **staff_u:staff_r:staff_t:s0** 的会话，我们可以通过 
+比如我们有一个上下文为 **staff_u:staff_r:staff_t:s0** 的会话，我们可以通过
 
 [source, sh]
 ----

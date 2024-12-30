@@ -271,35 +271,34 @@ copy_extensions::
 
 签名一个证书请求：
 
-[source, openssl.cnf]
+[source, sh]
 ----
 openssl ca -in req.pem -out newcert.pem
 ----
 
 用 CA 扩展，签名一个证书请求：
 
-[source, openssl.cnf]
+[source, sh]
 ----
 openssl ca -in req.pem -extensions v3_ca -out newcert.pem
 ----
 
 生成一个 CRL
 
-[source, openssl.cnf]
+[source, sh]
 ----
 openssl ca -gencrl -out crl.pem
 ----
 
 签名多个请求：
 
-[source, openssl.cnf]
+[source, sh]
 ----
 openssl ca -spkac spkac.txt
 ----
 
 一个案例 SPKAC 文件（为了简洁，裁切了 SPKAC 行）：
 
-[source, plaintext]
 ----
 SPKAC=MIG0MGAwXDANBgkqhkiG9w0BAQEFAANLADBIAkEAn7PDhCeV/xIxUg8V70YRxK2A5
 CN=Steve Test
@@ -351,7 +350,6 @@ emailAddress           = optional
 
 注意：文件的位置可以通过下面的方法改变：编译时选项、配置文件条目、环境变量、或者命令行选项。下面的值表示默认值。
 
-[source, plaintext]
 ----
 /usr/local/ssl/lib/openssl.cnf - master configuration file
 ./demoCA                       - main CA directory

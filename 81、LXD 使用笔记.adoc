@@ -22,7 +22,7 @@
 
 于是从上面的仓库中下载编译好的内核，在 Windows `%USERPROFILE%\.wslconfig` 添加/修改如下内容
 
-[source, conf]
+[source, toml]
 .%USERPROFILE%\.wslconfig
 ----
 [wsl2]

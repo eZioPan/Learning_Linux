@@ -45,7 +45,7 @@ wsl --set-default-version 2
 
 另外还有一些主机配置
 
-[source, conf]
+[source, toml]
 .${HOME}/.wslconfig
 ----
 # 如果你自行编译了 WSL 的 Linux 内核
@@ -104,7 +104,7 @@ wsl --import fedora X:\wsl\fedora ~\Downloads\rootfs.tar
 
 创建 `/etc/wsl.conf` 文件：
 
-[source, conf]
+[source, toml]
 ./etc/wsl.conf
 ----
 [boot]
@@ -161,7 +161,7 @@ reboot
 
 如下注释 /etc/dnf/dnf.conf 中的下面这行
 
-[source, conf]
+[source, toml]
 ./etc/dnf/dnf.conf
 ----
 # tsflags=nodocs

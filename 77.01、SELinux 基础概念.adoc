@@ -80,7 +80,6 @@ ps -eZ | grep systemd
 
 返回值
 
-[source, text]
 ----
 system_u:system_r:init_t:s0           1 ?        00:00:03 systemd
 ...
