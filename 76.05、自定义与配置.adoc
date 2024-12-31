@@ -1,0 +1,127 @@
+= 自定义与配置
+
+Podman 使用多个库来执行容器运行所需的多种任务
+
+|===
+| 库 | 描述
+
+| link:https://github.com/containers/storage[containers/storage]
+| 定义了容器镜像的存储，以及容器引擎所使用的其它基础存储
+
+| link:https://github.com/containers/image[containers/image]
+| 定义了在不同来源间移动容器镜像的机制；通常是在容器 registry 和本地容器存储之间移动镜像
+
+| link:https://github.com/containers/common[containers/common]
+| 定义了除 containers/storage 和 containers/image 之外，所有容器引擎的默认配置
+
+| link:https://github.com/containers/buildah[containers/buildah]
+| 用于构建容器镜像
+|===
+
+其中，容器引擎、Podman 和 Buildah 共享同一个配置文件 **containers.conf**，其它的库各自有自己的配置文件。
+
+[NOTE]
+====
+所有这些配置均使用 toml 语法书写
+====
+
+== 存储（storage）的配置文件
+
+link:https://github.com/containers/storage[] 提供了分层文件系统、容器镜像和容器的存储方法。该库通过 **storage.conf** 文件进行配置。
+
+Linux 发行商通常通过 `/usr/share/containers/storage.conf` 文件分发配置。它可以被 `/etc/containers/storage.conf` 覆盖。非 root 用户可以将配置文件存放在 `$XDG_CONFIG_HOME/containers/storage.conf` 中；若 `$XDG_CONFIG_HOME` 环境变量未设置，则存放在 `$HOME/.config/containers/storage.conf` 中。
+
+在绝大部分的情况下，我们都不需要修改这个文件。仅有少数情况需要这样做，比如，我们要手动指定容器的存储位置。
+
+[NOTE]
+====
+若使用 Podman remote 控制容器，则 **storage.conf** 文件指的是存放在 Podman 运行的 Linux 系统上的文件。
+====
+
+Podman 仅会读取最先获得的 **storage.conf** 中的内容，而忽略其它 **storage.conf** 文件。该文件的搜索顺序为，先搜索用户目录下的，接着是 /etc/ 下的，最后是 /usr/share/ 下的。
+
+可以运行 `podman info --format '{{ .Store.ConfigFile }}'` 来查看 **storage.conf** 的路径。
+
+[TIP]
+====
+在一个没有自定义 storage 配置，且运行在 rootless 模式的 podman。`podman info --format '{{ .Store.ConfigFile }}'` 返回的路径总是指向 **$HOME/.config/containers/storage.conf**。应该是一个 Bug，已经提交 Issues link:https://github.com/containers/podman/issues/24914[containers/podman#24914]
+====
+
+=== 存储的位置
+
+默认情况下，rootless Podman 将镜像存储在 **$HOME/.local/share/containers/storage** 目录下。而 rootful Podman 默认将镜像存储在 */var/lib/containers/storage* 目录下。
+
+如果你想修改存储的位置，那么在 **storage.conf** 中，storage 的位置对应的键名为 `graphRoot`。
+
+假设我希望将存储的位置修改至 **/tmp** 下，我们有两种做法：
+
+第一种是将 **/etc/containers/storage.conf** 或 **/usr/share/containers/storage.conf** 拷贝至 **$HOME/.config/containers/storage.conf**，修改 `[storage]` 节中的 `graphRoot` 的值为 `"/tmp/containers/storage"`。并且我们要注释掉 `[storage.options]` 节中的 `additionalimagestores` 见的键值中不可以被我们访问的部分。
+
+第二种是修改 **/etc/containers/storage.conf**，若没有该文件，则从 **/usr/share/containers/storage.conf** 拷贝，修改 `[storage]` 节中的 `rootless_storage_path` 的值为 `"/tmp/$UID/containers/storage"`。
+
+[NOTE]
+====
+对于后一种修改方法，我们需要注意的有三点
+
+第一个是，修改的键名为 `rootless_storage_path` 而非 `graphRoot`。在全局的 `/etc/containers/storage.conf` 中，`graphRoot` 是为 rootful 容器使用的，`rootless_storage_path` 才是为 rootless 容器使用的。
+
+第二个是，`rootless_storage_path` 的键值可以接受全局变量，比如这里我们就使用 `$UID` 创建了一个额外的目录，来区分不同用户的容器
+
+第三个是，我们可能需要重启系统，以便 podman 能正确读取配置，并创建目录
+====
+
+另外，在启动了 SELinux 的系统上，若我们修改了 storage 的位置，需要将 storage 的新位置告知 SELinux。这里使用的是 SELinux fcontext 的 equivalency 功能：
+
+[source, sh]
+----
+semanage fcontext --add --equal /var/lib/containers/ /tmp/$UID/containers/
+
+restorecon -R -v /tmp/$UID/containers/
+----
+
+[%collapsible]
+.如果你的确想固化 tmpfs 中的设置
+====
+特别的，由于这个案例中，我们设置的文件夹在 tmpfs 下（当然，实际使用时，我们自然不会将镜像存储放在 tmpfs 中），因此我们还可以创建一些规则，让系统在启动的时候自动创建这些目录：
+
+[source, tmpfiles.conf]
+./etc/tmpfiles.d/podman-storage.conf
+----
+# 该文件的 Type 字段的感叹号 `!` 表示这些命令仅在系统启动，或者命令行追加了 --boot 时才执行
+#Type Path                         Mode User          Group         Age Argument
+# 逐层创建文件夹，确保权限正确
+d!    /tmp/1001                    0700 podman-runner podman-runner -   -
+d!    /tmp/1001/containers         0700 podman-runner podman-runner -   -
+d!    /tmp/1001/containers/storage 0700 podman-runner podman-runner -   -
+# 递归重置 SELinux 标签
+Z!    /tmp/1001                    -    -             -             -   -
+----
+
+之后我们就可以删除我们创建的 /tmp/1001，并通过下面的命令测试我们配置的自动创建：
+
+[source, sh]
+----
+rm -r /tmp/1001
+
+systemd-tmpfiles --create --remove --boot /etc/tmpfiles.d/podman-storage.conf
+----
+====
+
+=== storage 的驱动
+
+一个容器的镜像通常是一层一层存储的，在运行一个容器的时候，后续的层需要挂载在先前的层之上。容器会使用 Linux 内核文件系统中一种名为**分层文件系统**（**layered filesystem**）的概念。Podman 支持多种类型的文件系统。在 Linux 中，这些文件系统统称 **写时拷贝**（**copy-on-write**，简称 **CoW**）文件系统；在 Podman 的体系中，这些文件系统被称为 **驱动**（**driver**）。默认情况下，Podman 使用名为 **overlay** 的存储驱动。
+
+[NOTE]
+====
+Podman 实际使用的存储驱动的名称是 `overlay2`，它是初版 `overlay` 的改进版本。在 Podman 中 `overlay` 和 `overlay2` 指的都是 `overlay2`。
+====
+
+除了 **overlay/overlay2**，Podman 还支持一些其它的存储驱动，比如 **vfs**、**devmapper**、**aufs**、**btrfs**、**zfs**。不过它们在在 Linux 系统上都没有 **overlay/overlay2** 常用，这里暂且不表。
+
+==== overlay 存储的选项
+
+**overlay** 驱动有一些有趣的自定义选项。它们可以通过 **storage.conf** 的 `[storage.options.overlay]` 来配置。
+
+`mount_program` 可以指定一个程序作为 overlay 驱动。默认情况下，Podman 使用 Linux 内核提供的 overlay 功能。同时，Podman 也会自带一个 `fuse-overlayfs` 程序，它是一个用户空间文件系统（FUSE）。若内核的 overlay 不支持 rootless 容器，那么 Podman 就会使用 `fuse-overlayfs`。相较于 Linux 内核的 overlay 驱动，`fuse-overlayfs` 也可能具有更新的功能。
+
+可以查看 `man 5 storage.conf` 了解更多的选项。
