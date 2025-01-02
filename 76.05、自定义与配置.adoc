@@ -125,3 +125,81 @@ Podman 实际使用的存储驱动的名称是 `overlay2`，它是初版 `overla
 `mount_program` 可以指定一个程序作为 overlay 驱动。默认情况下，Podman 使用 Linux 内核提供的 overlay 功能。同时，Podman 也会自带一个 `fuse-overlayfs` 程序，它是一个用户空间文件系统（FUSE）。若内核的 overlay 不支持 rootless 容器，那么 Podman 就会使用 `fuse-overlayfs`。相较于 Linux 内核的 overlay 驱动，`fuse-overlayfs` 也可能具有更新的功能。
 
 可以查看 `man 5 storage.conf` 了解更多的选项。
+
+== registries 的配置文件
+
+Podman 中与拉取和推送容器镜像相关的代码，存放在 link:https://github.com/containers/image[] 库中。Podman 使用 **registies.conf** 来指定 regitries，并用 **policy.json** 来确认镜像的签名认证。与 **storage.conf** 类似，大多数用户也不需要修改 **registies.conf** 或 **policy.json**，直接使用分发版的默认值即可。
+
+=== registries.conf
+
+**registries.conf** 的系统层级配置在 **/etc/containers/registries.conf** 中，用户层级配置在 **$HOME/.config/containers/registries.conf** 中，若没有该文件，则使用系统层级配置。
+
+[NOTE]
+====
+对于 remote 模式，**registries.conf** 是存放在 Podman 实际运行的 Linux 系统上的。
+====
+
+**registries.conf** 中最主要的配置就是 `unqualified-search-registries`，其中定义了一组 `<主机名>:<端口>` 形式的 registry。当用户通过短名拉取镜像时，Podman 就会尝试从该列表中定义的 registry 拉取镜像。
+
+比如，我们添加一个 `example.com` 作为 registry 的备选之一：
+
+[source, toml]
+./etc/containers/registry.conf
+----
+...
+unqualified-search-registries = ["example.com", ...]
+...
+----
+
+之后我们可以通过 `podman info` 查询 regstries 下 search 的值，其中就包含 `example.com`
+
+==== 阻止从容器 registy 拉取镜像
+
+在 **registies.conf** 中，可以添加多个 `[[registry]]` 节，对每个 registry 进行细节配置。比如我们可以通过下面的配置，禁止用户从 example.com 拉取镜像。
+
+[source, toml]
+./etc/containers/registry.conf
+----
+[[registry]]
+location = "example.com"
+blocked = true
+----
+
+之后我们可以通过 `podman info` 查询 regstries 下 example.com 的值，其中就包含 `Blocked: true`。在我们强制要求 podman 从 example.com 拉取镜像时，podman 就会产生 "registry XXX is blocked in xxx" 这样的错误。
+
+==== 为 registry 配置镜像
+
+比如说，我们要为 docker.io 配置一个镜像 mirror.gcr.io，我们可以这么写
+
+[source, toml]
+./etc/containers/registry.conf
+----
+[[registry]]
+prefix = "docker.io"
+location = "mirror.gcr.io"
+----
+
+这样，当我们选择 docker.io 拉取镜像的时候，podman 会自动从 mirror.gcr.io 上拉取，而且镜像名的前缀会依然保持 docker.io。
+
+当然，我们也可以添加更多的镜像
+
+[source, toml]
+./etc/containers/registry.conf
+----
+[[registry]]
+prefix = "docker.io"
+location = "mirror.gcr.io"
+
+[[registry.mirror]]
+location = "blah1 blah1 blah1"
+
+[[registry.mirror]]
+location = "blah2 blah2 blah2"
+----
+
+在使用 registry mirror 时，podman 会先尝试 "blah1"，再尝试 "blah2"，最后尝试 "mirror.gcr.io"。
+
+[NOTE]
+====
+当然 **registries.conf** 中还有很多配置，详见 `man 5 containers-registries.conf`
+====
