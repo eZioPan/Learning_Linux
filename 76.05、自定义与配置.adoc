@@ -199,7 +199,35 @@ location = "blah2 blah2 blah2"
 
 在使用 registry mirror 时，podman 会先尝试 "blah1"，再尝试 "blah2"，最后尝试 "mirror.gcr.io"。
 
+[IMPORTANT]
+====
+由于所有 register 的 mirror 都使用 `pass:[[[registry.mirror]]]` 这个节名称，因此 `pass:[[[registry.mirror]]]` 放置的位置非常重要。每个 registry 所有的 `pass:[[[registry.mirror]]]` 节，都必须近跟对应的 `pass:[[[registry]]]` 之后，不可以随机放置在其它的 `pass:[[[registry]]]` 之后。
+====
+
 [NOTE]
 ====
 当然 **registries.conf** 中还有很多配置，详见 `man 5 containers-registries.conf`
 ====
+
+== 引擎的配置文件
+
+Podman 使用 link:https://github.com/containers/common[] 库处理与容器存储和容器 registry 无关的配置。这些配置存储在 **containers.conf** 文件中
+
+**containers.conf** 可以存储在下面的位置：
+
+同时被 rootful 和 rootless 引擎读取的配置文件
+* Podman 固化在软件中的默认参数
+* **/usr/share/containers/containers.conf** 发行版提供的配置
+* **/etc/containers/containers.conf** 系统级别用来覆盖发行版本的配置
+* **++/etc/containers/containers.conf.d/*.conf++** 本地系统额外的配置文件，按照字符顺序排序
+
+仅被 rootless 引擎读取的配置文件
+
+* **$HOME/.config/continers/containers.conf** 用户可以创建这个文件来覆盖本地系统的设置
+* **++$HOME/.config/continers/containers.conf.d/*.conf++** 用户可以创建额外的配置文件，按照字符顺序排序
+
+与 **storage.conf** 和 **registries.conf** 不同，**containers.conf** 会将多个位置的配置文件融合在一起，形成最终的配置。读取顺序依照上面两个列表顺序读取，后读取的配置条目覆盖先读取的配置条目。
+
+== 系统级别配置文件
+
+这里主要是指 **/etc/subuid** 和 **/etc/subgid**，这里暂且略过。
