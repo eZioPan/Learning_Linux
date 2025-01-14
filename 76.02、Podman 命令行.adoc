@@ -594,6 +594,9 @@ podman image inspect --format '{{ .Config.Cmd }}' <镜像名>
 # 若要获取的键的键名含有点号，则需要使用 index 函数来访问，且特殊的键名需要用引号包含
 # 比如，获取镜像的制造商（vendor）
 podman image inspect --format '{{ index .Config.Labels "org.opencontainers.image.vendor" }}' <镜像名>
+
+# 若获取的对象本身是一个 struct，且我们希望同时打印键名和键值，则使用 json 函数
+podman image inspect --format '{{ json .Config.Annotations }}' <镜像名>
 ----
 
 [%collapsible]

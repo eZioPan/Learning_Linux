@@ -98,6 +98,13 @@ Podman 则是基于 Unix 的 fork/exec 理念的。Podman 在启动了一个容�
 * 容器的标准输出和标准错误也会被记录为 Podman 日志
 ====
 
+[TIP]
+====
+严格意义上来说，下面我们要描述的内容并不能否定 Podman 是 daemonless 的。
+
+但是我们需要知道的是，若 Podman 启动了 remote 模式，则通过 remote 启动的容器，是需要启动一个 systemd 来与 remote 通信的。而且所有通过 remote 启动的容器，都是这个 systemd 的子进程。
+====
+
 Podman 的命令行与 Docker 兼容，大部分的 Docker 子命令都有等价的 Podman 的子命令。
 
 Podman 可以作为受字节套激活的（socket-activated）REST API 服务。这样它就允许远程客户端管理和运行 Podman 容器。

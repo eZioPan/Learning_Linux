@@ -1,0 +1,198 @@
+= 与 systemd 整合
+
+== 在容器中启用 systemd
+
+在容器最初流行的时候，容器中的 PID 1 进程为实际运行的程序，所有的 log 应该输出至 stdout 和 stderr，而 Docker/Podman 则负责收集这些 log。当一个服务需要多个进程共同协作的时候，就启动多个容器，让进程通过网络协议通信。
+
+不过后来有另一些人认为，容器的 PID 1 进程应该是 systemd，实际组成服务的进程则应该由这个 systemd 启动。这样做的理由是我们可以使用软件包编写者提供的 unit 文件来启动程序，并且需要相互通信的进程可以使用进程间通信（IPC）而非网络协议进行通信。
+
+另一个指的注意的点是，在 Linux 中，一个子进程退出后，内核会向父进程发送 SIGCHLD 信号，通知父进程从内核的进程表中取得子进程的退出状态（exit code）。若父进程不去读取这个返回码，则内核的进程表就会一直保留这个进程条目，此时这个进程就会被标记为僵尸进程（zombie process，它几乎不占用系统资源，但是会占用内核进程表的一个条目）。直到父进程退出，被系统的 init 程序接管，从而让 init 程序处理所有的返回值。若我们让 systemd 作为容器的 PID 1 的进程，则可以让 systemd 处理进程返回值的问题。
+
+[NOTE]
+====
+`podman run` 支持 `-init` 参数，它会启动一个简易的 init 程序，来读回收僵尸进程。
+====
+
+Podman 可以通过检测容器的 `CMD` 来自动启动 systemd。下面四种 `CMD` 会让容器以 systemd 模式启动：
+
+* `/sbin/init`
+* `/usr/sbin/init`
+* `/usr/local/sbin/init`
+* `/*/systemd`
+
+我们可以从 fedora 镜像构建一个支持 systemd 的镜像：
+
+[source, Containerfile]
+----
+FROM 'registry.fedoraproject.org/fedora:41'
+
+RUN dnf -y update && dnf -y install systemd && dnf -y clean all
+
+CMD ["/sbin/init"]
+----
+
+之后执行 `podman build -f <Containerfile 文件>` 来构建镜像，并从该镜像启动。
+
+[NOTE]
+====
+如果一个现有的 container 没有安装 systemd，或者没有将 systemd 作为 PID 1 进程运行，那么这个 container 是无法直接切换到 systemd 状态下的。
+====
+
+若我们通过 `podman inspect` 检查我们上面创建的容器，我们可以注意到下面几点：
+
+* `StopSignal` 不再是默认的 `SIGTERM`，而是 `SIGRTMIN+3`。当 systemd 接收到后者的信号时，会切换到 `halt.target`，也就是停机状态。表示容器处于正常退出状态。
+* `SystemdMode` 被设置为 `true`
+
+=== 在 systemd 容器中运行 nginx 服务
+
+准备如下的 Containerfile，构建镜像：
+
+[source, Containerfile]
+----
+FROM 'registry.fedoraproject.org/fedora:41'
+
+RUN dnf -y update && dnf -y install systemd nginx && dnf -y clean all
+
+RUN systemctl enable nginx.service
+
+CMD ["/sbin/init"]
+----
+
+之后我们可以创建容器：
+
+[source, sh]
+----
+podman create --rm --volume ./file:/usr/share/nginx/html --publish 8080:80 <镜像名>
+----
+
+之后我们就可以访问对应的地址，网页可以正常显示。
+
+不过需要注意的是，我们这里已经无法使用 `podman logs` 查看 nginx 的日志了。systemd 会使用自身的日志系统记录相关的日志。因此我们需要在容器内部执行 `journalctl --unit nginx.service` ，或者查看容器中的 `/var/log/nginx/` 下的日志文件来查看日志。
+
+== 在宿主机启动时启动容器
+
+=== 重启容器
+
+在**创建**容器的时候，我们可以指定一个 `--restart=` 选项。当该选项的值为 `always` 的时候，除非容器是被 `podman kill` 或 `podman stop` 停止的，在其它情况下，若容器停止，则会自动重启容器。
+
+[TIP]
+====
+`podman container inspect --format '{{ .State.Restarting }}'` 可以查看容器当前是否处于重启状态
+
+`podman container inspect --format '{{ .RestartCount }}'` 可以查看容器的总重启次数
+
+`podman container inspect --format '{{ json .HostConfig.RestartPolicy}}'` 检查重启策略的详细设置
+====
+
+而且，podman 提供了一个 systemd unit `podman-restart.service`，启用它就可以在系统启动的时候自动启动 `restart-policy` 为 `always` 的容器。 +
+当然，对于 rootless 容器，我们需要使用 `systemctl --user enable podman-restart.service`
+
+若我们通过 `systemctl --user cat podman-restart.service` 观察，我们可以发现，这个 service 就是 `podman start`，只是添加了 `--filter restart-policy=always` 过滤出匹配的容器。
+
+[%collapsible]
+.相关源码
+====
+[TIP]
+======
+`podman create` 的 `--restart` 定义在 `containers/podman/cmd/podman/common/create.go` 下。
+
+`podman start` 的 `--filter` 可接收的各种字符串，定义在 `containers/podman/pkg/domain/filters/containers.go` 的 GenerateContainerFilterFuncs 函数中。 +
+若你直接查询 `podman-start` 的帮助，你会发现 `--filter` 可接收的参数远少于实际命令可接受的参数，帮助文档比较陈旧了。
+
+`restart-policy=always` 定义在 `podman/libpod/define/container.go` 中。
+======
+====
+
+=== 将 podman 容器设置为 systemd 服务
+
+[NOTE]
+====
+`podman generate systemd` 已经被标记为 DEPRECATED 弃用状态，该命令建议使用 Podman Quadlet 处理 systemd 服务。
+
+下面的内容参考自 `man 5 podman-systemd.unit`
+====
+
+Quadlet 由一个 systemd generator 程序和一组类 systemd unit 文件构成。用户编写自定义的 Quadlet 配置文件，这些文件会被 Quadlet 的 systemd generator 程序读取，并生成对应的 systemd unit。最后这些 unit 会被 systemd 启动和管理，从而启动容器等等。
+
+假设我们想把我们前面创建的在 fedora 上安装 systemd 和 nginx 的镜像创建为一个由 systemd 管理的容器，我们可以创建如下的配置文件：
+
+[source, sh]
+----
+mkdir -p ~/.config/containers/systemd
+
+# 后缀名 .container 很重要
+vim ~/.config/containers/systemd/fedora-systemd-nginx.container
+----
+
+特别注意，下面这个文件的注释不要写在行末尾，因为 Quadlet 可能会将设置的内容进行二次拼接，导致注释成为拼接内容的一部份
+
+[source, service]
+.~/.config/containers/systemd/fedora-systemd-nginx.container
+----
+# systemd 标准段落会直接传递给 systemd
+[Unit]
+Description=My Systemd-enabled Nginx Container controlled by Systemd
+
+# 所有与容器相关的配置都在这个段里
+# 下面的各项参数等价于传递给 podman run 命令
+[Container]
+# 等价 --name，取名字的时候，建议加上 systemd- 前缀，防止和用户直接创建的容器产生冲突
+ContainerName=systemd-Fedora-Systemd-Nginx
+# 等价 --entrypoint
+Entrypoint=/sbin/init
+# 等价指定镜像名，Image 要指向一个已有的 image（或者另一个 Quadlet .image 或 .build 文件）
+Image=localhost/fedora-systemd-nginx
+# 等价 --publish
+PublishPort=8080:80
+# 等价 --volume
+Volume=~/file:/usr/share/nginx/html
+
+# systemd 标准段落会直接传递给 systemd
+[Service]
+#设置足够长的时间，以便 podman 可能会从网络上拉取镜像
+TimeoutStartSec=900
+----
+
+我们可以要创建另一个文件
+
+[source, sh]
+----
+mkdir -p ~/.config/containers/systemd/fedora-systemd-nginx.container.d
+
+# 这个 drop-in 文件与 systemd 的 drop-in 文件的命名方法和用法都非常类似
+vim ~/.config/containers/systemd/fedora-systemd-nginx.container.d/enabling.conf
+----
+
+[source, serivce]
+.~/.config/containers/systemd/fedora-systemd-nginx.container.d/enabling.conf
+----
+# systemd 标准段落会直接传递给 systemd
+[Install]
+# 设置 WantedBy，让该容器可以随系统一同启动
+WantedBy=multi-user.target default.target
+----
+
+之后我们运行
+
+[source, sh]
+----
+# 重载配置文件
+systemctl --user daemon-reload
+
+# 检查生成的配置文件，注意这里的文件结尾是 .service 而非 .container
+systemctl --user cat fedora-systemd-nginx.service
+
+# 测试运行
+systemctl --user start fedora-systemd-nginx.service
+
+# 此时我们可以在 podman 中观察到对应的容器正在运行
+podman ps
+----
+
+之后我们就可以重启系统，观察到这个容器会自动运行。
+
+这里有几点需要注意：
+
+. 由 systemd generator 生成 unit 会被认为是 transitent unit，这些 unit 原本是不会跨重启而存在的。因此也本不应该有 `systemctl --user enable` 一说。但是 Quadlet 支持在 **.container** 文件中定义 `[Install]` 段，以生成由系统自动启动的状态。 +
+不过我们实际上是通过一个额外的附加文件添加 `[Install]` 段的，这样我们启停该容器的自动启动就不用反复修改原始配置文件了。
+. 与常规的 podman 容器不同，每次停止 systemd unit，对应的容器都会被销毁；每次启动 systemd unit，对应的容器都会被重新创建。因此，我们**不能依赖**任何 podman 默认提供的 layer storage 功能。所有需要固化的存储，都需要通过 volume 来实现。

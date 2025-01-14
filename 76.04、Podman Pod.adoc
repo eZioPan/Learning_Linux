@@ -86,7 +86,14 @@ podman pod create --name my_web_pod --volume ./file:/usr/share/nginx/html --publ
 podman create --name my_nginx --pod my_web_pod localhost/fedora_nginx
 
 # 这个容器的入口程序为 bash /timestamp.sh，同上由于创建 pod 的时候已经挂载了 volume，因此这里我们也不用设置
-podman create --name timestamper --pod my_web_pod --volume ./timestamp.sh:/timestamp.sh fedora:41 bash /timestamp.sh
+#
+# bash 作为 PID 1 程序有一个问题。就是默认情况下，bash 是不会注册 SIGTERM 的处理函数的，而 Linux kernel 会特殊处理 PID 1：
+# Linux kernel 会将 SIGTERM 传递给 PID 1 进程，但不会对 PID 1 进程执行终止流程。
+# PID 1 怎么处理这个信号，以及自身会不会退出，完全取决于 PID 1 程序自身的设计。
+# 很可惜的是，bash 默认不会执行任何操作。
+# 因此，我们可以使用 `--init`，让 podman 提供一个有效的 init 程序，来负责信号处理和传播。
+# 默认情况下，podman 会使用 OpenSUSE/catatonit，而且其在容器中的路径为 /run/podman-init
+podman create --name timestamper --pod my_web_pod --init --volume ./timestamp.sh:/timestamp.sh fedora:41 bash /timestamp.sh
 ----
 
 . 启动 pod
