@@ -114,6 +114,16 @@ podman create --rm --volume ./file:/usr/share/nginx/html --publish 8080:80 <镜�
 
 Quadlet 由一个 systemd generator 程序和一组类 systemd unit 文件构成。用户编写自定义的 Quadlet 配置文件，这些文件会被 Quadlet 的 systemd generator 程序读取，并生成对应的 systemd unit。最后这些 unit 会被 systemd 启动和管理，从而启动容器等等。
 
+[IMPORTANT]
+====
+如果有些时候 unit 文件生成失败，则可以手动执行下面的命令，观察 Quadlet 的运行状态：
+
+[source, sh]
+------
+/usr/lib/systemd/system-generators/podman-system-generator --user --dryrun
+------
+====
+
 假设我们想把我们前面创建的在 fedora 上安装 systemd 和 nginx 的镜像创建为一个由 systemd 管理的容器，我们可以创建如下的配置文件：
 
 [source, sh]
@@ -126,7 +136,7 @@ vim ~/.config/containers/systemd/fedora-systemd-nginx.container
 
 特别注意，下面这个文件的注释不要写在行末尾，因为 Quadlet 可能会将设置的内容进行二次拼接，导致注释成为拼接内容的一部份
 
-[source, service]
+[source, systemd.unit]
 .~/.config/containers/systemd/fedora-systemd-nginx.container
 ----
 # systemd 标准段落会直接传递给 systemd
@@ -139,7 +149,7 @@ Description=My Systemd-enabled Nginx Container controlled by Systemd
 # 等价 --name，取名字的时候，建议加上 systemd- 前缀，防止和用户直接创建的容器产生冲突
 ContainerName=systemd-Fedora-Systemd-Nginx
 # 等价 --entrypoint
-Entrypoint=/sbin/init
+# Entrypoint=/sbin/init
 # 等价指定镜像名，Image 要指向一个已有的 image（或者另一个 Quadlet .image 或 .build 文件）
 Image=localhost/fedora-systemd-nginx
 # 等价 --publish
@@ -163,7 +173,7 @@ mkdir -p ~/.config/containers/systemd/fedora-systemd-nginx.container.d
 vim ~/.config/containers/systemd/fedora-systemd-nginx.container.d/enabling.conf
 ----
 
-[source, serivce]
+[source, systemd.unit]
 .~/.config/containers/systemd/fedora-systemd-nginx.container.d/enabling.conf
 ----
 # systemd 标准段落会直接传递给 systemd
@@ -196,3 +206,86 @@ podman ps
 . 由 systemd generator 生成 unit 会被认为是 transitent unit，这些 unit 原本是不会跨重启而存在的。因此也本不应该有 `systemctl --user enable` 一说。但是 Quadlet 支持在 **.container** 文件中定义 `[Install]` 段，以生成由系统自动启动的状态。 +
 不过我们实际上是通过一个额外的附加文件添加 `[Install]` 段的，这样我们启停该容器的自动启动就不用反复修改原始配置文件了。
 . 与常规的 podman 容器不同，每次停止 systemd unit，对应的容器都会被销毁；每次启动 systemd unit，对应的容器都会被重新创建。因此，我们**不能依赖**任何 podman 默认提供的 layer storage 功能。所有需要固化的存储，都需要通过 volume 来实现。
+
+=== 自动更新 Podman 容器
+
+[NOTE]
+====
+更丰富的说明见 `man 1 podman-auto-update`
+====
+
+受 systemd 控制的 Podman 容器，我们可以为其设置自动更新功能。方法也很简单，只需要在对应的 `[Container]` 段设置键 `AutoUpdate` 即可。
+
+`AutoUpdate` 接受两个键值，一个是 `registry`，一个是 `local`。
+
+* `registry` 表示容器所使用的镜像直接来源于某个 registry，当我们在本地运行更新命令的时候，Podman 会比较本地 image 和 registry 上的 image 的 digest。若两个 digest 不同，Podman 就会从 registry 上拉取镜像，并依照新的镜像重启容器。
+* `local` 表示容器所使用的镜像来源于本地的镜像文件，当我们在本地运行更新命令的时候，Podman 会比较容器所使用的 image 和本地 image 的 digest。若两者不同，就依照新的镜像重启容器。
+
+运行更新命令其实为 `podman auto-update`，在我们添加了 `AutoUpdate`，并重载了 unit 文件之后，我们可以使用 `podman auto-update --dry-run` 查看 `podman auto-update` 可以管理的容器 unit。并且通过返回值的 **UPDATED** 行的状态，我们可以了解某个容器 unit 的更新状态。
+
+对于我们上面设置的 **fedora-systemd-nginx.container**，假设我们新构建了一个 **localhost/fedora-systemd-nginx** 镜像，那么我们就可以使用 `podman auto-update` 来实际执行容器的自动更新。
+
+[NOTE]
+====
+实际上 `podman auto-update` 仅对正在运行的容器起效。因为受 systemd 管理的容器，每次停止后都会被销毁，再次创建的时候，就会直接使用新的镜像，因此不存在“镜像需要更新”一说。
+====
+
+==== 使用 systemd 定时器触发 Podman 容器的自动更新
+
+上面我们提到 `podman auto-update` 可以用于更新容器，不过每次手动运行才能自动更新也就失去了一部分“自动”的意义了。实际上 Podman 提供了 **podman-auto-update.timer** 和对应的 **podman-auto-update.service** 来定时自动运行 Podman 容器的自动更新。
+
+我们只需要启动 **podman-auto-update.timer**，在默认的配置下，它就会每天触发 **podman-auto-update.service** 执行自动更新操作。
+
+[source, sh]
+----
+systemctl --user enable podman-auto-update.timer
+----
+
+== 通过 systemd 管理镜像构建
+
+Quadlet 除了可以处理 **.container** 文件，将其转化为启动容器的 Service，它还可以处理其它文件，产生其它种类的任务。比如说，它还支持 **.build** 文件，将其转化为构建镜像的 Service。
+
+[NOTE]
+====
+**.build** 文件的说明，也可以查询 `man 5 podman-systemd.unit` 了解。
+====
+
+举例
+
+[source, systemd.unit]
+.~/.config/containers/systemd/fedora-systemd-nginx.build
+----
+# 这是一个简易的镜像构建配置文件
+[Unit]
+Description="My simple container build unit"
+
+# Build 是 .build 文件特有的段，它会被 Qudalet 解析
+[Build]
+# 等价于 podman build 的 build context 部分，设置工作目录
+SetWorkingDirectory=${HOME}
+# 等价参数 --file，明确 Containerfile 的文件名
+# File=./Containerfile
+# 等价参数 --tag，用于设置生成的镜像的 tag
+ImageTag=localhost/systemd-fedora-systemd-nginx
+----
+
+在我们运行 `systemctl --user daemon-reload` 后，`fedora-systemd-nginx.build` 会生成 `fedora-systemd-nginx-build.service` 服务，我们只要运行这个服务，就会触发相应的 `podman build` 命令。
+
+[NOTE]
+====
+由于构建容器镜像可能需要较久的时间，使用 `systemctl --user start` 的时候，可以追加 `--no-block` 参数，让 systemd 在后台构建容器镜像。
+====
+
+同时，对于 **.container** 文件，我们可以将 `[Container]` 下的 `Image` 设置为所需的 `XXX.build` 的文件名。这样我们就不用预先准备好本地镜像文件，在我们启动容器的 service 的时候，就会自动构建镜像并启动。
+
+[IMPORTANT]
+====
+与容器不同，systemd 管理的 **.build** 文件生成的容器镜像，不会因为容器的停止而删除。
+====
+
+[NOTE]
+====
+Podman 5.3.1 有一个 bug，**.build** 文件中的 `Pull=` 配置是无法正确转换的，设置它会导致生成的 service 运行失败。
+
+这个 Bug 已经在上游源码中修复，见 link:https://github.com/containers/podman/issues/24599[containers/podman#24599]
+====

@@ -661,7 +661,6 @@ Linux 系统上也自带一个创建 namespace 的工具——它也叫“unshar
 
 `podman build` 可以依照 Containerfile 指示的内容构建一个镜像。
 
-
 === Containerfile 的格式
 
 Containerfile 支持很多指令（directive），它们大致可以分为两大类：向容器镜像中添加内容，或描述和记录镜像该如何使用。
@@ -738,6 +737,7 @@ CMD ["nginx", "-g", "daemon off;"]
 EOF
 
 # 实际构建镜像
+# -t 表示为该 image 赋予一个标签，这个标签是唯一的，可以用来指定一个镜像
 podman build -f Containerfile -t my_custom_nginx
 ----
 
@@ -747,3 +747,8 @@ podman build -f Containerfile -t my_custom_nginx
 ----
 podman run --publish 8080:80 --rm localhost/my_custom_nginx
 ----
+
+[NOTE]
+====
+假设我们通过 `podman build` 构建了一个新镜像，且我们给这个新镜像赋予了一个已有 tag，那么新的镜像就会具有这个 tag，而旧的镜像会失去 tag，变为 **<none>**，也就是无标签状态。
+====
