@@ -23,6 +23,11 @@
 
 === 手动下载 WSL 更新包
 
+[NOTE]
+====
+如果已经是 Windows 11 系统，则不需要执行下载安装包的操作，直接从 <<再次更新 WSL 至最新的版本>> 步骤执行即可
+====
+
 从上面提到的官方文档网址中，找到 link:https://learn.microsoft.com/en-us/windows/wsl/install-manual#step-4---download-the-linux-kernel-update-package[Step 4 - Download the Linux kernel update package]，下载 link:https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_x64.msi[WSL2 Linux kernel update package for x64 machines] 并安装
 
 === 再次更新 WSL 至最新的版本
@@ -40,14 +45,18 @@ wsl --update
 
 [source, powershell]
 ----
+# 检查 wsl 默认运行的版本
+wsl --status
+# 若默认版本为 1，则执行下面的设置
 wsl --set-default-version 2
 ----
 
 另外还有一些主机配置
 
 [source, toml]
-.${HOME}/.wslconfig
+.%USERPROFILE%/.wslconfig
 ----
+[wsl2]
 # 如果你自行编译了 WSL 的 Linux 内核
 #kernel="X:\\wsl\\MSLK-HEAD"
 
@@ -58,25 +67,33 @@ defaultVhdSize=68719476736
 # 每个 WSL 实例启动时，显示 debug 窗口（打印启动时的内核信息）
 debugConsole=true
 
-# WSL 默认启用 cgroup v1，禁用它，强制使用 cgroup v2
-kernelCommandLine = cgroup_no_v1=all
+# 在运行 systemctl status 后，若返回中有 “Tainted: cgroupsv1” 的字样，则表明 WSL 运行在 cgroup v1 下，禁用它，强制使用 cgroup v2
+#kernelCommandLine = cgroup_no_v1=all
 
 [experimental]
 # 启动 sparse 存储
-sparseVhd=true
+# 特别的，如果你希望让 Hyper-V 中的虚拟机也可以使用这个磁盘镜像，则不要开启这个选项
+#sparseVhd=true
 ----
 
 == 手动导入 Guest 系统
 
-=== 下载 lxc 镜像
+=== 下载镜像
 
-从 link:https://mirrors4.tuna.tsinghua.edu.cn/help/lxc-images/[清华大学镜像站 lxc-images] 中可以获得我们需要的 rootfs 文件
+从 link:https://mirrors4.tuna.tsinghua.edu.cn/lxc-images/images/[清华大学镜像站 lxc-images] 中可以获得我们需要的 rootfs 文件
 
-这里以 Fedora 37 镜像举例，找到如下目录 images/fedora/37/amd64/default/ 找到最新的时间点目录，找到其中的 rootfs.tar.xz 文件，并下载。
+这里以 Fedora 41 镜像举例，找到如下目录 **/fedora/41/amd64/default/** 找到最新的时间点目录，找到其中的 **rootfs.tar.xz** 文件，并下载。
 
-之后需要解压 `rootfs.tar.xz` 文件得到 `rootfs.tar` 文件（可以使用 7-zip 解压 .xz 文件）。
+之后需要解压 **rootfs.tar.xz** 文件得到 **rootfs.tar** 文件（可以使用 7-zip 解压 .xz 文件）。
 
-=== 通过命令行将 rootfs.xz 导入为 WSL Guset
+[NOTE]
+====
+一般来说，一个操作系统的分发商会提供 Docker image 或 OCI image，也可以下载来使用。 +
+需要注意的是，这些 image 具有特殊的格式，可能需要多次解包，找到其中的纯粹的 rootfs 才能使用。
+而且由于这些 image 是面向 docker/podman 形制的容器使用的，有一些基础的软件没有安装，需要我们在导入之后进行补充。
+====
+
+=== 通过命令行将 rootfs.tar 导入为 WSL Guset
 
 执行下面的 powershell 命令
 
@@ -100,6 +117,36 @@ wsl --import fedora X:\wsl\fedora ~\Downloads\rootfs.tar
 
 === 初步配置 Guest 系统
 
+* 创建一个 wheel 账户
++
+--
+如果你的系统上没有 `sudo` 这个包，则安装它
+
+[source, sh]
+----
+dnf install sudo
+----
+
+[%collapsible]
+.关于安装 `sudo` 带来的额外修正
+====
+如果上面导入的镜像选用的是 Docker image 或者 OCI image，那么我们后面在使用 `passwd` 命令为管理员账户设置密码时，可能会报 `passwd: Permission Denied` 错误。
+这是由于 Docker image/OCI image 是给 docker/podman 使用的，它们一般不需要设置任何用户密码或者创建额外的可登录用户。因此，虽然镜像中包含了 `passwd`，却没有安装另一个重要的包 `pam`。我们在安装 `sudo` 的时候，`pam` 会作为 `sudo` 的依赖一同安装。
+====
+
+之后通过下面的命令添加一个账户，并为之设置密码
+
+[source, sh]
+----
+useradd -G wheel <账户名>
+
+passwd <账户名>
+----
+--
+
+* 额外的配置
++
+--
 我们还可以额外为 Guest 系统配置 WSL 相关的配置文件，以获得“更好”的体验。
 
 创建 `/etc/wsl.conf` 文件：
@@ -110,6 +157,9 @@ wsl --import fedora X:\wsl\fedora ~\Downloads\rootfs.tar
 [boot]
 systemd = true # 启用 systemd 支持
 
+[automount]
+enabled = false # 如果你不需要从 WSL 中访问 Windows 上的文件资源，则可以设置该选项
+
 [interop]
 enabled = false # 关闭从 Guest 启动 Host 的进程的功能
 appendWindowsPath = false # 禁用将 Host 的 PATH 环境变量解析为 Guest 的 PATH
@@ -119,12 +169,13 @@ appendWindowsPath = false # 禁用将 Host 的 PATH 环境变量解析为 Guest 
 default = <创建的用户名>
 ----
 
-之后，我们在 powershell 中强制关闭 WSL
+之后，我们在 powershell 中强制关闭 WSL，下次启动 WSL 时，这些配置文件就会被读取出来
 
 [source, powershell]
 ----
 wsl --shutdown
 ----
+--
 
 === 启用 systemd 之后需要的额外配置
 
@@ -135,7 +186,7 @@ systemd-homed.service 也是无法兼容 WSL 的，所以也可以一并关闭�
 
 [source, sh]
 ----
-systemctl disable systemd-networkd.service systemd-networkd-wait-online.service systemd-homed.service
+systemctl disable systemd-networkd.service systemd-networkd.socket systemd-networkd-wait-online.service systemd-homed.service
 ----
 
 最后，重启 Guest 系统
