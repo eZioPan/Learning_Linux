@@ -1,0 +1,138 @@
+= PXE 引导 Fedora 安装
+
+== 当我们说“PXE”的时候我们指的是什么？
+
+初听起来，它似乎是一种“无盘启动”功能。也就是说计算机在启动的时候，可以访问远程服务器上的数据，让系统可以进入操作系统。
+
+因此，PXE 是一种 客户端/服务器 构架，我们至少需要准备一个服务器，用来为要启动的机器提供必要的文件。
+
+在 PXE 环境中，这个提供文件服务的协议是 TFTP。不过 TFTP 有两个值得我们注意的特性：第一个是 TFTP 要求客户端有有效的 IP 配置；第二个是 TFTP 是一种“被动”的传输协议，它只传输客户端要求的文件。
+
+TFTP 的两个特性就引入了两个问题，第一个是，在计算机启动初期，计算机是怎么配置 IP 的？第二个是，计算机怎么知道访问（什么服务器上的）哪个启动文件？
+
+这就不得不说另一个非常常见的服务了——DHCP。在我们的常规印象里，DHCP 的作用是为计算机动态分配 IP，不过它的功能远不止如此，比如说，上面我们提到的两个问题，就都是由 DHCP 协议解决的。首先是为计算机分配 IP 地址，这个功能是大家所熟知的；第二个，DHCP 还可以告知 PXE 所需的服务器地址，并且可以告诉 PXE 应该请求哪个文件。这样服务端的功能就由 DHCP 和 TFTP 一同完成了。
+
+客户端这边，要么计算机的主板/网卡的固件支持 PXE，能和 DHCP/TFTP 沟通，要么我们要加载第三方的 PXE 程序（比如 iPXE），让这个程序负责与 DHCP/TFTP 交互。
+
+== 实际设置 PXE 启动
+
+=== 目标
+
+在准备好必要的文件之后，在不访问局域网之外的网络的情况下，通过 PXE 完成 Fedora 系统的安装。
+
+准确来说，以 Windows 作为服务端，在 Windows 上运行的 HyperV 虚拟机作为客户端，通过 PXE 引导 HyperV 虚拟机安装 Fedora。
+
+=== 启动流程概述
+
+. HyperV 从网卡启动，加载 PXE 程序
+. PXE 请求局域网中的 DHCP 服务
+. tftpd64 响应 DHCP 请求，分配 IP 配置，并通过报头中的 **next server IP address** 字段提供 tftp 服务器的地址，通过 **boot file name** 字段提供启动文件名称。
++
+[NOTE]
+====
+也可以通过 DHCP Option 67（boot file name）提供启动文件名称。如果 PXE 软件支持这个选项，一般会优先选择这个选项提供的参数。
+====
+. PXE 向 tftp 服务器请求 Grub2 EFI 文件，下载至内存，并运行该文件，之后控制权移交至 Grub2（此间 PXE 会向 Grub2 传递配置好的网络信息）
+. Grub2 从 tftp 服务器请求 **grub.cfg** 文件
+. Grub2 解析 **grub.cfg** 文件，并依照文件中的内容通过 tftp 加载 kernel 和 initrd 文件，并运行 kernel。（Grub2 实际上是支持 http 协议的，但是不知道为什么，它无法正确通过 http 协议下载文件）
+. kernel 启动，并运行安装程序（anaconda），当我们完成配置并正式开始安装时，anaconda 通过 http 协议下载安装包，并在本地执行安装。
+
+=== 准备文件
+
+* Fedora 的 Server 版本的安装镜像，使用 Server 版本是因为这个版本自带软件库，这样我们就不用从网络上获取软件包。
+* tftpd64 软件，这个软件包含了简易的 dhcp 和 tftp 服务，而且可以在 Windows 上运行，它将作为我们的 DHCP/TFTP 服务器（为了测试流程，我实际上使用的是 OpenDHCP 软件，在这篇文章中两者没有什么差异）
+* miniserve 软件，这是一个简易的 http 服务器。由于我们要执行的是安装 Fedora 系统，它需要传输大量的软件包文件，通过 tftp 协议传出大量文件的效率非常底下，因此我们最后会使用 http 协议传出软件包。
+* 如果 HyperV 自带的 PXE 无法正确加载 grub 的 EFI 文件，可以尝试下载 iPXE 的 ISO 镜像，从中启动，让 iPXE 负责网络启动。
+
+=== 设置服务器端文件
+
+. 建立名为 **pxe_srv** 的文件夹，这个文件夹是我们所有数据文件的存放地
+. 在 **pxe_srv** 下建立两个个文件夹，分别为 **pxe**、**fedora**
+. 进入 **pxe** 文件夹，这个文件夹中将存放 grub 相关的文件和 kernel 相关的文件
+.. 从 Fedora Server ISO 中拷贝如下内容， +
+从 **EFI/BOOT/** 中拷贝 **grubx64.efi** 和 **grub.cfg** 至 **pxe** 目录下； +
+将整个 **images** 文件夹拷贝至 **pxe** 目录下。
++
+[%collapsible]
+.关于拷贝整个 **images** 目录的必要性的备注
+====
+实际上我们只需要 **images/pxeboot/** 下的 **vmlinuz** 和 **initrd.img**。不过我们需要保持目录结构，以尽量减少对于 **grub.cfg** 的修改。
+====
+.. 修改 **grub.cfg** 文件
+*** 注释掉 `search --no-floppy` 这一行，因为我们要手动指定 grub 查询的根目录的位置
+*** 添加两行 `set root=(tftp, 192.168.57.1)` 和 `set http_addr=http://192.168.57.1:8080`。 +
+`set` 命令用来设置一个变量。`root` 是一个特殊的变量，它会被 grub 当作所有根目录的实际位置。括号 `()` 表示并非简单的字符串，而是一个“硬件位置”，比如这里的 `(tftp, 192.168.57.1)` 表示通过访问 TFTP 协议访问 192.168.57.1 访问。而 `http_addr` 就是一个我们自定义的字符串了，它就简单表示一个网址，这个网址会作为我们传输安装软件包的根地址。
+*** 之后，将每个 menuentry 的 linuxefi 字段的参数 `inst.stage2=hd:LABEL=Fedora-S-dvd-x86_64-41` 替换为 `inst.repo=$http_addr` +
+这里的修改告诉 anaconda，安装系统所需的软件包仓库，可以通过 http 协议访问到，而且仓库的顶层就是 http 网站的顶层。
+. 进入 **fedora** 文件夹，这个文件夹将存储 Fedora 系统安装时所需要的软件仓库
+.. 从 Fedora Server ISO 中拷贝如下内容， +
+**Packages** 文件夹、**repodata** 文件夹、**.treeinfo** 文件，这三者拷贝至 **fedora** 目录下。 +
+其中 **Packages** 包含实际的包文件，**repodata** 是 **Packages** 的索引，**.treeinfo** 是 Fedora 安装介质必须包含的文件，是整个安装介质的摘要。
+
+=== 设置服务器端软件
+
+* HyperV 的相关设置
+.. HyperV 中添加一个“内部”虚拟交换机
+.. 在 Windows 的网络设置中为这个虚拟交换机配置一个静态 IP。我们这里是 192.168.57.1，掩码设置为 255.255.255.0。如果你不使用这个 IP 地址，记得在 **grub.cfg** 中修改为对应的 IP 地址。
+
+* tftpd64 的相关设置
+** GLOBAL 选项卡中至少要开启 TFTP Server 和 DHCP Server
+** TFTP 选项卡中
+*** Base Directory 要指向 **pxe** 文件夹
+*** TFTP Security 可以修改为 Read Only
+*** 勾选 Bind TFTP to this address，并在后面的地址中选择我们上面为虚拟交换机配置的 IP 地址。我们这里是 192.168.57.1
+** DHCP 选项卡中
+*** IP pool start address 选择一个可用的开始地址。我们这里可以设置为 192.168.57.100
+*** Size of pool 可以设置一个可分配的 IP 地址的容量。我们这里可以设置为 20
+*** Boot File 指向可启动的 EFI 文件，文件地址基于 TFTP 设置中的 Base Directory，比如我们这里 **grubx64.efi** 是放置在 TFTP 服务的根目录下的，因此这里直接填写 **/grubx64.efi** 即可。
+*** Def. router (Opt 3) 可以设置一个 192.168.57.1，不过没有什么实际意义，因为这个地址实际上不提供网关的功能。
+*** Mask (Opt 1) 设置同虚拟交换机的掩码设置
+*** 勾选 Bind TFTP to this address，并在后面的地址中选择我们上面为虚拟交换机配置的 IP 地址。我们这里是 192.168.57.1。
+
+* miniserve 的相关设置
+** miniserve 的命令行参数 `--verbose --interfaces 192.168.57.1 <fedora 文件夹目录>`
+
+=== 设置虚拟的启动参数
+
+创建一个虚拟机，“网络连接”接入我们刚才新建的交换机，“安装选项”设置为“基于网络的安装服务器安装操作系统”。 +
+之后在虚拟机配置中，从“安全”中关闭“启用安全启动”。并检查“固件”，我们创建的虚拟交换机接口应该作为第一启动项。
+
+=== 启动虚拟机
+
+之后启动虚拟机，就应该可以正常执行安装操作了。
+
+== 其它
+
+=== 关于 grub2 的可替换项
+
+其实也可以不用 grub2 做 bootloader，而使用 syslinux 做 bootloader。用 syslinux 做 bootloader 的好处是，syslinux 的 http 协议栈是良好的，可以通过 http 协议而非 tftp 协议加载 kernel 和 initrd，能加快内核的启动速度。
+
+需要从 syslinux 包中提取的文件有
+
+* 主 efi 文件 **efi64/efi/syslinux.efi**
+** efi 关联文件 **efi64/com32/elflink/ldlinux/ldlinux.e64**
+* 菜单文件，由 syslinux 的配置文件的 `DEFAULT` 行确定
+** 若为 `menu.c32`，则加载的是一个简易的菜单，文件为 **efi64/com32/menu/menu.c32**
+*** **menu.c32** 关联文件 **efi64/com32/libutil/libutil.c32**
+** 若为 `vesamenu.c32`，则加载一个全屏的简易图形化菜单，文件为 **efi64/com32/menu/vesamenu.c32**
+*** **vesamenu.c32** 关联文件 **efi64/com32/lib/libcom.c32**、**efi64/com32/libutil/libutil.c32**
+
+上面这些文件放在同一个目录下即可，接着需要创建一个名为 **pxelinux.cfg** 的文件夹，文件夹下创建一个名为 **default** 的文件，这个文件就类似于 grub.cfg，我们这里给出一个简易的配置
+
+[source]
+.pxelinux.cfg/default
+------
+UI vesamenu.c32
+PROMPT 0
+TIMEOUT 300
+ONTIMEOUT fedora-install
+
+MENU TITLE Fedora PXE Boot Menu
+
+LABEL fedora-install
+    MENU LABEL Install Fedora 41
+    KERNEL http://192.168.57.1:8080/vmlinuz
+    APPEND initrd=http://192.168.57.1:8080/initrd.img inst.repo=http://192.168.57.1:8080
+------
+
+最后记得将 DHCP 的 boot file 指向 syslinux.efi 文件，就可以执行启动命令了。
