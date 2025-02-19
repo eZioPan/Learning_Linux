@@ -1,0 +1,279 @@
+= 为 Fedora 系统安装自定义本地软件仓库
+
+[NOTE]
+====
+与 xref:74、PXE 引导 Fedora 安装.adoc[PXE 引导 Fedora 安装] 不同，本文要求一台已经运行 Fedora 的系统，才能完成构建操作。
+====
+
+在 xref:74、PXE 引导 Fedora 安装.adoc[PXE 引导 Fedora 安装] 中，我们使用的是 Fedora Server ISO 自带的软件仓库进行的系统安装。不过 Fedora Server ISO 中的软件的版本是不像网络软件仓库新的，我们大概率需要在安装时连接网络更新，或者在安装之后联网更新。
+
+其实我们可以自己预先构建一个最新的软件仓库，然后让 Anaconda（这里指 rhinstaller Anaconda，不是 Python 环境管理的那个 Anaconda，下同）从这个仓库里安装软件，这样我们获得的系统就具有最新的软件，而无需在安装好系统后立刻更新了。
+
+[NOTE]
+====
+link:https://fedoraproject.org/wiki/How_to_create_a_Fedora_install_ISO_for_testing#Create_a_local_mirror_(optional)[依照 Fedora 官方推荐]，我们实际上最好是拷贝整个仓库。不过 Fedora 的整个仓库也太大了，我们安装只需要一个（相对整个仓库来说）非常小的子集，因此这里我们手动收集所需的软件包，构成仓库。
+====
+
+== 理解流程
+
+=== 实现目标
+
+将安装 Fedora 系统所需的安装包下载至本地，让 Anaconda 通过访问局域网内的软件仓库完成系统安装，并额外自定义默认安装的软件包（在我们这里的目标是减少仓库大小、用 systemd-networkd 替换 NetworkManager、用 systemd-boot 替换 grub2）。我们的安装目标主机是 HyperV 虚拟机。
+
+=== 推导仓库内容
+
+首先，我们从之前的安装中观察到，Anaconda 会拉取软件仓库下的 **repodata/repomd.xml** 文件，因此我们必然要准备这个文件夹和其中的文件。这个文件可以由 `createrepo_c` 这个软件生成。`createrepo_c` 会自动收集一个目录下的所有的 rpm 包，并生成对应的 **repodata** 文件夹。这就要求我们预先下载好所有的 rpm 包，然后提供给 `createrepo_c` 以统计信息。
+
+不过我们该如何知晓应该下载什么软件包呢？我们可以观察一下 Fedora Server ISO 中的 **images/install.img** 文件，将其打开以后的 **/etc/anaconda/profile.d/fedora-server.conf** 中，有一行 `default_environment = server-product-environment`。它指出，Fedora Server 默认安装的环境是 `server-product-environment`。我们可以在 Fedora 环境中使用 `dnf environment list server-product-environment` 枚举出所有需要安装的软件组。然后我们可以继续用 `dnf group info <软件组名称>` 枚举每个软件组包含的软件。
+
+不过我们通过上面的方法获取软件包名称列表会非常的麻烦（dnf5 并不支持下载 environment group 或者 group 的所有依赖），而且并不利于我们构建最终的仓库（有其它原因，见下）。我们在实际构建整个软件仓库的时候，其实使用的是另一个方法，那就是 dnf 的 **Comps** 文件。在我们书写好所需的 comps 文件之后，我们就可以解析这个文件，完成软件包的下载，并且我们需要将这个文件传递给 `createrepo_c`，以构建 Anaconda 可以使用的软件库。**如果我们不书写 comps 文件，虽然我们可以构建出完成的软件仓库，但是 Anaconda 并不能正确使用这个仓库中的文件来完成安装。**
+
+我们是不需要从头书写 comps 文件的，Fedora 提供了各 Fedora 版本的 comps 文件。我们只需要下载，并加以修改即可。
+
+文件存放在 link:https://pagure.io/fedora-comps/tree/main[] 中。我们的目标是构建 Fedora 41 的安装仓库，则我们需要下载 **comps-f41.xml.in** 这个文件。这个文件较大，因为它记录了构建 Fedora 完整仓库所需要的软件包名、软件组名和环境组名，而我们只需要其中一小部分即可。
+
+到此为止，我们构建软件仓库的所需配置文件就搜集齐了，之后我们就可以逐步将这些配置文件转换为实际的软件仓库了。
+
+=== 大体流程
+
+. 编辑 **comps-f41.xml.in** 文件，摘取我们需要的环境组、软件组。
+. 通过 `xmlstarlet` 获取所需下载的软件包名，并通过 `dnf download` 下载所有的软件包。这个仓库将作为我们的总集仓库，之后我们构建更小的仓库的时候，就可以基于这个仓库，而不需要每次都访问网络仓库了。
+. 再次编辑 comps.xml 文件，将实际安装用仓库进一步精简和调整。
+. 通过 `createrepo_c` 构建软件包仓库。
+. 通过 `miniserve` 这类 http 服务软件为 Anaconda 提供软件仓库。
+. 编辑安装引导文件 **grub.cfg** 的条目，为 Anaconda 预先指定所需要软件包仓库地址。
+
+== 实际构建
+
+[IMPORTANT]
+====
+处于简化流程的需要，我们这里演示的是配置 **custom-environment** 环境组的软件仓库的流程。这个环境组是最小的一个环境组，因此需要下载的包也是最少的。
+====
+
+=== 构建总集仓库
+
+在 Fedora 上新建一个文件夹，比如 **uni**。
+
+从 link:https://pagure.io/fedora-comps/tree/main[] 中下载 **comps-f41.xml.in**（也可以额外下载 **comps.dtd**，这样我们用 vscode 编辑的时候，就不会报错）。
+
+新建一个 **my-comps.xml** 文件，从 **comps-f41.xml.in** 中复制最外层的标签：
+
+[source, xml]
+.uni/my-comps.xml
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE comps PUBLIC "-//Red Hat, Inc.//DTD Comps info//EN" "comps.dtd">
+<comps>
+    <!-- 这里将书写整个 comps 的实际内容 -->
+</comps>
+----
+
+之后我们需要复制的信息为 `custom-environment` 环境组的配置：
+
+[source, xml]
+.uni/my-comps.xml
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE comps PUBLIC "-//Red Hat, Inc.//DTD Comps info//EN" "comps.dtd">
+<comps>
+  <environment>
+    <id>custom-environment</id>
+    <_name>Fedora Custom Operating System</_name>
+    <_description>Basic building block for a custom Fedora system.</_description>
+    <display_order>1</display_order>
+    <grouplist>
+      <groupid>core</groupid>
+    </grouplist>
+    <optionlist>
+      <groupid>standard</groupid>
+      <groupid>guest-agents</groupid>
+      <groupid>networkmanager-submodules</groupid>
+    </optionlist>
+  </environment>
+</comps>
+----
+
+[IMPORTANT]
+====
+由于 Fedora 实际提供的是 **.in** 文件，而非 **.xml** 文件。我们这里的还需要额外将 `<_name>`、`</_name>`、`<_description>`、`</_description>` 的下划线去掉。之后拷贝的内容也相同。
+====
+
+之后，依照 custom-environment 环境组的要求，要拷贝的是 core 软件组，而且可选拷贝 standard、guest-agents、networkmanager-submodules 软件组。
+
+注意依照 comps.dtd 的要求，软件组需要置于 environment 的前面
+
+[source, xml]
+.uni/my-comps.xml
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE comps PUBLIC "-//Red Hat, Inc.//DTD Comps info//EN" "comps.dtd">
+<comps>
+  <group>
+    <!-- core 软件组内容 -->
+  </group>
+  <!-- 其它软件组内容 -->
+  <environment>
+    <!-- custom-environment 环境组内容-->
+  </environment>
+</comps>
+----
+
+另外，有一个名为 anaconda-tools 的软件组，其中也存放了一些我们需要的软件，这里需要一并添加：
+
+[source, xml]
+.uni/my-comps.xml
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE comps PUBLIC "-//Red Hat, Inc.//DTD Comps info//EN" "comps.dtd">
+<comps>
+  <group>
+    <!-- anaconda-tools 软件组内容 -->
+  </group>
+  <group>
+    <!-- core 软件组内容 -->
+  </group>
+  <!-- 其它软件组内容 -->
+  <environment>
+    <!-- custom-environment 环境组内容-->
+  </environment>
+</comps>
+----
+
+另外我们还可以移除不相关构架的软件包，也就是 `<packagereq>` 具有 `arch=` 属性，但不包含 `x86_64` 的那些软件包。
+
+之后我们借助 `xmlstarlet`，截取所有的包名，并通过 `dnf download` 下载所需的包和它们所有的依赖。
+
+[source, sh]
+----
+dnf download --releasever=41 --arch=x86_64 --arch=noarch --resolve --alldeps --destdir=./Packages $(xmlstarlet sel -t -m "//packagereq" -v "text()" -n my_comps.xml | sort | uniq) && createrepo_c .
+----
+
+这行命令有几个部分组成：
+
+. 首先是 `xmlstarlet sel -t -m "//packagereq" -v "text()" -n my_comps.xml | sort | uniq`，它指的是用 `xmlstarlet` 筛选出任何 `packagereq` 节点，并将它的值以文本的形式输出，之后再进行排序和去重，得到所需要的软件包
+. 之后是 `dnf download --releasever=41 --arch=x86_64,noarch --resolve --alldeps --destdir=./Packages`，它表示使用 `dnf` 下载 Fedora 41 软件库中，与 x86_64 架构以及架构无关的软件包，需要解析软件包依赖，并递归下载所有依赖，下载的路径是 **./Packages**
+. 最后是 `createrepo .`，它会扫描指定的路径，收集路径下所有的软件包的信息，生成 **repodata** 文件夹
+
+到这里总集仓库就建立好了，之后我们细调实际安装使用的仓库，就可以基于这个仓库进行操作。
+
+[NOTE]
+====
+严格意义上来说，整个软件库以及 my_comps.xml 还没有完成，因为我们后面还会增补一些软件、调整一些配置。
+====
+
+[NOTE]
+====
+在上面的操作中，若我们将 `createrepo_c .` 替换为 `createrepo_c -g my_comps.xml .`，我们就获得了一个可以安装的、具有最新版软件的仓库。我们直接在 **uni** 文件夹中启动一个 http 服务器，就可以开始安装了。不过我们也可以进一步删减要安装的软件，只安装我们的确需要的软件。
+====
+
+=== 构建安装仓库
+
+这一步，我们要依据我们的总集仓库，构建我们实际安装的软件仓库。
+
+首先是在 **uni** 文件夹外创建一个 **offline_repo** 文件夹，并将 **uni** 下的 **comps.dtd** 和 **my_comps.xml** 拷贝至 **uni** 下。
+
+之后我们编辑 **offline_repo** 下的 **my_comps.xml**。鉴于我们的目标是尽量缩减软件库的大小，对于 anaconda-tools 软件组，我们需要保留的仅有 `chrony`、`dosfstools`、`e2fsprogs`、`mandatory`、`lvm2`、`xfsprogs` 和 `sdubby`，该软件组中的其它软件包都可以注释掉。
+
+之后，我们需要补充一个软件组，这个软件组中的软件是我们增补的软件，主要是两个：一个是 sssd-common 的弱依赖 libsss_sudo，因为 core 中具有 sudo 这个软件包，因此我们需要在这里补充上这个弱依；另一个是 systemd-networkd，这是我们希望补充安装的软件包。
+
+[source, xml]
+.offline_repo/my-comps.xml
+---
+    <group>
+        <id>extra_packages</id>
+        <name>Extra Packages</name>
+        <description>To finish installation</description>
+        <default>true</default>
+        <uservisible>false</uservisible>
+        <packagelist>
+            <packagereq type="optional">libsss_sudo</packagereq>
+            <packagereq type="optional">systemd-networkd</packagereq>
+        </packagelist>
+    </group>
+---
+
+[NOTE]
+====
+添加 libsss_sudo 是为了补足 `dnf download` 的不足：`dnf download` 不会下载一个软件包的可选依赖，因此我们必须要明确指定这个依赖用的软件包。我们当然可以直接修改命令行来完成这个操作，不过为了可复现和命令的可复用，我们这里选择编辑 Comps 文件来达成这个目的。
+====
+
+之后将这个软件组添加至 custom_environment 换进组中。
+
+[source, xml]
+.offline_repo/my-comps.xml
+---
+    <environment>
+        <!-- custom_environment 内容 -->
+        <grouplist>
+            <groupid>core</groupid>
+            <groupid>extra_packages</groupid>
+        </grouplist>
+        <!-- custom_environment 内容 -->
+    </environment>
+---
+
+[IMPORTANT]
+====
+由于我们是增补软件包，因此我们必须将上面增补修改的内容同时添加至 **uni** 下的 **my_comps.xml** 中，并且再次执行 **uni** 文件夹下的命令，以从远程仓库下载所有需要的包。这样才算准备好了总集仓库。当然，每次添加新的软件包，都需要执行这个操作。这也是为什么我选择新建一个软件组来补充软件包，而不是直接向已有的软件组中添加软件包的原因——方便在总集仓库和安装仓库之间同步配置。
+====
+
+在我们更新好总集软件仓库之后，运行下面的命令构建实际的安装用仓库：
+
+[source, sh]
+----
+rm -rf Packages; rm -rf repodata; dnf --repofrompath=uni,../uni --repo=uni --refresh download --arch=x86_64 --arch=noarch --resolve --alldeps --destdir=./Packages $(xmlstarlet sel -t -m "//packagereq" -v "text()" -n my_comps.xml | sort | uniq) && createrepo_c -g my_comps.xml .
+----
+
+解释：
+
+* `rm -rf Packages; rm -rf repodata;`：移除现有的软件包仓库，这是为了完成重新构建而设置的。由于 `dnf download` 是向目标文件夹添加软件包，而不会清理旧的软件包，因此我们手动清理现有的仓库，可以获得最干净的软件仓库。
+* `xmlstarlet sel -t -m "//packagereq" -v "text()" -n my_comps.xml | sort | uniq`：这一节和上面的一模一样，不再解释。
+* `dnf --repofrompath=uni,../uni --repo=uni --refresh download --arch=x86_64 --arch=noarch --resolve --alldeps --destdir=./Packages`：这一段和上面的大体一致，有几个增补内容
+** `--refresh` 每次都刷新 dnf 的 cache，由于我们运行这个命令，大概率是由于 **uni** 文件夹有变化，但是 dnf 有自己的缓存策略，可能会使用自己缓存的 **uni** 文件夹的信息，这不是我们希望的。因此这里设置 `--refresh`，强制 dnf 从 **uni** 文件夹获取。
+** `--repofrompath=uni,../uni`：从路径 **../uni** 读取仓库，将该仓库的名称设置为 **uni**。
+** `--repo=uni`：仅使用 **uni** 软件库。
+* `createrepo_c -g my_comps.xml .`：创建仓库，同时读取软件组的配置文件，作为仓库索引的一部分。
+
+当我们运行了这行命令之后，安装用软件仓库就准备好了。我们就可以在 **offline_repo** 中架设一个 http 服务器，让 Anaconda 可以访问这个仓库来安装软件。
+
+=== 其它
+
+若我们不希望安装某个特定的软件包，但这个软件包又是作为某个软件包的依赖存在的。那么我们可以在 **uni** 文件夹中运行下面的脚本，来列举所有 Comps 文件中的每个软件包的名称和它所有的依赖的软件包的名称。我们将该脚本的输出写入一个文件中，之后搜索这个文件的内容，就知道是哪个软件包使用了某个我们不需要的软件包了。
+
+[source, sh]
+.list_dep.sh
+----
+#!/bin/bash
+
+# Generate the RPM package list using xmlstarlet and sort
+pkg_list=$(xmlstarlet sel -t -m "//packagereq" -v "text()" -n my_comps.xml | sort | uniq)
+
+# Check if the package list is empty
+if [ -z "$pkg_list" ]; then
+  echo "Error: No packages found in the XML file!"
+  exit 1
+fi
+
+# update cache
+dnf --refresh --repofrompath=uni,. --repo=uni makecache &> /dev/null
+
+# Process each package in the list
+echo "$pkg_list" | while IFS= read -r pkg; do
+  # Skip empty lines
+  if [ -z "$pkg" ]; then
+    continue
+  fi
+
+  # Print the package name
+  echo "Package: $pkg"
+
+  # Get the dependencies of the package using rpm
+  echo "Dependencies:"
+  dnf download --repofrompath=uni,. --repo=uni --resolve --alldeps --destdir=./Packages "$pkg"
+
+  # Print a separator for readability
+  echo "-------------------------"
+done
+----
+
+用法： `sh ./list_dep.sh &> dep.lst`
