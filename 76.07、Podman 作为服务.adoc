@@ -1,0 +1,272 @@
+= Podman 作为服务
+
+== 简介 Podman 服务
+
+Podman 支持 RESTful API。`podman system service` 可以启动一个服务（下简称“Podman 系统服务”）来监听 RESTful API 调用。默认情况下，Podman 系统服务会创建一个持续监听 5 秒的服务，如果 5 秒之内没有输入传入，则服务会自动退出；在处理完成所有的传入数据之后，该服务会继续监听 5 秒钟，等待其它输出传入，否则就主动关闭现有的连接，并退出。这个额外等待的时间可以通过 `--time <额外等待秒数>` 来设置，若设置为 **0**，则表示该服务会持续存在。
+
+=== systemd 服务
+
+由于 Podman 系统服务并不希望自身常驻运行，因此当其与 systemd 结合的时候，使用了两个部件启动服务：
+
+* **podman.service** 这是 Podman 系统服务的主要 systemd 配置文件（可以通过 `systemctl --user cat podman.service` 查看）。它本身较为简单，就是通过命令 `podman system service` 在对应的用户下启动一个 Podman 系统服务进程。不过它有一个 `Requires=podman.socket` 配置，也就是说，这个服务会被名为 **podman.socket** 的套接字服务激活：
+* **podman.socket** 这是 Podman 系统服务的套接字配置文件（可以通过 `systemctl --user cat podman.socket` 查看）。它本身就是创建了一个 `$XDG_RUNTIME_DIR/podman/podman.sock` 套接字文件，等待外部打开这个文件，之后会触发 **podman.service** 处理发向这个套接字的 API 请求。
+
+所以，Podman 系统服务的整个处理流程为：
+
+. systemd 在用户登录的时候，依照 **podman.socket** 的内容创建一个 socket，并监听该 socket。
+. 当有进程连接上这个 socket 的时候，**podman.service** 被触发，启动 Podman 系统服务进程，并对对端进程发来的数据进行响应。
+. 当处理完所有的传入的数据，等待 5 秒钟，看是否有新的传入数据，若有则进行处理，若没有，则关闭连接并退出服务。
+
+我们可以通过下面的命令激活 **podman.socket**
+
+[source, sh]
+----
+systemctl --user enable --now podman.socket
+----
+
+之后我们可以通过下面的命令向 Podman 系统服务传入一个指令：
+
+[source, sh]
+----
+curl --verbose --unix-socket "$XDG_RUNTIME_DIR/podman/podman.sock" "http://d/libpod/_ping"
+----
+
+其中
+
+* `--verbose` 表示显示详细的 HTTP Head（可以不写，则打印基础信息；或改成 `--silence`，则不显示任何信息）
+* `--unix-socket` 表示后面给出的文件是一个 unix socket
+* `$XDG_RUNTIME_DIR/podman/podman.sock` 是 rootless Podman 系统服务的文件地址
+* `+http://d/libpod/_ping+` 是我们要发送给 Podman 系统服务 API 的指令
+
+[%collapsible]
+.关于 URL 的解析
+====
+[NOTE]
+======
+curl 会将 `+http://d/libpod/_ping+` 拆解为三个部分
+
+* `http://` 会被识别为 `HTTP/1.1`
+* `d` 会被转换为主机名 `Host: d` +
+当然，Podman 的 RESTful API 并不需要指定任何主机名称，写上只是为了满足 HTTP 标准格式。
+* `/libpod/_ping` 会被转换为资源路径 `/libpod/_ping`
+
+之后 curl 还会识别整个命令行，并将 HTTP 请求类型设置为 `GET`
+
+从而组成完整的 HTTP Request：
+
+[source]
+--------
+GET /libpod/_ping HTTP/1.1\r\nHost: d\r\n\r\n
+--------
+
+使用 CRLF（`\r\n`）作为行结尾是 HTTP 格式的要求，且 HTTP Request Header 和 HTTP Request Body 之间需要额外添加一个空行（`Host: d` 之后的两个空行），就构成了我们的完整 HTTP 请求。
+
+当然，我们也可以不使用 curl 提供的现成的 HTTP 功能，使用更基础的 **socat** 软件手动收发数据：
+
+[source, sh]
+--------
+printf 'GET /libpod/_ping HTTP/1.1\r\nHost: d\r\n\r\n' | socat STDIO "UNIX-CONNECT://${XDG_RUNTIME_DIR}/podman/podman.sock"
+--------
+
+使用 **socat** 还可以交互式输入整个 HTTP Request：
+
+. 由于人手输入数据会很慢，因此我们首先要通过 `--time` 参数增加 `podman system service` 等待的秒数（比如设置为 60 秒）
+. 使用 `socat STDIO "UNIX-CONNECT://${XDG_RUNTIME_DIR}/podman/podman.sock"` 进入交互输入模式
+. 手动输入 HTTP 请求，需要注意的是
+** 所有的 `\r` 需要通过连续快捷键 Ctrl+V Ctrl+M 输入，`\n` 则可以简单通过回车输出（当然也可以通过连续快捷键 Ctrl+V Ctrl+J 输入）（记得 `Host: d` 后依旧是两组 `\r\n`）
+** 当我们完成了所有交互之后，通过快捷键 Ctrl+D 结束输入
+======
+====
+
+之后 Podman 系统服务会返回数据，并由 curl 统一打印出来
+
+[source]
+----
+*   Trying /run/user/1001/podman/podman.sock:0...
+* Connected to d (/run/user/1001/podman/podman.sock) port 0
+> GET /libpod/_ping HTTP/1.1
+> Host: d
+> User-Agent: curl/8.9.1
+> Accept: */*
+>
+* Request completely sent off
+< HTTP/1.1 200 OK
+< Api-Version: 1.41
+< Builder-Version:
+< Buildkit-Version:
+< Cache-Control: no-cache
+< Docker-Experimental: true
+< Libpod-Api-Version: 5.4.0
+< Libpod-Buildah-Version: 1.39.0
+< Ostype: linux
+< Pragma: no-cache
+< Server: Libpod/5.4.0 (linux)
+< X-Reference-Id: 0xc000081210
+< Date: Mon, 03 Mar 2025 07:12:58 GMT
+< Content-Length: 2
+< Content-Type: text/plain; charset=utf-8
+<
+* Connection #0 to host d left intact
+OK
+----
+
+我们想打印一下 podman 的系统信息，可以这样输入：
+
+[source, sh]
+----
+curl --silent --unix-socket "$XDG_RUNTIME_DIR/podman/podman.sock" "http://d/v5.4.0/libpod/version" | jq
+----
+
+这行命令，
+
+* 首先是我们不再关注 HTTP Response Header 的内容，因此使用 `--silent` 仅显示 HTTP Respond Body
+* `+http://d/v5.4.0/libpod/version+` 中有一个版本号 `v5.4.0`，它取自 `/libpod/_ping` 指令返回的 HTTP Response Header 中的 `Libpod-Api-Version` 的值，并在前面添加了一个字母 `v`。
+* `jq` 用于格式化输出的 JSON 数据
+
+这些 API 的文档，可以参考 link:https://docs.podman.io/en/latest/Reference.html[Podman 的 Reference]。
+
+比如，我们依照文档，发送一个稍微复杂的指令——列举所有的容器：
+
+[source, sh]
+----
+curl --silent --unix-socket "$XDG_RUNTIME_DIR/podman/podman.sock" "http://d/v5.4.0/libpod/containers/json" | jq
+----
+
+你可以发现，它只返回了正在运行的容器，并非所有的容器。依照文档的说明，我们需要添加参数 `all=true`，才能枚举所有的容器，于是我们修改指令，在 URL 后添加 `?all=true`：
+
+[source, sh]
+----
+curl --silent --unix-socket "$XDG_RUNTIME_DIR/podman/podman.sock" "http://d/v5.4.0/libpod/containers/json?all=true" | jq
+----
+
+[NOTE]
+====
+如果你使用 **socat** 获取的数据，且你有很多的容器，那么返回的 HTTP Response Body 可能并非一个简单的 JSON 数据，而是 **数字 + 数据** 的形式。此时你可以观察 HTTP Respnse Header，其中应该有一条 `Transfer-Encoding: chunked`，它表示的是 HTTP 发送的是分组数据，**数字** 是一个十六进制数，表示其后紧随的 **数据** 的长度（不计算数据末尾添加的最后的一个 CRLF）。且这个模式的最后一个 **数字 + 数据** 必然是 **0** 长度和空数据（以 CRLF 结尾）。
+====
+
+== 使用 Python 库与 Podman 交互
+
+Podman 官方提供了一个link:https://github.com/containers/podman-py[使用 Python 与 Podman RESTful API 交互的库]，这里我们简单使用一下：
+
+[source, sh]
+----
+# 创建虚拟环境
+python -m venv podman-over-python
+
+# 激活虚拟环境
+cd podman-over-python
+source bin/activate
+
+# 安装 podman 包
+pip install podman
+----
+
+在刚才创建的环境中，编写 python 代码：
+
+[source, python]
+.main.py
+----
+import podman
+import os
+import json
+
+
+def main():
+    xdg_rt_dir = os.environ.get("XDG_RUNTIME_DIR")
+
+    uri = os.path.join("podman", "podman.sock")
+
+    if xdg_rt_dir is None:
+        uri = "unix:///" + os.path.join("run", "user", f"{os.getuid()}", uri)
+    else:
+        uri = "unix:///" + os.path.join(f"{xdg_rt_dir}", uri)
+
+    with podman.PodmanClient(base_url=uri) as client:
+        # 打印 Podman 系统信息
+        print(json.dumps(client.info(), indent=2))
+        # 枚举镜像
+        print(client.images.list())
+        # 枚举容器
+        print(client.containers.list(all=True))
+
+
+if __name__ == "__main__":
+    main()
+----
+
+== `podman --remote`
+
+Podman 自带一个 `--remote` 功能，让我们可以通过 RESTful API，通过命令行工具，远程（同一系统，不同账户，或者不同系统）控制实际运行容器的 Podman 系统。
+
+=== 设置实际运行 Podman 的账户
+
+我们这里要创建一个新用户，这个用户不在 wheel 群组中，不能使用 sudo，也不能用密码登录，仅能通过 SSH 的 PublicKey 登录，这样我们就尽可能减小了 Podman 容器安全泄露可能导致的影响。
+
+[source, sh]
+----
+# 创建一个普通用户 podman-runner，且指明它需要一个家目录，因为 Podman 的 rootless 容器需要在用户的家目录下创建一些文件
+sudo useradd --create-home podman-runner
+
+# 注意，这里不要为 podman-runner 设置密码，我们要尽量避免任何用密码登录 podman-runner 这个账户的可能性。即便设置了，也要通过下面的命令移除。
+# sudo usermod --lock podman-runner
+
+# 创建 .ssh 目录，用来保存 podman-runner 的 SSH 验证信息
+sudo --user podman-runner mkdir --mode 0700 /home/podman-runner/.ssh
+
+# 创建 SSH 的已验证共钥文件
+sudo --user podman-runner touch /home/podman-runner/.ssh/authorized_keys
+# 记得修改文件权限
+sudo --user podman-runner chmod 0600 /home/podman-runner/.ssh/authorized_keys
+
+# 创建 SSH 登录密钥，若之前创建过，也可以使用现有的
+ssh-keygen -t rsa
+# 创建的过程中，会提示私钥和公钥的文件名，需要记录一下
+
+# 将我们生成的公钥注入 podman-runner2 的已验证公钥中
+cat ~/.ssh/<公钥文件>.pub | sudo --user podman-runner tee --append /home/podman-runner/.ssh/authorized_keys
+
+# 此时我们可以验证我们的设置是否正确，如果能正确登录，则配置正确
+ssh -i ~/.ssh/<私钥文件> podman-runner@localhost
+----
+
+若前面的创建一切正常，则启动 podman-runner 的 podman.socket
+
+[source, sh]
+----
+# 需要正常的登录流程才能使用 systemctl --user（主要是设置 XDG_RUNTIME_DIR 环境变量），因此我们需要使用 ssh 登录（不能使用 sudo + su）
+ssh -i ~/.ssh/id_rsa podman-runner@localhost "systemctl --user enable --now podman.socket"
+----
+
+不过这里还有一个问题，我们希望 podman-runner 在没有活动会话的时候，不会被 systemd-logind 移除所有的 podman-runner 用户下属进程。我们还需要设置用户的 linger，让 podman-runner 随系统启动而启动，且在系统关闭前才退出（如同系统服务一般）。
+
+[source, sh]
+----
+sudo loginctl enable-linger podman-runner
+----
+
+=== 设置远程用户的 podman 配置
+
+主要是让 podman 记录一下远程控制信息
+
+[source, sh]
+----
+podman system connection add --default --identity <私钥文件的绝对路径> <该远程连接配置的自定义名称> ssh://podman-runner@localhost
+----
+
+之后我们就可以使用下面的命令远程执行远程控制了：
+
+[source, sh]
+----
+podman --remote <podman 指令>
+----
+
+在 Linux 上，若我们希望使用 podman 命令的时候，总是运行远程命令，我们还可以修改当前用户的 **~/.config/containers/containers.conf**，添加如下的内容：
+
+[source, toml]
+.~/.config/containers/containers.conf
+----
+[engine]
+remote = true
+----
+
+这样我们就不必在命令行中指定 `--remote` 参数了。
