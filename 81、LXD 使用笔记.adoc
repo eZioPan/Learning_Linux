@@ -22,7 +22,7 @@
 
 于是从上面的仓库中下载编译好的内核，在 Windows `%USERPROFILE%\.wslconfig` 添加/修改如下内容
 
-[source, toml]
+[source, ini]
 .%USERPROFILE%\.wslconfig
 ----
 [wsl2]
@@ -96,7 +96,7 @@ apt install snapd
 虽然我们使用的内核已经支持了 AppArmor，但由于是在 WSL 中运行的 Ubuntu，因此 `securityfs` 这个重要的组件没有被自动挂载，这里我们需要写一个 service，让其可以自动挂载 +
 依照 link:https://github.com/microsoft/WSL/issues/8840#issuecomment-1254524930[#8840] 的说法，创建 `/etc/systemd/system/mount_securityfs.service`
 
-[source, toml]
+[source, ini]
 ./etc/systemd/system/mount_securityfs.service
 ----
 [Unit]
