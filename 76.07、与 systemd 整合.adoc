@@ -136,7 +136,7 @@ vim ~/.config/containers/systemd/fedora-systemd-nginx.container
 
 特别注意，下面这个文件的注释不要写在行末尾，因为 Quadlet 可能会将设置的内容进行二次拼接，导致注释成为拼接内容的一部份
 
-[source, toml]
+[source, ini]
 .~/.config/containers/systemd/fedora-systemd-nginx.container
 ----
 # systemd 标准段落会直接传递给 systemd
@@ -173,7 +173,7 @@ mkdir -p ~/.config/containers/systemd/fedora-systemd-nginx.container.d
 vim ~/.config/containers/systemd/fedora-systemd-nginx.container.d/enabling.conf
 ----
 
-[source, toml]
+[source, ini]
 .~/.config/containers/systemd/fedora-systemd-nginx.container.d/enabling.conf
 ----
 # systemd 标准段落会直接传递给 systemd
@@ -252,7 +252,7 @@ Quadlet 除了可以处理 **.container** 文件，将其转化为启动容器�
 
 举例
 
-[source, toml]
+[source, ini]
 .~/.config/containers/systemd/fedora-systemd-nginx.build
 ----
 # 这是一个简易的镜像构建配置文件
