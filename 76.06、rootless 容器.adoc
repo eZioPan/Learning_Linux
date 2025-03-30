@@ -158,3 +158,58 @@ cat /proc/$(pidof -- catatonit -P)/uid_map
 ====
 
 如果你在容器中查看根目录的信息，你会发现 **/proc** 和 **/sys** 的所有者为 **nobody**，对应的 UID 为 **65534**。它表示的是，这个文件夹的实际的 UID 没有被 uid_map 映射到容器所在的用户命名空间，于是内核将这个 UID 赋予 overflow uid 65534，**ls** 将其显示为 nobody。
+
+[TIP]
+====
+关于 ID Mapping 和 overflowuid/overflowgid 的文章，见 link:https://www.kernel.org/doc/html/latest/filesystems/idmappings.html[]
+====
+
+==== 挂载命名空间（mount namespaces）
+
+挂载命名空间可以让你在该命名空间中挂载文件系统，但这些挂载点不会被该命名空间之外的进程看到。比如说，在一个挂载命名空间中，你可以在 **/tmp** 挂载一个 **tmpfs**，这样就可以阻止该命名空间中的进程读写 **/tmp** 中原有的内容；但是在该挂载命名空间之外的进程则依旧可以读写原始 **/tmp** 中的内容，而不受到挂载命名空间的影响。
+
+比如，我们对比一下 `podman unshare` 所在的命名空间和外部命名空间的差异：
+
+[source, sh]
+----
+diff --color=always <(podman unshare sh -c "ls -l /proc/self/ns | awk '/^l/ {print \$(NF-2), \$(NF-1), \$NF}'") <(ls -l /proc/self/ns | awk '/^l/ {print $(NF-2), $(NF-1), $NF}')
+----
+
+可以发现 `podman unshare` 创建了用户命名空间和挂载命名空间。
+
+然后我们比较一下 `podman unshare` 和外部挂载的内容的不同：
+
+[source, sh]
+----
+diff --color=always <(mount | sort) <(podman unshare sh -c 'mount | sort')
+----
+
+然后我们可以在 `podman unshare` 自行挂载一个文件：
+
+[source, sh]
+----
+echo "hello" > /tmp/mytestfile
+podman unshare sh -c 'mount -o bind /tmp/mytestfile /etc/shadow; cat /etc/shadow'
+cat /etc/shadow
+----
+
+可以发现，unshare 创建的命名空间内部的 **/etc/shadow** 的内容的确被 mount 成为了 **/tmp/mytestfile** 的内容。而命名空间外的 **/etc/shadow** 并未受到影响。
+
+==== 用户命名空间和挂载命名空间
+
+从上一个案例中可以看到，若你可以 bind mount **/etc/shadow** 文件，那么你就可以迷惑具有 **setuid** 的软件（比如 **/bin/su** 和 **/bin/sudo**），让你可以获得 root 权限。这也是为什么非 root 用户不可以执行挂载的原因。
+
+在 `podman unshare` 的过程中，即便我们可以修改 **/etc/shadow** 从而迷惑具有 **setuid** 的软件，我们也无法逃脱用户命名空间，而影响宿主系统。
+
+不过，即便使用了命名空间，Linux 内核也不会让非 root 用户随意挂载任何文件系统，因为部分文件系统可以修改 Linux 内核的关键部分。
+
+== rootless Podman 的底层机制
+
+在系统启动后，首次（成功）运行 Podman 程序（无需启动一个容器）的时候，Podman 会读取 **/etc/subuid** 和 **/etc/subgid**，并从中查询与当前用户相匹配的条目，从而获取当前用户可以使用的 subuid 和 subgid。之后就会创建一个 `catatonit -P` 进程，该进程会持有用户命名空间和一个挂载命名空间，其中 `catatonit -P` 进程的 **/proc/self/uid_map** 和 **/proc/self/gid_map** 则会包含当前用户的 UID/GID 以及 subuid/subgid。
+
+即便系统上的所有容器都已经退出，Podman 依旧会保留 `catatonit -P` 进程，这个进程会继续持有用户命名空间和挂载命名空间，直到该进程退出（当前用户退出、强制退出该进程，或者执行了 `podman system migrate`）。`catatonit -P` 持续存在的意义，就是持有用户进程空间，让所有的容器都运行在同一个用户命名空间里。所有的容器都运行在同一个命名空间下，才能让共享内容和其它命名空间成为可能。
+
+[NOTE]
+====
+若你在运行了 Podman 之后修改了 **/etc/subuid** 或 **/etc/subgid**，你会发现这个修改不是立刻生效的，因为 `catatonit -P` 的 **uid_map** 和 **gid_map** 依旧是之前的内容。此时，你需要运行 `podman system migrate`，清除 `catatonit -P` 进程，才能在下次创建 `catatonit -P` 的时候，读取到新的 subuid 和 subgid。
+====
