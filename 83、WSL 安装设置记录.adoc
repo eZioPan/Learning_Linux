@@ -210,7 +210,7 @@ reboot
 
 === fedora 镜像默认无 man 帮助文件
 
-如下注释 /etc/dnf/dnf.conf 中的下面这行
+如下，注释 /etc/dnf/dnf.conf 中的下面这行
 
 [source, ini]
 ./etc/dnf/dnf.conf
@@ -229,7 +229,7 @@ dnf install man
 
 [source, sh]
 ----
-dnf repoquery --installed | sudo xargs dnf reinstall -y
+sudo dnf reinstall -y $(dnf repoquery --installed)
 ----
 
 === 缩减 vhdx 大小
