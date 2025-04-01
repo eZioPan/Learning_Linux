@@ -213,3 +213,28 @@ cat /etc/shadow
 ====
 若你在运行了 Podman 之后修改了 **/etc/subuid** 或 **/etc/subgid**，你会发现这个修改不是立刻生效的，因为 `catatonit -P` 的 **uid_map** 和 **gid_map** 依旧是之前的内容。此时，你需要运行 `podman system migrate`，清除 `catatonit -P` 进程，才能在下次创建 `catatonit -P` 的时候，读取到新的 subuid 和 subgid。
 ====
+
+=== 拉取镜像
+
+当我们使用 `podman pull` 拉取镜像文件的时候，Podman 会首先拉取远程服务器上的镜像文件列表，并与当前系统上已有的镜像进行对比，若存在则不实际执行拉取，否则执行拉取操作。
+
+执行拉取操作的过程，大致有以下几步：
+
+. 从 registry 下载镜像的 manifest
+. 依照 manifest 下载镜像的 config 和 layer 文件
+. 通过 OverlayFS 将解压的 layer 文件和 config 文件逐层挂载为最终的容器文件
+
+这里需要注意的是，拉取操作是在 `catatonit -P` 创建的用户命名空间和挂载命名空间下执行的。也就是说，Podman 解包镜像 tar 文件的时候，解压出来的文件就已经在 Podman 的用户命名空间下了。在宿主机看来，这些文件具有的 UID/GID 实际上完全处于普通用户的 UID/GID/SUBUID/SUBGID 下了。
+
+[NOTE]
+====
+如果你拉取/导入的镜像文件中的文件或文件夹，具有的 UID/GID 大于当前账户能使用的 SUBUID/SUBGID 长度（比如镜像中有一个 UID 1000 的普通账户，但 SUBUID 仅支持 1~100 的值）。那么，在解包这个镜像文件的时候，就会产生错误 **potentially insufficient UIDs or GIDs available in user namespace** 从而禁止导入。
+
+你可以尝试在默认的 SUBUID/SUBGID 创建的命名空间下，通过 **useradd** 在容器中创建一个普通账户，这个账户的 UID/GID 应该为 1000。之后使用 `podman container export --output <输出文件名>.tar <容器 Tag>` 导出容器文件。之后修改（记得提前备份文件）**/etc/subuid** 和 **/etc/subgid** 中的值，将长度缩小到比如 `100`。再运行 `podman system migrate` 后，通过 `podman image import <导入文件>.tar <新容器 Tag>` 来导入镜像，就会触发上述的错误。当然做完这些之后，记得还原 **/etc/subuid** 和 **/etc/subgid** 中的内容，并再次运行 `podman system migrate` 完成 Podman 环境的还原。
+====
+
+=== 创建一个容器
+
+这一步就是 Podman 会基于镜像创建一个容器，在构建好的 overlayfs 上再挂载一个可读写的新 overlayfs 作为用户操作的最终文件系统。之后将容器的各种信息加入到一个 Podman 内部的数据库中。
+
+之后，Podman 需要为容器配置网络。
