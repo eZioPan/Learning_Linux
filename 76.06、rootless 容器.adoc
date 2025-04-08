@@ -238,3 +238,60 @@ cat /etc/shadow
 这一步就是 Podman 会基于镜像创建一个容器，在构建好的 overlayfs 上再挂载一个可读写的新 overlayfs 作为用户操作的最终文件系统。之后将容器的各种信息加入到一个 Podman 内部的数据库中。
 
 之后，Podman 需要为容器配置网络。
+
+=== 配置网络
+
+在 rootless 容器中，Podman 在容器中使用 **pasta** 程序为容器提供网络服务。
+
+[NOTE]
+====
+* 在 rootful 容器中，Podman 默认使用 **netavark** 程序配置 Linux 内核，创建独立的接口和网桥。
+* 在 Podman 4.0 之前，rootless 容器的网络默认通过 **slirp4netns** 程序提供的，rootful 容器的网络默认通过 **CNI** 程序进行配置的。
+====
+
+pasta 会在 rootless 容器中创建一个类型为 TUN/TAP 的网络接口，而这个网络接口的另一端则为宿主机上运行的 pasta 进程，这个 pasta 进程会通过套接字与宿主机上的网络栈交互，从而达到转发容器与外界的网络报文的功能（这里包括将容器内的端口映射至宿主机上的功能）。
+
+[NOTE]
+====
+rootless 容器除了直接使用 pasta，其实也是支持使用网桥模式的。我们可以在创建 rootless 容器时，传入 `--network podman`，让容器接入名为 `podman` 的默认网桥。
+
+根据测试，使用 `--network pasta` 时，网络接口、网络服务完全由 pasta 提供，pasta 进程退出意味着容器完全断网。使用 `--network podman` 时，网络接口（ISO二层功能）由 brige 提供，但路由（ISO三层功能）依旧由 pasta 承担。
+====
+
+在容器的存储了网络都配置好之后，Podman 将启动容器进程。
+
+=== 启动容器监视器：common
+
+Podman 会运行 **conmon**（CONtainer MONitor），它会监测容器的整个运行周期，并负责接收容器日志，转发标准输入输出、标准错误，处理信号转发，向 Podman 回报容器状态的功能。在容器运行的初期，它还会依照配置调用容器的运行时（Podman 一般使用 **crun**）来为容器实际的主进程。
+
+=== 启动 OCI 运行时
+
+OCI 运行时会读取 OCI 配置文件，并配置内核以运行容器。OCI 运行时会执行如下操作：
+
+. 为容器创建额外的命名空间
+. 配置 cgroups v2
+. 为运行中的容器设置 SELinux 上下文
+. 读取 **/usr/share/containers/seccomp.json** 文件，将其中规则转换为 seccomp 内核规则，并写入内核中，以额外限制容器的权限。
+. 为容器设置环境变量
+. 将 Volume 挂载至 rootfs 上
+. 将当前的根目录切换到 rootfs 上
+. fork 出容器进程
+. 执行任何 OCI 钩子程序，并向其传递 rootfs 和容器的 PID 1 进程
+. 执行镜像指定的命令
+. 推出 OCI 运行行，让 **conmon** 继续监视容器
+
+若我们需要连接容器的输入输出，则是通过 **conmon** 执行转发的。
+
+=== 容器化应用运行，直到退出
+
+容器中的进程可以自行退出，或者被用户的 `podman stop <容器名称>` 退出。
+
+当容器的进程退出后，内核会向对应的 **conmon** 发送 **SIGCHLD** 信号，以提示 **conmon** 其管理的子进程的状态发生变化。之后，**conmon** 会执行如下操作：
+
+. 接收容器的退出码（这一步也防止子进程变成僵尸进程）
+. 关闭容器的日志文件
+. 关闭 Podman 命令的 StdOut 和 StdErr
+. 执行 `podman conainer cleanup <容器 ID>` 命令
+. **conmon** 自身退出
+
+`podman container cleanup` 负责退出 **pasta** 网络，并卸载容器的所有挂载点。若我们指定了 `--rm` 参数，则还会额外移除容器存储的 layer，并将容器从数据库中移除。
