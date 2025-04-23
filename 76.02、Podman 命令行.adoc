@@ -102,7 +102,11 @@ podman stop <正在运行的容器的名称>
 
 [NOTE]
 ====
-特别的，若我们的容器的主进程是 systemd，那么默认情况下，停止信号将被修改为 systemd 接受的 SIGRTMIN+3（systemd 将其解读为 “Halts the machine”），而非普通的 SIGTERM。
+特别的，
+
+* 若我们的容器的主进程是 systemd，那么默认情况下，停止信号会自动修改为 systemd 接受的 **SIGRTMIN+3**（systemd 将其解读为 “Halts the machine”），而非普通的 **SIGTERM**。
+
+* 若我们的容器的主进程是 bash，那么在创建容器时，我们最好将容器的停止信号修改为 **SIGHUP**（`--stop-signal SIGHUP`），因为默认的 **SIGTERM** 是不会触发 bash 退出的。
 ====
 
 `podman stop` 还有几个常用的参数

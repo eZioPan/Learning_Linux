@@ -1,0 +1,103 @@
+= 容器隔离
+
+容器共用一个系统内核，若一个容器能控制宿主机的内核，那么它就能控制所有在该宿主机上运行的容器，以及所有宿主机上运行的非容器进程。同样的，若一个容器能直接控制底层的文件系统，那么它就有可能随意读写文件系统上的任何文件。从这种意义上来说，容器安全的首要任务就是保护内核和文件系统不被容器随意修改。
+
+== 只读 Linux 内核伪文件系统
+
+Linux 内核通过特定的文件系统，让进程可以与内核通信，并配置内核。我们需要保护这些文件系统，防止受限容器修改它们。
+
+Linux 内核的伪文件系统通常挂载在 **/proc** 和 **/sys** 下。大多数进程需要读取这些文件系统下的数据，但仅有管理员需要额外的写入权限。通常来说，内核会要求 root 权限，或者具有 **CAP_SYS_ADMIN** 能力（capability）的进程来修改这些文件系统。
+
+在处理挂载至 **/proc** 和 **/sys** 的伪文件系统的时候，Podman 仅会以只读的方式挂载部分 **/sys** 下的文件系统，而 **/proc** 则与宿主系统上的 **/proc** 完全不同（这样容器内的进程就只能控制容器内启动的进程了）。而且，部分文件/文件夹会包含宿主系统的关键信息，这些文件会被挂载为 **/dev/null**，文件夹会被挂载上只读的 tmpfs，以防止泄露数据。
+
+[NOTE]
+====
+在容器中运行 `mount` 命令，可以查看容器内部的挂载情况。
+====
+
+== Unmask 已经 mask 的路径
+
+我们可以在创建容器的时候，指定不要被 mask 的路径。比如 **/proc/scsi** 默认是被 mask 的：
+
+[source, sh]
+----
+# 检查 mount 情况，从返回值可以看到，/proc/scsi 被挂载了一个 0k 大小的只读 tmpfs
+podman run --rm fedora:41 mount | grep /proc/scsi
+
+# 检查 /proc/scsi 的内容，从返回值可以知晓，这个目录下什么也没有
+podman run --rm fedora:41 ls -l /proc/scsi
+----
+
+之后，我们在创建容器的时候，可以通过 `--security-opt unmask=<路径>` unmask **/proc/scsi**
+
+[source, sh]
+----
+# 在 unmask /proc/scsi 的情况下，枚举该路径下的文件，可以看到其中具有一些内容
+podman run --rm --security-opt unmask=/proc/scsi fedora:41 ls -l /proc/scsi
+----
+
+[NOTE]
+====
+阅读 podman-create 的帮助中，有关于 security-opt 的 unmask 的部分，可以知晓 podman 默认 mask 的路径。
+====
+
+== Mask 额外的路径
+
+`security-opt` 可以 unmask 已经 mask 了的路径，就可以 mask 还未 mask 的路径。
+
+[source, sh]
+.mask **/proc/sys/dev**
+----
+# 首先检查 /proc/sys/dev 下的内容
+podman run --rm fedora:41 ls -l /proc/sys/dev
+
+# mask 这个路径
+podman run --rm --security-opt mask=/proc/sys/dev fedora:41 ls -l /proc/sys/dev
+----
+
+== Linux 能力（capabilities）
+
+现在有一个问题，若容器可以知晓容器挂载的路径，那么我们如何阻止容器中以 root 身份运行的程序解挂载、或将只读挂载重挂载为读写模式，进而攻击内核呢？
+
+大多数用户知道 Linux 有两类用户，具有完整权限的 root 用户，以及具有有限权限的非 root 用户。当一个非 root 用户需要执行高权限的程序的时候，非 root 用户需要提权操作（比如 `sudo` 和 `ping`），这个操作是通过给特定程序文件设置 **setuid** 位来实现的。当非 root 用户运行了具有 **setuid** 的程序文件的时候，新进程就具有了 root 权限。
+
+这种简单地将用户/进程区分为特权和非特权的方式，在 2000 年左右迎来了其终结。Linux 内核工程师们将 root 权限拆分为了数个特权能力（capabilities）。我们可以通过 `man 7 capabilities` 了解这些能力。 +
+要想了解当前内核支持的能力，可以读取 **/proc/sys/kernel/cap_last_cap**。它表示当前内核支持的最大能力序号，也就是说，当前内核支持从 0 号能力到文件所给出的最大能力之间的所有的能力。不过很可惜的是，我们并不能直接通过软件获得能力序号与名称之间的关系，我们需要搜索 Linux kernel 的源码来了解对应关系：**/usr/src/kernels/$(uname --kernel-release)/include/uapi/linux/capability.h**
+
+要了解当前用户所具有的能力，以及（通过诸如 setuid）可以获得的能力，可以使用 `capsh --print` 命令。 +
+`capsh --print` 返回值中的 `Current=` 表示当前用户已经具有的能力，而 `Bouding set=` 则表示可能可以获得的能力的最大范围。
+
+=== 移除的 Linux 内核能力
+
+由于容器内的进程不应该修改操作系统，因此，Podman 控制的容器，即便其中的进程具有 UID=0，它也仅具有少数几个 Linux 内核能力。我们可以在容器中运行 `capsh --print` 来查看容器进程具有的能力。
+
+[source, sh]
+----
+podman run --rm fedora:41 capsh --print
+----
+
+[NOTE]
+====
+在容器中检查 **/proc/sys/kernel/cap_last_cap** 会获得与宿主机上一致的结果，毕竟容器使用的内核和宿主机上的一致。
+====
+
+=== 手动移除或添加 Linux 内核能力
+
+使用 `--cap-drop=` 和 `--cap-add=` 可以移除和添加 Linux 内核能力。
+
+[source, sh]
+----
+# 比如，我们不需要容器可以绑定端口号小于 1024 的能力
+podman run --rm --cap-drop CAP_NET_BIND_SERVICE fedora:41 capsh --print
+
+# 比如，我们要创建一个自定义的 IP 包
+podman run --rm --cap-add CAP_NET_RAW fedora:41 capsh --print
+----
+
+=== 阻止获取新的 Linux 内核能力
+
+使用 `--security-opt no-new-privileges` 可以阻止容器内的进程获取新的内核能力。这样，即便容器内的进程执行了具有 setuid 的软件，进程也无法获得新的能力。同时，这个选项还会阻止进程执行 SELinux 上下文切换。
+
+== UID 隔离：用户命名空间（User namespace）
+
+虽然移除 Linux 内核能力能大大增强容器内进程的安全性。但以 root 身份运行的程序依旧可以修改所有者为 root 账户的文件。Podman 使用用户命名空间来解决这个问题。
