@@ -100,4 +100,37 @@ podman run --rm --cap-add CAP_NET_RAW fedora:41 capsh --print
 
 == UID 隔离：用户命名空间（User namespace）
 
-虽然移除 Linux 内核能力能大大增强容器内进程的安全性。但以 root 身份运行的程序依旧可以修改所有者为 root 账户的文件。Podman 使用用户命名空间来解决这个问题。
+虽然移除 Linux 内核能力能大大增强容器内进程的安全性。但以 root 身份运行的程序依旧可以修改所有者为 root 账户的文件；以 root 账户运行的程序，可以修改系统文件，并诱使管理员运行这些修改过的文件；而且部分客户端-服务器设计的程序会直接相信以 root 账户运行的进程（比如 Docker）。Podman 使用用户命名空间来解决这些问题。
+
+在 xref:76.06、rootless 容器.adoc[] 中，我们介绍了有关用户命名空间的概念。这样我们在容器中的 root 账户，在系统看来则不是，解决了上述问题。
+
+对于 rootless 用户来说，还有一个问题：默认情况下，素有的容器都是在同一个用户命名空间中运行的。在理论上，仅从用户命名空间的角度来说，一个容器是可以攻击另一个容器的，因为它们具有相同的 UID。而且，若容器内的进程突破了容器，那么它们就可以任意修改你主文件夹中的任意文件，因为 rootless 容器内部的 root 账户，对应的是运行容器的用户的账户。
+
+=== 使用 `--userns=auto` 隔离容器
+
+Podman 是可以为每个启动的容器分配一组独占的 UID 的。在 rootless 模式下，创建容器的时候使用 `--userns=auto` 会自动执行如下的操作：
+
+* 不将主机上当前用户的 UID 映射为容器内 UID 0
+* 自动配置映射，将中间 UID 映射为容器 UID +
+默认的效果是，读取 **/etc/subuid** / **/etc/subgid** 中可使用的 UID/GID 范围，判断当前系统上已经独占的 subuid/subgid，从可用的 subuid/subgid 的起点，并占用之后的 1024 个 subuid/subgid。
++
+[NOTE]
+====
+* 默认的 1024 这个值，可以通过修改 `storage.conf` 中的 `auto-userns-min-size` 来修改。
+* 在命令行设置中，我们可以使用 `--userns:size=<所需长度>` 为容器精确设置映射长度。
+====
+
+[NOTE]
+====
+查询了 `man podman-create` 的 `--uidmap` 的部分可知：
+
+对于 rootless 容器来说，UID 映射经过了两步：
+
+host UID（主机 UID） -> intermediate UID（中间 UID） -> container UID（容器 UID）
+
+其中“主机 UID”至“中间 UID”的映射是 Podman 软件定义的，主机上的当前用户 UID 映射到“中间 UID”的 0，**/etc/subuid** 中定义的 UID 则顺次映射到“中间 UID”的 1,2,3,4。`--uidmap` 定义的是，“中间 UID”到“容器 UID”之间的映射，选项参数 `from_uid` 对应的是“中间 UID”的起点，`container_uid` 对应的是“容器 UID”的起点，`amount` 对应的是映射的长度。
+
+我们可以使用 `podman container inspect <容器名> --format '{{json .HostConfig.IDMappings}}'` 查看容器的 UID/GID 映射，返回的数组，比如 **["0:1:1024"]** 表示的就是 `--uidmap` 的参数 **["容器 UID:中间 UID:映射长度"]**。
+
+我们可以通过 `podman ps --ns <容器名>` 获取 PID 之后，使用 `cat /proc/<容器 PID>/uid_map` 来印证这个猜想。（当然，不要忘记，**{{json .HostConfig.IDMappings}}** 返回的是“容器 UID”和“中间 UID”之间的映射，而 **/proc** 下的 **uid_map** 是“容器 UID”和“主机 UID”之间的映射）
+====
