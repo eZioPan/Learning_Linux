@@ -1,50 +1,16 @@
 = 用 systemd-boot 替换 grub
 
-== 新增内容
+== 版改版说明
 
-[NOTE]
-====
 v2 版改版说明：
 
 * 在第一版中，笔者没有遵循 Fedora 对于 BOOT 分区和 EFI 分区的建议，导致了一些兼容性问题。在这一版中统一按照 Fedora 的规划进行设置。
 * 优化了部分操作过程，尽量使用现有的工具
 * 明确了部分用语
-====
 
-[IMPORTANT]
-====
-请务必准备一个可以启动的 Fedora Workstation LiveCD，万一在下面的调整中出现任何错误，我们还有从 LiveCD 启动，并挂载硬盘 chroot 进行补救的操作。
+== 关于按照第一版文章操作后，在系统大版本更新之后无法启动的急救
 
-[NOTE]
-======
-为了保证 chroot 后可以使用大部分工具，除了 mount 根目录之外，还需要额外挂载一些关键目录
-
-[source, sh]
-------
-# 这里做如下假设
-# 1. EFI 分区在 sda1 上
-# 2. 根目录具有 btrfs 文件系统，其在 sda2 上
-# 3. 根目录挂载点设置在 /mnt 下
-
-# 挂载根目录
-# 由于 btrfs 的存在，这里我们要指定需要挂载的是 root 子卷
-mount /dev/sda2 /mnt -o subvol=/root
-
-# 挂载常见的虚拟文件系统
-mount --bind /proc /mnt/proc
-mount --bind /sys /mnt/sys
-mount --bind /dev /mnt/dev
-mount --bind /run /mnt/run
-
-# 特别的，由于 bootctl install 需要修改 UEFI 变量，因此，我们需要额外挂载 efivars 文件夹
-mount --bind /sys/firmware/efi/efivars /mnt/sys/firmware/efi/efivars
-------
-
-这样设置之后，我们就有了一个基本可用的 chroot 环境了。使用 `chroot /mnt` 进入环境后，我们就可以使用 `mount -a` 自动加载其它的文件系统了。
-======
-====
-
-[IMPORTANT]
+[%collapsible]
 ====
 如果你阅读了第一版文章，且更新到了 Fedora 41，那么在 systemd-boot 引导后会出现 **Error preparing initrd: not found**，请使用下方的命令进行急救：
 
@@ -73,6 +39,35 @@ mount --bind /sys/firmware/efi/efivars /mnt/sys/firmware/efi/efivars
 ... 使用 `bootctl list` 确认可引导条目正确
 .. 重启系统
 ====
+
+== 必要的后备措施
+
+请务必准备一个可以启动的 Fedora Workstation LiveCD，万一在下面的调整中出现任何错误，我们还有从 LiveCD 启动，并挂载硬盘 chroot 进行补救的操作。
+
+在 LiveCD 环境中，为了保证 chroot 后可以使用大部分工具，除了 mount 根目录之外，还需要额外挂载一些关键目录：
+
+[source, sh]
+------
+# 这里做如下假设
+# 1. EFI 分区在 sda1 上
+# 2. 根目录具有 btrfs 文件系统，其在 sda2 上
+# 3. 根目录挂载点设置在 /mnt 下
+
+# 挂载根目录
+# 由于 btrfs 的存在，这里我们要指定需要挂载的是 root 子卷
+mount /dev/sda2 /mnt -o subvol=/root
+
+# 挂载常见的虚拟文件系统
+mount --bind /proc /mnt/proc
+mount --bind /sys /mnt/sys
+mount --bind /dev /mnt/dev
+mount --bind /run /mnt/run
+
+# 特别的，由于 bootctl install 需要修改 UEFI 变量，因此，我们需要额外挂载 efivars 文件夹
+mount --bind /sys/firmware/efi/efivars /mnt/sys/firmware/efi/efivars
+------
+
+这样设置之后，我们就有了一个基本可用的 chroot 环境了。使用 `chroot /mnt` 进入环境后，我们就可以使用 `mount -a` 自动加载其它的文件系统了。
 
 == 简述
 
@@ -119,10 +114,10 @@ systemd-boot 是 systemd 推出的仅支持 UEFI 模式启动的 boot loader，�
 
 [source, sh]
 ----
-dnf install --allowerasing sdubby
+dnf swap grubby sdubby
 ----
 
-安装 sduddy 包会同时安装 systemd-boot-unsigned，并移除 grubby 包。
+上述操作会用 sduddy 包替换 grubddy 包，并安装 sdubby 的依赖包 systemd-boot-unsigned。
 
 sdubby 包中有不少与 systemd-boot 相关的配置文件，而 systemd-boot-unsigned 包则包含了 systemd-boot 所需的 efi 文件。
 
@@ -134,21 +129,21 @@ sdubby 包中有不少与 systemd-boot 相关的配置文件，而 systemd-boot-
 如果你不幸关闭了系统，那么可以在 BIOS/UEFI 中选择 **shimx64.efi** 进行启动。
 ====
 
+在正式操作之前，我们先将系统自带的，错误的 systemd-boot 条目进行备份：
+
+[source, sh]
+----
+mv /boot/loader/ /boot/loader.bk
+----
+
+之后，我们通过 `bootctl` 命令写入 UEFI 条目：
+
 [source, sh]
 ----
 bootctl install
 ----
 
 该操作将会在 **/boot/efi** 中释放相关的文件，主要是将 **sysstemd-bootx64.efi** 拷贝至 **/boot/efi/EFI/systemd/** 下，并用相同的文件覆盖了 **/boot/efi/EFI/BOOT/BBOTX64.efi**；并在 EFI 自己的 NVRAM 里写入 systemd-boot 对应的启动项配置，我们可以通过 `efibootmgr` 命令观察到名为 `Linux Boot Manager` 的启动项。
-
-之后我们就可以通过下面的命令查看可以由 systemd-boot 引导的系统：
-
-[source, sh]
-----
-bootctl list
-----
-
-给出的信息会有各种报错，这是因为系统上默认的配置文件并不符合 systemd-boot 的配置要求，因此我们还需要使用其它工具生成正确的配置。
 
 === 使用 kernel-install 产生可用的配置文件
 
@@ -159,7 +154,7 @@ kernel-install --verbose add-all
 
 === 重启后的配置
 
-在重启之后，我们再次使用 `bootctl stataus` 命令，就可以看到其输出中有
+在重启之后，我们再次使用 `bootctl status` 命令，就可以看到其输出中有
 
 [source]
 ----
@@ -168,6 +163,13 @@ Current Boot Loader:
 ----
 
 字样，就表示本次启动是通过 systemd-boot 引导的了。
+
+此时，我们就可以移除上面我们进行备份的系统自带的错误配置文件了：
+
+[source, sh]
+----
+rm -r /boot/loader.bk
+----
 
 不过我们在启动过程中，应该没有看到任何的启动菜单界面，这个并不符合我们的要求，因此我们还需要再做一些配置，让启动菜单显示出来。
 
@@ -192,13 +194,14 @@ Current Boot Loader:
 ====
 
 . 为 sdubby 和 systemd-boot-unsigned 包添加保护 +
-在 **/etc/dnf/protected.d/** 下添加文件 **systemd-boot.conf**，并在其中写入下面的内容
+在 **/etc/dnf/protected.d/** 下添加文件 **systemd-boot.conf**，并写入对应的内容
 +
-[source]
-./etc/dnf/protected.d/systemd-boot.conf
+[source, sh]
 ----
+cat << EOF | sudo tee /etc/dnf/protected.d/systemd-boot.conf
 sdubby
 systemd-boot-unsigned
+EOF
 ----
 
 . 测试 sdubby 和 systemd-boot-unsigned 是否被保护成功
@@ -210,13 +213,6 @@ dnf remove --setopt=tsflags=test sdubby systemd-boot-unsigned
 +
 如果返回错误表示要移除的是 **protected packages** 则表示保护成功
 
-. 移除 dnf 中 grub2、shim 包相关的保护
-+
-[source, sh]
-----
-rm -f /etc/dnf/protected.d/grub2-*.conf /etc/dnf/protected.d/shim.conf
-----
-
 . 移除 grub 和 shim 相关的包
 +
 [IMPORTANT]
@@ -227,7 +223,8 @@ rm -f /etc/dnf/protected.d/grub2-*.conf /etc/dnf/protected.d/shim.conf
 +
 [source, sh]
 ----
-dnf remove grub* shim* mactel-boot
+# 临时禁用所有的包保护
+dnf remove --setopt protected_packages= grub* shim* mactel-boot
 ----
 +
 注：我的电脑不是 mac，因此我还移除了引导 mac 相关的 mactel-boot 包

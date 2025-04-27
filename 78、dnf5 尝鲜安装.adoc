@@ -103,7 +103,7 @@ dnf5 update dnf5
 之后，为了保证我们一直优先使用 copr 的 dnf5，我们可以设置一下这个 copr 仓库的优先级 +
 编辑 **/etc/yum.repos.d/_copr:copr.fedorainfracloud.org:rpmsoftwaremanagement:dnf5-testing.repo** 或 ****/dnf5-testing-nightly.repo** 这个文件，在其中加入一行
 
-[source]
+[source, toml]
 ----
 priority=95
 ----
@@ -111,3 +111,15 @@ priority=95
 默认情况下，一个 repo 的优先级为 99，值越小越优先，这里设置到 95，就可以保证比 update 和 fedora 这两个 repo 更加优先
 
 另：在使用 `sudo` 的时候，将被 sudo 的指令所需要的环境变量写在 `sudo` 的后面，默认情况下，sudo 前面的环境变量是不会传递给里面的命令的
+
+添加如下的配置，可以让 dnf 快速跳过过慢的远程服务器，新增文件 **/etc/dnf/libdnf5.conf.d/99-minrate.conf**
+
+[source, toml]
+/etc/dnf/libdnf5.conf.d/99-minrate.conf
+----
+[main]
+minrate = 500K #设置最小传输速率
+timeout = 5 #当传输速率连续 5 秒小于我们设置的最小值的时候，放弃该服务器
+----
+
+另：临时使用可以在命令行中添加 `--setopt minrate=500K --setopt timeout=5` 来实现。
