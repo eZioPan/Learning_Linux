@@ -143,7 +143,12 @@ cat /proc/1/uid_map
 
 [source, sh]
 ----
-cat /proc/$(pidof -- catatonit -P)/uid_map
+# 查询容器初始进程（init process，也就是通常意义上的容器的主进程）的 PID 号
+podman ps --ns
+# 用 podman container inspect --format '{{.State.Pid}}' <容器名> 也可以获取容器的 PID
+
+# 获取容器初始进程的 uid_map
+cat /proc/<容器初始进程的 PID>/uid_map
 ----
 
 [source, sh]
@@ -159,7 +164,9 @@ cat /proc/$(pidof -- catatonit -P)/uid_map
 
 [NOTE]
 ====
-准确来说，我们从容器所在用户命名空间的**外部**查看容器的 uid_map 和 gid_map 返回的不一定是正确的信息。这是因为，即便是同一个 uid_map/gid_map 文件，不同的用户查看到的数据也可能是不同的，详见 `man 7 user_namespaces` 的 __User and group ID mappings: uid_map and gid_map__ 段落 。最正确的方法应该还是在容器中运行 `cat /proc/self/uid_map` 来获取准确的信息。
+* 在容器运行的时候，如果你有使用 `sudo lsns --tree` 查看过系统上的各种命名空间，那么你可以发现，普通 rootless 容器是直接继承一个 `catatonit -P` 创建的用户命名空间的，而非直接在容器上创建的。这意味着，同一个常规用户下运行的所有常规容器，都公用同一个用户命名空间。这一点在我们之后解释容器安全性的时候会再次提及。
+
+* 准确来说，我们从容器所在用户命名空间的**外部**查看容器的 uid_map 和 gid_map 返回的不一定是正确的信息。这是因为，即便是同一个 uid_map/gid_map 文件，不同的用户查看到的数据也可能是不同的，详见 `man 7 user_namespaces` 的 __User and group ID mappings: uid_map and gid_map__ 段落 。最正确的方法应该还是在容器中运行 `cat /proc/self/uid_map` 来获取更准确的信息。
 ====
 
 如果你在容器中查看根目录的信息，你会发现 **/proc** 和 **/sys** 的所有者为 **nobody**，对应的 UID 为 **65534**。它表示的是，这个文件夹的实际的 UID 没有被 uid_map 映射到容器所在的用户命名空间，于是内核将这个 UID 赋予 overflow uid 65534，**ls** 将其显示为 nobody。

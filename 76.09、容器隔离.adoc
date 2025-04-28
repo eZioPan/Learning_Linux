@@ -15,7 +15,7 @@ Linux 内核的伪文件系统通常挂载在 **/proc** 和 **/sys** 下。大�
 在容器中运行 `mount` 命令，可以查看容器内部的挂载情况。
 ====
 
-== Unmask 已经 mask 的路径
+=== Unmask 已经 mask 的路径
 
 我们可以在创建容器的时候，指定不要被 mask 的路径。比如 **/proc/scsi** 默认是被 mask 的：
 
@@ -41,7 +41,7 @@ podman run --rm --security-opt unmask=/proc/scsi fedora:41 ls -l /proc/scsi
 阅读 podman-create 的帮助中，有关于 security-opt 的 unmask 的部分，可以知晓 podman 默认 mask 的路径。
 ====
 
-== Mask 额外的路径
+=== Mask 额外的路径
 
 `security-opt` 可以 unmask 已经 mask 了的路径，就可以 mask 还未 mask 的路径。
 
@@ -129,10 +129,21 @@ Podman 是可以为每个启动的容器分配一组独占的 UID 的。在 root
 host UID（主机 UID） -> intermediate UID（中间 UID） -> container UID（容器 UID）
 
 其中“主机 UID”至“中间 UID”的映射是 Podman 软件定义的，主机上的当前用户 UID 映射到“中间 UID”的 0，**/etc/subuid** 中定义的 UID 则顺次映射到“中间 UID”的 1,2,3,4。`--uidmap` 定义的是，“中间 UID”到“容器 UID”之间的映射，选项参数 `from_uid` 对应的是“中间 UID”的起点，`container_uid` 对应的是“容器 UID”的起点，`amount` 对应的是映射的长度。
+====
 
-我们可以使用 `podman container inspect <容器名> --format '{{json .HostConfig.IDMappings}}'` 查看容器的 UID/GID 映射，返回的数组，比如 **["0:1:1024"]** 表示的就是 `--uidmap` 的参数 **["容器 UID:中间 UID:映射长度"]**。
+[NOTE]
+====
+对于使用了 `--userns` 选项，或者自定义了 uidmap 或 gidmap 的容器：
 
-我们可以通过 `podman ps --ns <容器名>` 获取 PID 之后，使用 `cat /proc/<容器 PID>/uid_map` 来印证这个猜想。（当然，不要忘记，**{{json .HostConfig.IDMappings}}** 返回的是“容器 UID”和“中间 UID”之间的映射，而 **/proc** 下的 **uid_map** 是“容器 UID”和“主机 UID”之间的映射）
+我们可以通过 `podman ps --ns` 查看运行容器的 PID 和用户命名空间。然后我们可以通过 `sudo lsns --tree` 来查看系统上所有的命名空间，之后我们就可以进行对比。我们可以发现，除了运行 Podman 时产生的一个用户命名空间，每个容器自己还会在 Podman 的命名空间中再创建一个用户命名空间。这与我们上面了解的 rootless 容器的“两步映射”是对应的。
+
+我们可以进一步使用 `podman container inspect <容器名> --format '{{json .HostConfig.IDMappings}}'` 查看容器的 UID/GID 映射来验证我们的猜想。返回的数组，比如 **["0:1:1024"]** 表示的就是 `--uidmap` 的参数 **["容器 UID:中间 UID:映射长度"]**。
+
+下面我们假设，通过 `sudo lsns --tree` 得到的 Podman 启动的 `catatonit -P` 进程的 PID 为 **__podman_pid__**，而得到的容器的主进程的 PID 为 **__container_pid__**。
+
+我们可以接着使用 `nsenter --target __podman_pid__ --user cat /proc/__container_pid__/uid_map`，进入 Podman 初始创建的用户命名空间；来查看，站在 Podman 的视角下，容器主进程的 UID 的映射情况。我们可以发现，返回的内容与上面 podman inspect 返回的内容保持一致。这再次验证了 `--uidmap` 文档中所说的“二次映射”的行为。（对于这种容器的用户命名空间直属于 Podman 初始创建的用户命名空间，可以用 `--parent-user` 参数代替 `--target __podman_pid__` 参数）
+
+除此之外，我们还可以在宿主机系统的命名空间下，查看 **/proc/__container_pid__/uid_map** 的内容。可以发现，由于当前进程所处的命名空间不同，即便是同一个 **uid_map** 文件的内容也是不同的，验证了我们 xref:76.06、rootless 容器.adoc[] 中的说法。另外，如果我们同时观察 **/proc/_podman_pid__/uid_map** 的内容，也可以发现 Podman 的“两步映射”是怎么逐步将宿主机系统上的 UID 映射到容器上的。
 ====
 
 === 用户命名空间中的 Linux 能力
@@ -161,7 +172,7 @@ PID 命名空间让容器中的进程只能看见容器内的进程，而不能�
 ====
 与用户命名空间不同，PID 命名空间没有固定的映射方式。在宿主机系统上，每个进程都有自己的“每 PID 命名空间进程号”，可以通过 **/proc/<PID>/status** 文件的 **NStgid**、**NSpid**、**NSpgid**、**NSsid** 查询到。（完整字段含义见 `man 5 proc_pid_status`）
 
-举例来说，我们可以启动一个容器，然后在容器中运行一个持续运行的进程，比如 `top`。然后我们就可以在宿主机上运行 `podman ps --ns <容器名>` 来查看运行容器所在的命名空间号。这里我们关注的是 **PIDNS** 这一列，假设容器对应的 PID 命名空间号为 **__pid_ns_number__**。则我们可以通过 `sudo ps -O pidns | grep __pid_ns_number__` 来过滤出该 PID 命名空间中所有的进程。然后我们就可以使用 `cat /proc/<PID>/status | grep NS` 来打印特定进程**跨 PID 命名空间**的进程号（特别关注 `NSpid` 的结果）。此时，我们对比容器中正在运行的 `top` 命令的返回结果，就可以看到同一个进程在宿主机和容器中的进程号的对应关系。
+举例来说，我们可以启动一个容器，然后在容器中运行一个持续运行的进程，比如 `top`。然后我们就可以在宿主机上运行 `podman ps --ns` 来查看运行容器所在的命名空间号。这里我们关注的是 **PIDNS** 这一列，假设容器对应的 PID 命名空间号为 **__pid_ns_number__**。则我们可以通过 `sudo ps -O pidns | grep __pid_ns_number__` 来过滤出该 PID 命名空间中所有的进程。然后我们就可以使用 `cat /proc/<PID>/status | grep NS` 来打印特定进程**跨 PID 命名空间**的进程号（特别关注 `NSpid` 的结果）。此时，我们对比容器中正在运行的 `top` 命令的返回结果，就可以看到同一个进程在宿主机和容器中的进程号的对应关系。
 ====
 
 使用 `--pid=host` 后，我们就能看到容器外部的进程了，而且容器内的进程的 PID 和宿主机上看到的 PID 是一致的。
