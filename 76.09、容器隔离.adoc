@@ -120,30 +120,9 @@ Podman 是可以为每个启动的容器分配一组独占的 UID 的。在 root
 * 在命令行设置中，我们可以使用 `--userns:size=<所需长度>` 为容器精确设置映射长度。
 ====
 
-[NOTE]
+[TIP]
 ====
-查询了 `man podman-create` 的 `--uidmap` 的部分可知：
-
-对于 rootless 容器来说，UID 映射经过了两步：
-
-host UID（主机 UID） -> intermediate UID（中间 UID） -> container UID（容器 UID）
-
-其中“主机 UID”至“中间 UID”的映射是 Podman 软件定义的，主机上的当前用户 UID 映射到“中间 UID”的 0，**/etc/subuid** 中定义的 UID 则顺次映射到“中间 UID”的 1,2,3,4。`--uidmap` 定义的是，“中间 UID”到“容器 UID”之间的映射，选项参数 `from_uid` 对应的是“中间 UID”的起点，`container_uid` 对应的是“容器 UID”的起点，`amount` 对应的是映射的长度。
-====
-
-[NOTE]
-====
-对于使用了 `--userns` 选项，或者自定义了 uidmap 或 gidmap 的容器：
-
-我们可以通过 `podman ps --ns` 查看运行容器的 PID 和用户命名空间。然后我们可以通过 `sudo lsns --tree` 来查看系统上所有的命名空间，之后我们就可以进行对比。我们可以发现，除了运行 Podman 时产生的一个用户命名空间，每个容器自己还会在 Podman 的命名空间中再创建一个用户命名空间。这与我们上面了解的 rootless 容器的“两步映射”是对应的。
-
-我们可以进一步使用 `podman container inspect <容器名> --format '{{json .HostConfig.IDMappings}}'` 查看容器的 UID/GID 映射来验证我们的猜想。返回的数组，比如 **["0:1:1024"]** 表示的就是 `--uidmap` 的参数 **["容器 UID:中间 UID:映射长度"]**。
-
-下面我们假设，通过 `sudo lsns --tree` 得到的 Podman 启动的 `catatonit -P` 进程的 PID 为 **__podman_pid__**，而得到的容器的主进程的 PID 为 **__container_pid__**。
-
-我们可以接着使用 `nsenter --target __podman_pid__ --user cat /proc/__container_pid__/uid_map`，进入 Podman 初始创建的用户命名空间；来查看，站在 Podman 的视角下，容器主进程的 UID 的映射情况。我们可以发现，返回的内容与上面 podman inspect 返回的内容保持一致。这再次验证了 `--uidmap` 文档中所说的“二次映射”的行为。（对于这种容器的用户命名空间直属于 Podman 初始创建的用户命名空间，可以用 `--parent-user` 参数代替 `--target __podman_pid__` 参数）
-
-除此之外，我们还可以在宿主机系统的命名空间下，查看 **/proc/__container_pid__/uid_map** 的内容。可以发现，由于当前进程所处的命名空间不同，即便是同一个 **uid_map** 文件的内容也是不同的，验证了我们 xref:76.06、rootless 容器.adoc[] 中的说法。另外，如果我们同时观察 **/proc/_podman_pid__/uid_map** 的内容，也可以发现 Podman 的“两步映射”是怎么逐步将宿主机系统上的 UID 映射到容器上的。
+关于用户命名空间的额外解释，见 xref:76.99、关于 unshare 和命名空间的一些题外话.adoc[]
 ====
 
 === 用户命名空间中的 Linux 能力
@@ -183,3 +162,34 @@ PID 命名空间让容器中的进程只能看见容器内的进程，而不能�
 
 **这种配置有很强的风险。**
 ====
+
+== 网络隔离：网络命名空间
+
+=== 手动创建两个网络命名空间之间的虚拟以太网连接
+
+. 首先，我们要创建一个用户命名空间，之后所有的操作都仅限于该命名空间 `unshare --map-auto -- /usr/libexec/catatonit/catatonit -P &` +
+记录返回的 PID（下称 __userns_pid__）。 让 **catatonit**“持有”该命名空间，让其在后台运行。
+
+** `--map-auto` 会自动执行 `--map-groups=auto`，后者会自动更新创建的进程的 **/proc/<PID>/gid_map**，并保持进程的 **/proc/<PID>/setgroups** 为 allow，这样我们后面就可以通过 `nsenter` 进入这个用户命名空间中。 +
+有关联的 issue，见 xref:https://github.com/util-linux/util-linux/issues/3553[util-linux/util-linux#3553] 和 xref:https://github.com/shadow-maint/shadow/issues/1256[shadow-maint/shadow#1256]
+** `/usr/libexec/catatonit/catatonit -P` 我们要创建的进程为 `catatonit -P`，这是 Podman 最常用的持有用户命名空间的简易程序，当然我们也可以创建 **bash**，不过我们后面是需要额外用其它 shell 再入这个用户命名空间的，因此这里就用 **catatonit** 替代了。
+** `&` 让 **unshare** 在后台运行，因为 **catatonit -P** 本身会在前台运行，占用我们的 shell。 +
+Shell 语义上是让 unshare 在后台运行，但实际上，在内存中，由于 catatonit 替换了 unshare 的程序镜像，因此是 catatonit 在后台运行。
+
+. 【可选】检查创建的用户命名空间 +
+使用 `cat /proc/__userns_pid__/uid_map` 和 `cat /proc/__userns_pid__/gid_map` 查看 UID 和 GID 的映射情况；并使用 `cat /proc/__userns_pid__/setgroups` 确认其值为 `allow`。
+
+. 开启一个新的 shell，并使用 `nsenter --target __userns_pid__` 进入该命名空间中，使用 `unshare --net` 创建一个网络命名空间。使用 `echo $$` 记录下当前 shell 的 PID，下称 __netns_a__。
+
+. 重复上一步操作，在一个新的 shell 中创建一个新的网络命名空间。其 shell 的 PID 下称 __netns_b__。
+
+. 在 __netns_a__（__netns_b__ 也可以）中使用这个命令创建一个 veth 设备对：`ip link add <设备名1> type veth peer name <设备名2>`， +
+比如 `ip link add veth1 type veth peer name veth2`。这样我们就创建了一对相互连接的 veth 接口。
+
+. 为 veth2 设置新的网络命名空间：`ip link set veth2 netns __netns_b__`。（将 veth2 “移动至”另一个命名空间）
+** 若你在 __netns_b__ 中创建的设备，那么就要将 netns 的参数修改为 __netns_a__。
+** 是移动 veth1 还是 veth2 过去并不重要，这里我们假设移动过去的是 veth1。
+
+. 分别在两个网络命名空间中为设备设置 IP 地址 `ip address add dev veth1 10.10.10.1/24`，`ip address add dev veth2 10.10.10.2/24`
+. 分别在 `ip link set veth1 up` 和 `ip iink set veth2 up` 启用端口
+. 尝试 ping 对面的 IP 地址，发现可以 ping 通，如果你安装了 netcat 之类的软件，还可以尝试 TCP 通信。

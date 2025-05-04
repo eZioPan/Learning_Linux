@@ -658,7 +658,9 @@ podman image mount <镜像名>
 
 [NOTE]
 ====
-Linux 系统上也自带一个创建 namespace 的工具——它也叫“unshare”；Linux 上还有一个程序叫做“nsenter”是用来进入一个以前创建的 namespace 的。podman 的 unshare 与 Linux 系统上的 unshare 类似，使用了类似的 Linux 内核功能。
+Linux 系统上也自带一个创建 namespace 的工具——它也叫 **unshare**；Linux 上还有一个程序叫做 **nsenter**，是用来进入一个以前创建的 namespace 的。podman 的 unshare 与 Linux 系统上的 **unshare** 类似，使用了类似的 Linux 内核功能。
+
+默认情况下，Linux 的 **unshare** 命令会启动一个新的 shell。此时，你想知道自己有没有处于 unshare 创建的新进程里，可以使用 `echo $SHLVL` 进行粗略的判定。
 ====
 
 == 构建镜像
