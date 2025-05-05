@@ -165,6 +165,49 @@ PID 命名空间让容器中的进程只能看见容器内的进程，而不能�
 
 == 网络隔离：网络命名空间
 
+如 xref:76.06、rootless 容器.adoc[] 所述，默认情况下，rootless 容器使用 pasta 作为网络接入服务。pasta 本身较为简单，它仅拷贝了主机的 IP 地址和路由信息，不做任何 NAT 处理，这样容器中暴露出来的端口就如同直接在宿主机上暴露出来的一样。如果我们希望容器与容器之间通过一个桥进行连接，而不直接依赖宿主机的网络栈，Podman 也提供了桥接功能。
+
+默认情况下，Podman 会创建一个名为 `podman` 的桥：
+
+[source, sh]
+----
+podman network list
+podman network inspect podman
+----
+
+我们可以创建一个网络桥：
+
+[source, sh]
+----
+podman network create my_bridge
+podman network list
+podman network inspect my_bridge
+# 当然，我们可以为这个桥执行更详细的配置
+# 首先移除我们前面创建的桥
+podman network rm my_bridge
+# 可以为桥接设置具体的 DHCP 配置
+# 特别的，由于我们可以为一个容器配置多个网络，因此在手动指定网络信息的时候，必须遵循 --subnet --gateway --ip-range 的顺序
+podman network create --subnet 10.10.10.0/24 --ip-range 10.10.10.100-10.10.10.200 my_bridge
+# 枚举网络接口，并检查我们刚刚创建的网络接口
+podman network list
+podman network inspect my_bridge
+----
+
+如果一个容器在创建时使用了 pasta 作为网络接入服务，那么是不可以切换到桥接的，我们需要在创建容器的时候，就指定网络使用桥接：
+
+[source, sh]
+----
+podman create --network my_bridge <镜像名称>
+----
+
+一个容器使用了桥接之后，我们就可以使用 `podman network connect` 和 `podman network disconnect` 将容器添加至一个桥接中，或从一个桥接中移除：
+
+[source, sh]
+----
+podman network connect <桥接名称> <容器名称>
+podman network disconnect <桥接名称> <网络名称>
+----
+
 === 手动创建两个网络命名空间之间的虚拟以太网连接
 
 . 首先，我们要创建一个用户命名空间，之后所有的操作都仅限于该命名空间 `unshare --map-auto -- /usr/libexec/catatonit/catatonit -P &` +
