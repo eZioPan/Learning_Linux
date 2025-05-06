@@ -236,3 +236,69 @@ Shell 语义上是让 unshare 在后台运行，但实际上，在内存中，�
 . 分别在两个网络命名空间中为设备设置 IP 地址 `ip address add dev veth1 10.10.10.1/24`，`ip address add dev veth2 10.10.10.2/24`
 . 分别在 `ip link set veth1 up` 和 `ip iink set veth2 up` 启用端口
 . 尝试 ping 对面的 IP 地址，发现可以 ping 通，如果你安装了 netcat 之类的软件，还可以尝试 TCP 通信。
+
+== IPC 隔离：IPC 命名空间
+
+进程间通信（IPC）命名空间隔离特定的 IPC 资源，比如 System V IPC 对象和 POSIX 消息队列。另外它也隔离的 **/dev/shm** 临时文件系统。
+
+[NOTE]
+====
+在启动了 SELinux 的系统上，配置 IPC 命名空间会同步修改容器的 SELinux 标签，否则 SELinux 会阻止进程间通信。
+====
+
+== 文件系统隔离：挂载命名空间
+
+对于容器来说，可能最重要的命名空间就是挂载命名空间了。挂载命名空间影藏了宿主系统上的整个文件系统，仅将确实要提供给容器的文件系统挂载。Podman 会创建文件系统挂载点 **rootfs**，并将所有的 volume 绑定挂载到它上面。之后 Podman 运行 OCI 运行时的时候，OCI 运行时会调用 **pivot_root** 系统调用，从而修改了挂载命名空间的更挂载点。它的最终效果是将根挂载点移动至 **rootfs** 目录下。此时，宿主机上所有的文件都不可见了，容器只能访问我们提供的数据。通过移除 **CAP_SYS_ADMIN** 能力，容器中的进程是无法通过影响 rootfs 的挂载，来影响底层文件系统的。
+
+挂载命名空间和移除 **CAP_SYS_ADMIN** 能力对文件系统形成了很强的隔离，但有时候，由于一些软件漏洞，容器中的进程依旧可以逃离命名空间的控制。这个时候就右 SELinux 阻挡越界了。
+
+== 文件系统隔离：SELinux
+
+[NOTE]
+====
+这里仅记录与容器相关的 SELinux 内容，关于 SELinux 的基础概念，见 xref:77.01、SELinux 基础概念.adoc[] 及相关的系列。
+====
+
+=== SELinux 类型强制
+
+容器内进程的类型为 **container_t**，而容器中的文件的类型为 **container_file_t**。与容器管理相关的进程，比如 podman、catatonit、pasta\conmon 则具有 **container_runter_t** 类型。
+
+[NOTE]
+====
+当容器以 `--privileged` 参数创建的时候，绝大部分隔离措施会关闭，容器中的进程__几乎__如同被 Podman 所在的用户直接运行在宿主机上一样。此时容器内的进程具有 **spc_t** 类型（spc 是 super privileged container 的缩写）。
+====
+
+=== SELinux 多类别安全（MCS）分离措施
+
+Podman 会使用两个 MSC 标签唯一确定一个容器的 MSC 类别，比如 `s0:c1,c2`。那么具有 `s0:c1,c2` 的进程是可以访问具有 `s0`、`s0:c1`、`s0:c2`、`s0:c1,c2` 的文件，当然，它不能访问具有 `s0:c1,c2,c3` 或者 `s0:c3,c4` 的文件。
+
+在我们挂载 volume 的时候，若使用了 `Z` 参数，则 Podman 会将 volume 内的文件标记上完整的 MCS，也就是一个 MLS 标签附加两个 MCS 标签，那么这个 volume 就只能被特定的容器访问。若使用了 `z` 参数，则 Podman 仅会为 volume 内的文件标记上 MLS 标签，这样所有包含了该 MLS 标签的容器都可以访问这个 volume 中的数据。
+
+[NOTE]
+====
+如果我们仅想关闭 SELinux 相关的保护，但希望启用其它的隔离措施，那么可以在创建容器时使用 `--security-opt label=disable` 来实现。
+====
+
+[MOTE]
+====
+udica 项目（xref:https://github.com/containers/udica[]）的目标是为特定容器的运行生成 SELinux 规则，简化用户编写容器相关的 SELinux 规则的难度。
+====
+
+== 系统调用隔离 `seccomp`
+
+Podman 通过 `seccomp` 为容器内进程移除不必要的系统调用，从而防止容器内进程逃逸。
+
+Podman 的默认 seccomp 配置文件放置在 **/usr/share/containers/seccomp.json** 中。
+
+[NOTE]
+====
+* 你可以使用 `--security-opt seccomp=<seccomp json 文件>` 来使用自定义的 seccomp 规则。
+* 你也可以使用 `--security-opt seccomp=unconfined` 来关闭 seccomp 的过滤。
+====
+
+[NOTE]
+====
+由于用户很难确定一个容器到底要使用多少系统调用，因此手动编写 seccomp 规则文件是较难的。
+
+oci-seccomp-bpf-hook 项目（xref:https://github.com/containers/oci-seccomp-bpf-hook/[]）可以自动统计一个容器的整个运行过程中的所使用的所有的系统调用。我们可以依照其给出的统计数据来编写 seccomp 规则，从而锁定该容器可用的系统调用。
+====
