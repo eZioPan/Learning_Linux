@@ -279,9 +279,10 @@ Podman 会使用两个 MSC 标签唯一确定一个容器的 MSC 类别，比如
 如果我们仅想关闭 SELinux 相关的保护，但希望启用其它的隔离措施，那么可以在创建容器时使用 `--security-opt label=disable` 来实现。
 ====
 
-[MOTE]
+[NOTE]
 ====
-udica 项目（xref:https://github.com/containers/udica[]）的目标是为特定容器的运行生成 SELinux 规则，简化用户编写容器相关的 SELinux 规则的难度。
+* udica 项目（xref:https://github.com/containers/udica[]）的目标是为特定容器的运行生成 SELinux 规则，简化用户编写容器相关的 SELinux 规则的难度。
+* 关于为容器编写 SELinux 规则，可以参考 blog：xref:https://danwalsh.livejournal.com/81756.html[danwalsh - Container Domains (Types)]、xref:https://fedoramagazine.org/use-udica-to-build-selinux-policy-for-containers/[fedoramagazine - Use udica to build SELinux policy for containers]。
 ====
 
 == 系统调用隔离 `seccomp`

@@ -1,0 +1,25 @@
+= 加强容器化负载的安全
+
+在 RedHat 推出它自己的虚拟化方案的时候，它也添加了对 SELinux 的支持，形成的技术称为 **sVirt**，也就是 __secure virtualization__（安全虚拟化） 的简写。
+
+== 理解 sVirt 所使用的 MCS
+
+仅使用 SELinux 域以及常规的 SELinux 类型并不足以在隔离不同客户机系统。sVirt 使用 SELinux 的 **多类别安全**（**Multi-Category Security** **MCS**）为虚拟化添加额外的一层安全。
+
+在 SELinux 中，一些域被标记为受 MCS 约束的类型（MCS-constrainted type）。此时，若一个资源包含了域不具有的任意的类别，那么域就不能访问该资源。sVirt 的实现保证了相关的虚拟化域都是受 MCS 约束的类型。我们可以通过查看 **mcs_constrained_type** 包含了类型，来了解系统上受 MCS 约束的类型：
+
+[source, sh]
+----
+seinfo --attribute mcs_constrainted_type --expand
+----
+
+通过 MCS，sVirt 可以正确地隔离不同的客户机系统。每个运行中的虚拟机都会被（随机）赋予两个 SELinux 类别。而虚拟机需要使用的镜像文件，则必须具有与虚拟机一样的 SELinux 类别。
+
+MSC 会阻止虚拟机访问错误的镜像。而且，若一个虚拟机尝试访问或攻击另一个虚拟机，MCS 也会阻止它。
+
+由于 sVirt 使用两个 SELinux 类别来确定一个虚拟机的类别。这样的好处是，即便一个宿主机上分配给虚拟机的 SELinux 类别不是很多，也能生成足够多的组合分配给不同的虚拟机使用。
+
+.组合数
+====
+假设一个系统上，为虚拟机分配的 SELinux 类别的编号为 `c10.c99`，也就是有 90 个可用的类别。那么 sVirt 一共可以组合出 n*(n-1)/2 = 4005 个类别组合，方便同时运行数个虚拟机。
+====
