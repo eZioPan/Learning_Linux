@@ -14,7 +14,7 @@ Linux 学习笔记，最初基于 **鸟哥的 Linux 私房菜 第四版** https:
 
 == 当前活跃编写内容
 
-Podman，第 76 章
+OpenPGP，第 73 章
 
 == 部分参考的文章来源列表
 
@@ -22,6 +22,9 @@ Podman，第 76 章
 
 * 主线流程
 ** 鸟哥的 Linux 私房菜 第四版（CentOS7） https://linux.vbird.org/linux_basic/centos7/
+
+* OpenPGP
+** 《OpenPGP for application developers》
 
 * Podman
 ** 《Podman in Action》

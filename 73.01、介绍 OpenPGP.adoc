@@ -1,0 +1,25 @@
+= 介绍 OpenPGP
+
+本文主要参考 OpenPGP version 6 的 RFC，需要注意的是，OpenPGP 的基础原理和其功能自从 1998 年发布的 RFC2440 之后就一直保持一致。
+
+== 什么是 OpenPGP
+
+OpenPGP 是加密操作（cryptographic operations）的一个开放标准。OpenPGP 支持在发送者和接收者之间建立安全的文件和信息传递渠道。它同样支持身份认证（identities）及其验证（verification）。OpenPGP 衍生自“Pretty Good Privacy（PGP）”加密程序，且前者具有很多广泛使用且可以互认的实现。
+
+使用 OpenPGP，你可以：
+
+* 加密（encrypt）和解密（decrypt）信息，以保证机密性（confidentiality）
+* 签名（sign）和验证（verify）数据以确保真实性（authenticity）
+* 签发（issue）和验证（validate）关于密钥（key）和身份认证（identities）的证书（certifications），如同证书认证机构（Certificate Authority）认证（validating）身份认证（identities）。
+
+== 本文的受众是谁？
+
+会接触 OpenPGP 的人分为三类：
+
+. 终端用户，他们使用的软件柏寒 OpenPGP 功能。
+. 软件开发者，他们开发的应用包含 OpenPGP 功能。
+. OpenPGP 库的实现者（或其它会直接操作 OpenPGP 内部数据结构的软件）
+
+该文档主要面向软件开发者。本文档假设读者有扎实的软件开发知识，以及常规的密码学概念。本文在“库的层面”介绍 OpenPGP，让开发者可以基于任何已有的 OpenPGP 实现来继续开发。
+
+本文也可做为 RFC 的有用补充，来协助 OpenPGP 库的实现者。
