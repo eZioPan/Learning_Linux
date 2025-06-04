@@ -23,3 +23,9 @@ OpenPGP 是加密操作（cryptographic operations）的一个开放标准。Ope
 该文档主要面向软件开发者。本文档假设读者有扎实的软件开发知识，以及常规的密码学概念。本文在“库的层面”介绍 OpenPGP，让开发者可以基于任何已有的 OpenPGP 实现来继续开发。
 
 本文也可做为 RFC 的有用补充，来协助 OpenPGP 库的实现者。
+
+== 为什么不直接使用 OpenPGP RFC？
+
+OpenPGP RFC 定义了 OpenPGP 所使用的__信息格式__，这些信息对于 OpenPGP 库的实现者来说很重要，但对于直接使用 OpenPGP 库的软件开发者来说并不是必须的。
+
+本文在库的级别讨论 OpenPGP 概念，隐去了 OpenPGP 产物（artifacts）的内部的编码细节。我们专注于 OpenPGP 产物的属性，以及它该如何使用，并额外添加了 RFC 中未能详尽说明的内容。

@@ -1,0 +1,80 @@
+= 总览
+
+== 为什么使用 OpenPGP？
+
+OpenPGP 是总所周知的、IETF 标准化的加密操作集。它广泛用于确保通信的安全——比如加密信息和邮件；并且，在大多数 Linux 分发版中，它用来保证软件包的完整性。它拥有大量的库、工具、社区支持论坛组成的生态系统。而且，它的强健性和多功能让 OpenPGP 在其它需要加密和保证完整性的领域也有一席之地——包括文件传输程序、密码管理器、安全数据存储以及为 git 仓库中的源码签名。
+
+它还有一些其它的原因，让你可以考虑在项目中使用 OpenPGP：
+
+. **去中心化信任模型**：OpenPGP 的去中心化定义了一种认证机制，让个人和实体可以创建和管理自己的加密身份认证（cryptographic identities）。与中心化的信任模型不同，去中心化的信任模型让个人和实体管理他们自己的身份认证，构建了一个社区驱动的信任网，而不依赖于中心化的权威，减少了单点故障发生的概率。
+
+. **端对端（end-to-end）加密**：OpenPGP 为实现端对端加密提供了一个强壮的框架。即便信道本身可能已不可信任，内容依旧保持机密（confidential）、可验证（verifiable）、可认证（authenticated），并可抵抗非授权的访问。加密在众多场景中都非常关键，特别是在传送一些敏感信息——比如财务数据、个人可分辨信息（personally identifiable information, PII），或专有商务数据——时。
+
+. **匿名性（Anonymity）与假名性（pseudonymity）**：在敏感或临时的情境下，身份保护是很重要的，OpenPGP 可以用于提供一定层次的匿名性或假名性，已保护用户的身份信息。
+
+. **互通性（Interoperability）**：OpenPGP 是一个结构化的、标准化的协议，广泛被各类公开或私密的实体采用，但又不与任何供应商技术绑定。它支持所有的主流操作系统，比如 Windows、macOS、GNU/Linux、Android 和 iOS。由于其标准化、广泛采用、跨平台兼容、以及可移植性，OpenPGP 的互通性极大地减少了开发的时间、花费和技术壁垒。
+
+== 历史概述
+
+=== Pretty Good Privacy（PGP）
+
+OpenPGP 的历史可以被追溯回 Pretty Good Privacy（PGP），由 Phil Zimmermann 编写的软件，其发布于 1991 年。
+
+虽然原始的 PGP 软件从未赋予自由软件许可，但其源码已被作者广泛公开了。
+
+=== 标准化 OpenPGP
+
+虽然 PGP 最开始是作为商业软件开发的，但是当时的所有者，PGP 公司，与 IETF 合作开始其标准化，在 1996 年 8 月发表了 RFC 1991 “OpenPGP Message Exchange Formats”。
+
+在 1997 年 7 月，启动了一个在新名称 OpenPGP 下制定一个新的开放标准的进程，在 1995 年 11 月发表了 RFC 2440 “OpenPGP Message Format”。
+
+OpenPGP 这个名称可以被实现自由使用，不像名称 PGP，是一个注册商标。
+
+=== GnuPG，一个早期的自由软件实现
+
+在 1997 年 12 月 20 日发表的，由德国计算机程序员 Werner Koch 编写的 GNU Privacy Guard（GnuPG）是 OpenPGP 标准的一个自由的、开源的实现。
+
+GnuPG 是 OpenPGP 的早期的主要的实现。随着时间推移，GnuPG 的重要性与日俱增，因为它称为了邮件安全、软件签名等的基础工具。
+
+因为 GnuPG 程序的二进制文件称为“gpg”，因此“GnuPG”和“gpg”通常互换使用。
+
+== RFC 4880 时代
+
+=== OpenPGP 版本 4
+
+在 2007 年，IETF 发布了 RFC 4880，定义了第四版 OpenPGP。即便到 2023 年后半年，第四版依旧是最常用的版本。
+
+在 RFC 6637 中，扩展了一个椭圆曲线加密，指定了三个 NIST 质数域曲线的用法。
+
+一些实现尝试了其它非标准化的扩展。值得注意有，基于 Curve 25519 的算法定义在了 draft-koch-eddsa-for-openpgp 文档中。虽然这些算法被广泛使用，然该算法从未正式标准化。
+
+=== OpenPGP 的主要实现
+
+如今，有多个 OpenPGP 的实现扮演了重要的角色：
+
+* Mozilla Thunderbird 电邮软件使用了 RNP，一个 C++ 的 OpenPGP 的实现。
+* GNU Privacy Guard（GnuPG），OpenPGP 标准的一个关键实现，整合进了无数关键的基础架构中，最突出的就是用于验证 Linux 分发版的软件包的完整性。
+* Proton Mail，为大量用户提供了邮件加密服务，使用和维护了 OpenPGP.js 和 GopenPGP，后者是 OpePGP 用 golang 实现的封装库。
+* RPM 包管理器软件通过 Sequoia PGP 包含了一个 OpenPGP 后端，一个现代的由 Rust 编写的 OpenPGP 实现。Fedora Linux 操作系统自从 38 版开始在 rpm 中使用 Sequoia PGP。
+
+=== 互通性
+
+历史上，互通性是基于临时确定的方案进行测试的。自从 2019 年之后，Sequoia 项目维护了“OpenPGP interoperability test suite”，来执行严谨和系统性的测试。
+
+== 未来的路
+
+=== OpenPGP 第 6 版
+
+在原文书写时（2023 年），OpenPGP 的第六版已接近发布为 RFC。IETF OpenGPG 工作小组聚焦于更新加密机制，添加新算法，并移除已过时的算法。
+
+本文档描述 OpenPGP 第 6 版，并指出该版本与之前版本中，与开发者相关的不同的部分。
+
+=== OpenGPG 中的后量子时代加密
+
+已经有工作在 OpenGPG 中标准化并添加后量子时代的公钥算法。该项目由德国“BSI”资助。其目标包括向 Thunderbird 和 GnuPG 中添加后量子时代的加密支持。IETF 113 中有相关的演示。
+
+== 展示细节：OpenGPG 数据的内部结构
+
+OpenPGP 内部以“包（packet）”的形式构建数据。我们将在本文档的最后几个章节来看一个案例。
+
+了解 OpenPGP 数据的内部结构对了解 RFC 很有帮助。后者对 OpenPGP 包的内部结构有详尽的描述，而且对排错也有帮助。

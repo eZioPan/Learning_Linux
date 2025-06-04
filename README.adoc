@@ -24,7 +24,7 @@ OpenPGP，第 73 章
 ** 鸟哥的 Linux 私房菜 第四版（CentOS7） https://linux.vbird.org/linux_basic/centos7/
 
 * OpenPGP
-** 《OpenPGP for application developers》
+** 《OpenPGP for application developers》 https://openpgp.dev/book/
 
 * Podman
 ** 《Podman in Action》
