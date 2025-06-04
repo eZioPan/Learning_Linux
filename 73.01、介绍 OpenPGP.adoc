@@ -4,7 +4,7 @@
 
 == 什么是 OpenPGP
 
-OpenPGP 是加密操作（cryptographic operations）的一个开放标准。OpenPGP 支持在发送者和接收者之间建立安全的文件和信息传递渠道。它同样支持身份认证（identities）及其验证（verification）。OpenPGP 衍生自“Pretty Good Privacy（PGP）”加密程序，且前者具有很多广泛使用且可以互认的实现。
+OpenPGP 是密码学操作（cryptographic operations）的一个开放标准。OpenPGP 支持在发送者和接收者之间建立安全的文件和信息传递渠道。它同样支持身份认证（identities）及其验证（verification）。OpenPGP 衍生自“Pretty Good Privacy（PGP）”加密程序，且前者具有很多广泛使用且可以互认的实现。
 
 使用 OpenPGP，你可以：
 
