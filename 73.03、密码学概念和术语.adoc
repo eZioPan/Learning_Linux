@@ -96,7 +96,7 @@ OpenPGP 文档，包括基础 RFC，更常使用“secret key”而非更广泛�
 OpenPGP 的数字签名主要用于两处：
 
 * 数据签名
-* 对于构件（components）的签名
+* 对于组件（components）的签名
 
 == 混合密码系统（Hybrid cryptosystems）
 
