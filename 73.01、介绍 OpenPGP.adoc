@@ -10,7 +10,7 @@ OpenPGP 是密码学操作（cryptographic operations）的一个开放标准。
 
 * 加密（encrypt）和解密（decrypt）信息，以保证机密性（confidentiality）
 * 签名（sign）和验证（verify）数据以确保真实性（authenticity）
-* 签发（issue）和验证（validate）关于密钥（key）和身份认证（identities）的证书（certifications），如同证书认证机构（Certificate Authority）认证（validating）身份认证（identities）。
+* 签发（issue）和验证（validate）关于密钥（key）和身份认证（identities）的证书（certifications），如同证书认证机构（Certificate Authority）认证（validating）身份（identities）。
 
 == 本文的受众是谁？
 
