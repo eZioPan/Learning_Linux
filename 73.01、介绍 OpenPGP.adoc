@@ -1,16 +1,18 @@
 = 介绍 OpenPGP
 
-本文主要参考 OpenPGP version 6 的 RFC，需要注意的是，OpenPGP 的基础原理和其功能自从 1998 年发布的 RFC2440 之后就一直保持一致。
+本文档项目旨在提供对 OpenPGP 的全面了解，为软件开发者高亮其功能和应用。虽然本文档主要参考了link:https://datatracker.ietf.org/doc/draft-ietf-openpgp-crypto-refresh/[最新 RFC 中概述的 OpenPGP 第 6 版]，但必须指出的是，自 1998 年 RFC 2440 首次作为开放标准发布以来，OpenPGP 的基本原则和功能在各个版本中始终保持一致。
+
+本文档工程希望将 OpenPGP 的所有概念和功能，介绍给希望将其使用在自己工程中的应用工程师。
 
 == 什么是 OpenPGP
 
-OpenPGP 是密码学操作（cryptographic operations）的一个开放标准。OpenPGP 支持在发送者和接收者之间建立安全的文件和信息传递渠道。它同样支持身份认证（identities）及其验证（verification）。OpenPGP 衍生自“Pretty Good Privacy（PGP）”加密程序，且前者具有很多广泛使用且可以互认的实现。
+OpenPGP 是密码学操作（cryptographic operations）的一个开放标准。它是基于广为人知的xref:73.03、密码学概念和术语.adoc[密码学构件]的系统。OpenPGP 支持在发送者和接收者之间建立安全的文件和信息传递渠道。它同样支持身份认证（identities）及其验证（verification）。OpenPGP 衍生自link:https://en.wikipedia.org/wiki/Pretty_Good_Privacy[“Pretty Good Privacy（PGP）”]加密程序，且前者具有很多广泛使用且xref:73.02、总览.adoc#_互通性[可以互认的实现]。
 
 使用 OpenPGP，你可以：
 
-* 加密（encrypt）和解密（decrypt）信息，以保证机密性（confidentiality）
-* 签名（sign）和验证（verify）数据以确保真实性（authenticity）
-* 签发（issue）和验证（validate）关于密钥（key）和身份认证（identities）的证书（certifications），如同证书认证机构（Certificate Authority）认证（validating）身份（identities）。
+* xref:73.10、加密.adoc[加密（encrypt）]和73.11、解密.adoc[解密（decrypt）]信息，以保证机密性（confidentiality）
+* xref:73.07、对数据签名.adoc[签名（sign）]和xref:73.09、签名验证.adoc[验证（verify）]数据以确保真实性（authenticity）
+* xref:73.08、组件签名.adoc[签发（issue）和确认（validate）]关于密钥（key）和身份认证（identities）的证书（certifications），如同证书认证机构（Certificate Authority）认证（validating）身份（identities）。
 
 == 本文的受众是谁？
 
@@ -20,12 +22,26 @@ OpenPGP 是密码学操作（cryptographic operations）的一个开放标准。
 . 软件开发者，他们开发的应用包含 OpenPGP 功能。
 . OpenPGP 库的实现者（或其它会直接操作 OpenPGP 内部数据结构的软件）
 
-该文档主要面向软件开发者。本文档假设读者有扎实的软件开发知识，以及常规的密码学概念。本文在“库的层面”介绍 OpenPGP，让开发者可以基于任何已有的 OpenPGP 实现来继续开发。
+本文的主要受众并非终端用户。
 
-本文也可做为 RFC 的有用补充，来协助 OpenPGP 库的实现者。
+本文档主要面向第二类人，在他们的软件中使用 OpenPGP 功能的应用开发者。本文描述了 OpenPGP 系统的属性和其用法。本文档假设读者有扎实的软件开发知识，以及常规的密码学概念。本文在“库的层面”介绍 OpenPGP，软件开发者开始使用任何已有的 OpenPGP 实现（比如 link:https://openpgpjs.org/[OpenPGP.js]、link:https://sequoia-pgp.org/[Sequoia-PGP]）。
+
+本文也可做为 RFC 的有用补充，来协助 OpenPGP 库（或其它直接处理 OpenPGP 内部数据结构的软件）的实现者。
+
+随着新的现代化的高质量的 OpenPGP 库的涌现，以及即将到来的更新后的 link:https://datatracker.ietf.org/doc/draft-ietf-openpgp-crypto-refresh/[OpenPGP 版本 6 规范]的释出，我们认为现在是在应用中实现 OpenPGP 功能，或现代化现有 OpenPGP 子系统的最佳时间。
+
+本文档的目的是对 OpenPGP 技术进行与实践无关的介绍，帮助软件开发人员快速熟悉该技术，并作为通向 RFC 中相关信息的途径。
 
 == 为什么不直接使用 OpenPGP RFC？
 
-OpenPGP RFC 定义了 OpenPGP 所使用的__信息格式__，这些信息对于 OpenPGP 库的实现者来说很重要，但对于直接使用 OpenPGP 库的软件开发者来说并不是必须的。
+link:https://datatracker.ietf.org/doc/draft-ietf-openpgp-crypto-refresh/[OpenPGP RFC] 定义了 OpenPGP 所使用的__信息格式__。它描述了 OpenPGP 数据的内部结构，这些信息对于 OpenPGP 库的实现者来说很重要。但这个层级的细节，对于通过库使用 OpenPGP 的软件开发者来说并非必须。
 
-本文在库的级别讨论 OpenPGP 概念，隐去了 OpenPGP 产物（artifacts）的内部的编码细节。我们专注于 OpenPGP 产物的属性，以及它该如何使用，并额外添加了 RFC 中未能详尽说明的内容。
+本文在库的级别讨论 OpenPGP 概念，隐去了 OpenPGP 产物（artifacts）的内部的编码细节。我们专注于 OpenPGP 产物的属性，以及它该如何使用，并额外添加了 link:https://en.wikipedia.org/wiki/Request_for_Comments[RFC] 中未能详尽说明的内容。
+
+== 本文档面向哪版 OpenPGP？
+
+本文档包含了现代 OpenPGP 实践的核心概念，其跨越多个版本。这意味着，在基础层面上，从其最早版本到最新版本之间存在着的显著的重叠、连续性和一致性。
+
+虽然使用版本 6 作为当前标准的参考，我们也纳入了从早期版本——特别是第 4 版——中获得的见解，其仍在进行中的项目中广泛使用。
+
+当虽然 OpenPGP 的不同版本语软件开发相关，我们着力于尽量保内容是版本无关的，以让使用各种 OpenPGP 迭代版本的不用开发者都可以广泛接受。
