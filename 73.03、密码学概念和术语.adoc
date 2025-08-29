@@ -7,31 +7,33 @@
 中文中常把 hash 音译为“哈希”，不过这个翻译实际上是有些问题的，我们这里还是用另一个词“散列”来替代。
 ====
 
-密码学散列函数可以接受任意长度的数据（比如一个文本信息或文件），并生成固定长度的编码
+link:https://en.wikipedia.org/wiki/Cryptographic_hash_function[密码学散列函数]可以接受任意长度的数据（比如一个文本信息或文件），并生成固定长度的编码
 ，称为“散列摘要（hash digest）”，这个词一般会简称为“散列（hash）”或“摘要（digest）”。一个散列摘要有时也被称为一个“（密码学）校验和（checksum）”。散列摘要一般作为原始数据的唯一身份认证使用。
 
 密码学散列函数一般具有两个重要的性质：
 
-* **原像抗性（pre-image resistance）**：给定一个散列摘要，它应该极难确定任何可以匹配上该散列摘要的原始数据（包含但不限于生成该散列摘要的原始数据）。该属性包含了一个被称为单向函数（one-way function）的特点——一个计算方法可以简单的运算，但非常难以逆运算。
-* **碰撞抗性（collision resistance）**：我们应该很难找到两个不同的原始数据，它们可以被映射至相同散列摘要值。
+* link:https://en.wikipedia.org/wiki/Preimage_attack[**原像抗性（pre-image resistance）**]：给定一个散列摘要，它应该极难确定任何可以匹配上该散列摘要的原始数据（包含但不限于生成该散列摘要的原始数据）。该属性包含了一个被称为link:https://en.wikipedia.org/wiki/One-way_function[单向函数（one-way function）]的特点——一个计算方法可以简单的运算，但非常难以逆运算。
+* link:https://en.wikipedia.org/wiki/Collision_resistance[**碰撞抗性（collision resistance）**]：我们应该很难找到两个不同的原始数据，它们可以被映射至相同散列摘要值。
 
 == 消息认证码（message authentication code）
 
-一个消息认证码（英文简称 MAC），又被称为认证标签（authentication tag），是一小段信息，用来检验信息的完整性和真实性。
+一个link:https://en.wikipedia.org/wiki/Message_authentication_code[消息鉴别码（message authentication code, MAC）]，又被称为鉴别标签（authentication tag），是一小段信息，用来检验信息的完整性和真实性。
 
 它使用一个（对称 symmetric）私钥从原始信息中派生（derived）。接收者接收到的信息中包含一个 MAC，若接收者同时具有这个私钥，那么它就可以验证该信息是否被篡改。
 
-HMAC 是依赖于散列函数的一类 MAC。OpenPGP 协议会使用它。
+link:https://en.wikipedia.org/wiki/HMAC[HMAC] 是依赖于散列函数的一类 MAC。OpenPGP 协议会使用它。
 
 === 密钥派生函数（key derivation functions）
 
-一个散列函数也可以被用于创建密钥派生函数（英文简写 KDF）。KDF 的一个用法就是将一个密码迭代地传入一个散列函数来生成对称密钥。
+一个散列函数也可以被用于创建link:https://en.wikipedia.org/wiki/Key_derivation_function[密钥派生函数（key derivation function, KDF）]。KDF 的一个用法就是将一个密码迭代地传入一个散列函数来生成对称密钥材料。
 
-OpenPGP 规范中一个值得注意的 KDF 是 HKDF，它是基于 HMAC 的密钥派生函数。
+OpenPGP 规范中一个值得注意的 KDF 是 link:https://en.wikipedia.org/wiki/HKDF[HKDF]，它是基于 HMAC 的密钥派生函数。
+
+关于 KDF 和它在 OpenPGP 协议中的角色的详细信息，见 xref:73.05、在 OpenPGP 中管理私钥材料.adoc#_用密码passphrases保护密钥[加密私钥]章节和加密章节的 link:73.10、加密.adoc#_v2_seipd基于_aead[SEIPDv2] 段。
 
 == 对称密钥密码学（symmetric-key cryptography）
 
-对称密钥密码学使用相同的密码学密钥进行加密和解密。非对称密码学与之不同，其使用一队密钥：公钥用来加密，对应的私钥用来解密。对称密钥密码学系统支持__加密/解密__操作。
+link:https://en.wikipedia.org/wiki/Symmetric-key_algorithm[称密钥密码学]使用相同的密码学密钥进行加密和解密。非对称密码学与之不同，其使用一队密钥：公钥用来加密，对应的私钥用来解密。对称密钥密码学系统支持__加密/解密__操作。
 
 对称密钥操作的参与者需要通过安全的信道（channel）分享密钥。
 
@@ -41,21 +43,21 @@ OpenPGP 规范中一个值得注意的 KDF 是 HKDF，它是基于 HMAC 的密�
 
 但是，交换密钥的问题需要单独解决。
 
-混合密码系统（hybrid cryptosystems）结合了对称密钥密码学的优势，并使用额外的公钥密码学来管理前者的密钥。
+<<混合密码系统（hybrid cryptosystems）>>结合了对称密钥密码学的优势，并使用额外的公钥密码学来管理前者的密钥。
 
 === OpenPGP 中的对称密钥密码学
 
 在 OpenPGP 中，对称密钥加密用于三个情景下：
 
 * 最显著的，在混合密码系统中用来加密和解密数据
-* 加密由密码保护的私钥
-* 用于密码保护的数据的加密，这是标准中一个较为少见的用法
+* 加密link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-secret-key-encryption[由密码保护的私钥]
+* 用于link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-symmetric-key-encrypted-ses[密码保护的数据的加密]，这是标准中一个较为少见的用法
 
 在 OpenPGP 中，当对称密钥用来加密数据时，它们会称为“信息密钥（message key）”或者“会话密钥（session key）”。
 
-=== 带有关联数据的认证加密（authenticated encryption with associated data, AEAD）
+=== 带有关联数据的鉴别加密（authenticated encryption with associated data, AEAD）
 
-认证加密（authenticated encryption）不仅保证了机密性，还能保证数据的完整性。
+link:https://en.wikipedia.org/wiki/Authenticated_encryption[鉴别加密（authenticated encryption）]不仅保证了机密性，还能保证数据的完整性。
 
 在 OpenPGP 第 6 版中，AEAD 替换了 MDC 机制来处理可塑性（malleability）问题。在早期版本的 OpenPGP 中，恶意的对密文（ciphertext）的操作可能不会被发现。AEAD 保证了对抗该类（之前）不可察觉的修改。
 
@@ -63,7 +65,7 @@ OpenPGP 规范中一个值得注意的 KDF 是 HKDF，它是基于 HMAC 的密�
 
 == 公钥（非对称）密码学（public-key (asymmetric) cryptography）
 
-公钥密码学使用一对相关但不同的密钥。每对密钥包含一个公钥（public key）和一个私钥（private key）。该系统支持加密、解密和数字签名（digital signature）操作。
+link:https://en.wikipedia.org/wiki/Public-key_cryptography[公钥密码学]使用一对相关但不同的密钥。每对密钥包含一个公钥（public key）和一个私钥（private key）。该系统支持加密、解密和数字签名（digital signature）操作。
 
 与对称加密学不同，参与者不需要提前分享密钥。在公钥密码学中，对于特定的密码学操作——比如加密和签名验证——公钥是公开发布的，而私钥，则保持机密，用于解密和签名创建操作。
 
@@ -87,7 +89,7 @@ OpenPGP 文档，包括基础 RFC，更常使用“secret key”而非更广泛�
 
 === 密码学数字签名
 
-数字签名是非对称密码学的基础机制，提供了安全的、数学方法上的验证数字信息和文档的真实性、完整性、和原始性。
+link:https://en.wikipedia.org/wiki/Digital_signature[数字签名]是非对称密码学的基础机制，提供了安全的、数学方法上的验证数字信息和文档的真实性、完整性、和原始性。
 
 在 OpenPGP 中，数字签名有多种用途，依然超越了验证信息来源的作用。它可以用于各种用途，包括认证（certification）、同意（consent）、确认（acknowledgment）甚至是被签名者吊销（revocation）。
 
@@ -95,13 +97,13 @@ OpenPGP 文档，包括基础 RFC，更常使用“secret key”而非更广泛�
 
 OpenPGP 的数字签名主要用于两处：
 
-* 数据签名
-* 对于组件（components）的签名
+* xref:73.07、对数据签名.adoc[数据签名]
+* xref:https://openpgp.dev/book/signing_components.html[对于组件（components）的签名]
 
-== 混合密码系统（Hybrid cryptosystems）
+== 混合密码系统（hybrid cryptosystems）
 
-混合密码系统结合使用对称和非对称（公钥）密码学，以发挥出两者各自的长处：也就是对称密码学的速度和效率，以及公钥密码学的安全交换密钥的机制。
+link:https://en.wikipedia.org/wiki/Hybrid_cryptosystem[混合密码系统]结合使用对称和非对称（公钥）密码学，以发挥出两者各自的长处：也就是对称密码学的速度和效率，以及公钥密码学的安全交换密钥的机制。
 
 === OpenPGP 中的用法和术语
 
-OpenPGP 使用混合密码系统来加密。该过程包含生成唯一的密钥，对于每个会话来说，该密钥被称为“会话密钥”。
+OpenPGP 使用混合密码系统来加密。该过程包含生成唯一的密钥，对于每个会话来说，该密钥被称为“会话密钥”。关于该话题的详细信息，见章节link:73.10、加密.adoc[加密]和link:73.11、解密.adoc[解密]。
