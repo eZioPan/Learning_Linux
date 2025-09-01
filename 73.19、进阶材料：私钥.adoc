@@ -80,4 +80,4 @@ OpenPGP 具有特定的被称为密钥覆写攻击的弱点。这些攻击利用
 
 ==== 资源
 
-关于 KO 攻击的好理解信息，以及其背景、攻击向量、应对措施以及技术分析，见 link:https://www.kopenpgp.com[KOpenPGP.com]。其基于文章“Victory by KO: Attacking OpenPGP Using Key Overwriting”，作者 Lara Bruseghini, Daniel Huigens, and Kenneth G. Paterson，于 the Proceedings of ACM Conference on Computer and Communications Security, Los Angeles, November 2022。
+关于 KO 攻击的完整信息，以及其背景、攻击向量、应对措施以及技术分析，见 link:https://www.kopenpgp.com[KOpenPGP.com]。其基于文章“Victory by KO: Attacking OpenPGP Using Key Overwriting”，作者 Lara Bruseghini, Daniel Huigens, and Kenneth G. Paterson，于 the Proceedings of ACM Conference on Computer and Communications Security, Los Angeles, November 2022。

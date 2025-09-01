@@ -106,7 +106,7 @@ OpenPGP 使用密码学签名防止组件的非授权添加或修改。它验证
 
 反向签名强调了子密钥和主密钥之间的互关联性，其作为子密钥绑定签名的子包数据嵌入，强化了绑定的真实性。
 
-=== 将身份绑定至证书
+=== 将身份认证绑定至证书
 
 自签名在绑定身份组件——比如用户 ID 或用户属性——至 OpenPGP 证书时也十分重要。
 
@@ -114,7 +114,7 @@ OpenPGP 使用密码学签名防止组件的非授权添加或修改。它验证
 
 认证自签名包——由主密钥、用户 ID 和签名包的元数据计算而来——会在用户 ID 包之后直接添加至证书中。
 
-=== 添加全局元数据至证书
+=== 向证书添加全局元数据
 
 将子密钥和身份组件绑定至证书的签名由两个功能：将组件链接至证书，以及向组件中添加元数据。
 
@@ -148,11 +148,11 @@ __直接密钥签名__是 OpenPGP 第 6 版中推荐的、为整个证书定义�
 
 吊销自签名（revocation self-signature）是一种重要的自签名，主要用于无效化组件或撤回之前的签名陈述。
 
-吊销签名分为几种，每个都有特定的功能：
+有多种类型的吊销签名，每个都有特定的目的：
 
-* 密钥吊销签名（类型 ID `0x20`）将主密钥标记为已吊销。
-* 子密钥吊销签名（类型 ID `0x28`）无效化一个子密钥的绑定。
-* 证书吊销（类型 ID `0x30`）无效化一个用户 ID 或用户属性的绑定。
+* link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-key-revocation-signature-ty[**密钥吊销签名（key revocation signature）**]（类型 ID `0x20`）吊销主密钥。
+* link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-subkey-revocation-signature[**子密钥吊销签名（subkey revocation signature）**]（类型 ID `0x28`）无效化子密钥的绑定。
+* link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-certification-revocation-si[**核证吊销（certification revocation）**]（类型 ID 0x30）无效化用户 ID 或用户属性的绑定。
 
 使用吊销的常见场景包含，将证书或独立的子密钥标记为不可用（比如私钥泄露或被替换）或者声明用户 ID 不再有效。
 
@@ -177,19 +177,19 @@ OpenPGP 证书在实践上是一个仅追加（append-only）的数据结构。�
 不具有吊销原因的吊销签名包将会被解析为硬吊销。
 ====
 
-== 第三方签名中的认证和委派
+== 第三方签名中的鉴别和委派
 
-OpenPGP 中的第三方签名主要用于编码身份的认证陈述、以及委派信任决策。这些签名可以手动检验或通过 OpenPGP 软件以机器可读的形式进行处理，它是基于用户指定的信任锚来评估证书的真实性的。
+OpenPGP 中的第三方签名主要用于编码身份的鉴别陈述、以及委派信任决策。这些签名可以手动检验或通过 OpenPGP 软件以机器可读的形式进行处理，它是基于用户指定的信任锚来评估证书的真实性的。
 
-=== 认证身份组件
+=== 核证身份组件
 
-当一个签名者签发对一个身份签发了一个认证签名，它就表明了身份于证书之间的一个验证过的链接。也就是说，签名者担保身份声明的有效性。
+当一个签名者对一个身份签发了一个核证签名，它就表明了身份与证书之间的一个验证过的链接。也就是说，签名者担保该身份声明。
 
-举例来说，Alice 可以通过创建证书签名，来担保 Bob 的用户 ID `Bob Baker <bob@example.com>` 和他的证书 `BB28 9FB7 A68D BFA8 C384 CCCD E205 8E02  D9C6 CD2F 3C7C 56AE 7FB5 3D97 1170 BA83` 是合法链接的。Bob 之后就可以分发 Alice 的认证签名作为他证书的一部分。
+举例来说，Alice 可以通过创建核证签名，来担保 Bob 的用户 ID `Bob Baker <bob@example.com>` 和他的证书 `BB28 9FB7 A68D BFA8 C384 CCCD E205 8E02  D9C6 CD2F 3C7C 56AE 7FB5 3D97 1170 BA83` 是合法链接的。Bob 之后就可以分发 Alice 的核验签名作为他证书的一部分。
 
-其它游湖可以自行决定是否要依赖 Alice 的陈述来验证 Bob 的证书的真实性。
+其它用户可以自行决定是否要依赖 Alice 的陈述来验证 Bob 的证书的真实性。
 
-=== 信任签名：委派认证
+=== 信任签名：委派鉴别
 
 OpenPGP 使用__信任签名（trust signature）__子包来委派认证决策，将接受方的证书作为用户的“受信介绍人（trusted introducer）”（或称信任锚）。其包含确定暂态委托（transitive delegations）的信任深度（trust depth）（或级别 level），使用数字量化信任，表明介绍人的证书的可靠程度。
 

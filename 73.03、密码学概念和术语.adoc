@@ -91,7 +91,7 @@ OpenPGP 文档，包括基础 RFC，更常使用“secret key”而非更广泛�
 
 link:https://en.wikipedia.org/wiki/Digital_signature[数字签名]是非对称密码学的基础机制，提供了安全的、数学方法上的验证数字信息和文档的真实性、完整性、和原始性。
 
-在 OpenPGP 中，数字签名有多种用途，依然超越了验证信息来源的作用。它可以用于各种用途，包括认证（certification）、同意（consent）、确认（acknowledgment）甚至是被签名者吊销（revocation）。
+在 OpenPGP 中，数字签名有多种用途，依然超越了验证信息来源的作用。它可以用于各种用途，包括核证（certification）、同意（consent）、确认（acknowledgment）甚至是被签名者吊销（revocation）。
 
 在密码学协议中，通过数字签名表现的“陈述（statements）”具有自然而然的多功能性，该特性广泛使用，且非常关键，允许第三方检测和验证这些称述来确认真实性和实际的用途。
 
