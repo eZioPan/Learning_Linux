@@ -2,11 +2,13 @@
 
 == 私钥概览
 
-本章讨论 OpenPGP 中的私钥管理。
+本章讨论 OpenPGP 中私钥材料的管理。
+
+私钥材料与组件密钥关联，是 xref:73.04、证书.adoc[OpenPGP 证书]的组成部分。关于包的内部结构，见章节xref:抽丝剥茧：私钥材料的包结构.adoc[]。
 
 == 术语：“证书”与“私钥”
 
-术语__OpenPGP 证书__表示通常意义上的“OpenPGP 公钥”。OpenPGP 证书是组件公钥、身份组件、绑定自签名、三方认证的组合。
+术语__OpenPGP 证书__表示通常意义上的“OpenPGP 公钥”。OpenPGP 证书是组件的公钥、身份组件、绑定自签名、三方认证的组合，如前序章节所述（xref:73.04、证书.adoc[证书]）。
 
 本章聚焦于证书元素的对应部分：组件密钥的__私钥__。
 
@@ -14,35 +16,51 @@
 
 在特定的情况下，密码学私钥会嵌入 OpenPGP 证书 之中。此类操作在可转移私钥（transferable secret keys, TSKs）的情境中出现。
 
-TSK 格式在备份 OpenPGP 密钥或转移密钥至不同的电脑时十分有效。
+== 可转移密钥格式
+
+有时候，将 OpenPGP 证书和密钥材料以link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-transferable-secret-keys[可转移密钥（TSK）]的形式合并起来是很有用的。TSK 是一个序列化的格式，其将 OpenPGP 证书数据以及关联的私钥材料组合起来，存储在单个文件中。
+
+TSK 格式在备份或转移 OpenPGP 密钥至不同的电脑时十分有效。要了解 TSK 的包内部结构，见章节 xref:抽丝剥茧：私钥材料的包结构.adoc[]
 
 ====
 术语：
 可转移私钥有时通俗地称为“OpenPGP 私钥”。
 ====
 
-历史上，TSK 的概念——将一个 OpenPGP 证书的所有元素及其关联的私钥合并在一起——有时会与 OpenPGP 私钥操作交叉。但是，TSK 主要用于（备份）存储和迁移；通常来说，它不应该用于私钥存储（private keystore）之中。
+历史上，TSK 的概念——将一个 OpenPGP 证书的所有元素及其关联的私钥合并在一起——有时会与 OpenPGP 私钥操作交叉。但是，TSK 主要用于（备份）存储和迁移；通常来说，它不应该用于私钥存储（private keystore）之中。见 xref:73.19、进阶材料：私钥.adoc#_私钥存储[私钥存储]。
 
 == 用密码（passphrases）保护密钥
 
 在 OpenPGP 格式中，私钥可以可选地被一个密码保护。
 
-当未授权方获取了 OpenPGP 密钥数据之后，若其不知道密码，那么它就无法访问和使用该密钥。
+即便未授权方获取了 OpenPGP 密钥数据，若其不知道密码，那么其依旧无法访问和使用该密钥。
 
 === 将密码转换为对称密钥
 
 在 OpenPGP 中，当我们保护私钥时，一个对称密钥会派生自用户的密码。该派生的密钥则会用于保护 OpenPGP 私钥数据。
 
-要实现它，OpenPGP 标准定义了一组被称为字符串转密钥（string-to-key, S2K）的机制。S2K 机制，使用密钥派生函数（key derivation funtion, KDF），从低熵（low-entropy）的密码中生成高熵（high-entropy）的对称加密密钥。
+要实现它，OpenPGP 标准定义了一组被称为link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-string-to-key-s2k-specifier[字符串转密钥（string-to-key, S2K）]的机制。S2K 机制，使用link:https://en.wikipedia.org/wiki/Key_derivation_function[密钥派生函数（key derivation funtion, KDF）]，从低熵（low-entropy）的密码中生成高熵（high-entropy）的对称加密密钥。
 
 该对称密钥用于在被动状态（passive state）——比如存储在硬盘上——下保护私钥。要使用密码保护的 OpenPGP 私钥，它首先需要使用对称密钥解密，之后才能用作私钥操作，解密后的私钥会在内存中短暂地保持解锁状态。
 
 ==== 对称密钥生成的机制
 
-随时间推移，OpenPGP 开发了各种用于 S2K 机制的对称密钥生成方法，同时伴随密码学实践的演进。目前，有两种推荐的通用机制：
+随时间推移，OpenPGP 收录了各种link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-string-to-key-s2k-types-reg[用于生成对称密钥的 S2K 机制]，同时伴随密码学实践的演进。目前，有两种推荐的通用机制：
 
-* **Argon2**：在 OpenPGP 第 6 版中推出，Argon2 是一种耗费内存（memory-hard）的机制，设计为减轻使用特殊硬件进行快速暴力破解的攻击。
-* **迭代加盐 S2K（Iterated and Salted S2K）**：该机制是 OpenPGP 第 4 版的主要机制。
+* link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-argon2[**Argon2**]：在 OpenPGP 第 6 版中推出，Argon2 是一种耗费内存（memory-hard）的机制，设计为减轻使用特殊硬件进行快速暴力破解的攻击。
+* link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-iterated-and-salted-s2k[**迭代加盐 S2K（Iterated and Salted S2K）**]：该机制是 OpenPGP 第 4 版的主要机制。
+
+第三种机制在部分条件下也可用于密钥生成。允许解密使用过时机制生成的私钥。
+
+RFC 使用术语“String-to-Key (S2K) specifier”或“String-to-Key (S2K) specifier type”来表示用来从密码中__生成__对称密钥的机制。
+
+=== 使用对称密钥进行加密
+
+通过密钥生成对称密钥导致了将其用于加密或解密 OpenPGP 私钥材料。
+
+RFC 使用术语“String-to-Key Usage (S2K usage)”来表示__施加__对称密钥的过程。
+
+不同的机制定义在 link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-secret-key-encryption[OpenPGP 私钥材料的加密]。
 
 === 基于组件的密码保护
 
@@ -57,7 +75,15 @@ OpenPGP 中保护私钥的机制是独立应用在每个组件密钥上的：
 
 == 私钥的 OpenPGP 卡（OpenPGP card）
 
-（略）
+link:https://en.wikipedia.org/wiki/OpenPGP_card[OpenPGP 卡] 是一类硬件安全设备，它们特别设计为处理 OpenPGP 私钥材料。这些卡提供了另一种在用户电脑上直接管理私钥材料的方法。
+
+硬件安全设备，比如 OpenPGP 卡，设计为防止用户的电脑直接访问私钥材料。其目标为完全防止密钥材料泄露，即便远程攻击者完全攻陷了用户的系统。
+
+OpenPGP 卡遵守 link:https://gnupg.org/ftp/specs/OpenPGP-smart-card-application-3.4.1.pdf[Functional Specification of the OpenPGP application on ISO Smart Card Operating Systems, Version 3.4.1] 开放规范。该规范已经被多个开发商在多个设备上实现，且有多个自由软件版本支持，有些还兼容开放硬件设计。
+
+实际上，OpenPGP 卡规范勾勒了私钥存储子系统的一个模型。OpenPGP 卡不会完整存储整个 OpenPGP 证书。相反，它有三个不同的“密钥槽”，分别用于__签名_、__解密__和__鉴别__。每个密钥槽存储一个组件密钥的数据，包含其密码学私钥材料。额外的，OpenPGP 卡显示地在对应的密钥槽中存储组件密钥的指纹。
+
+值得注意的是，这种显示地在 OpenPGP 卡中存储指纹的实践，与通常的 OpenPGP 格式不同，后者不会存储组件密钥的指纹，而是动态地从密钥数据中计算出来。
 
 == 私钥操作
 
@@ -67,3 +93,5 @@ OpenPGP 中保护私钥的机制是独立应用在每个组件密钥上的：
 
 . 给定一个支持解密算法的私钥，他可以解密一个__会话密钥__。
 . 给定一个支持签名算法的私钥，他可以计算一个散列摘要的__密码学签名__。
+
+这些基本操作只需要访问组件密钥及其相关的私钥材料，特别是link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-secret-key-packet-formats[私钥包]。其它包，比如绑定签名，是不需要的。
