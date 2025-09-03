@@ -9,42 +9,42 @@
 在 OpenPGP 中，术语__签名__可以有两个不同的含义：
 
 * **密码学签名**：由密码学密钥创建的一串字节，由签名方案计算而来。
-* **OpenPGP 签名包**：在 OpenPGP 标准中定义，这些包由一个裸密码学签名、__类型__代号（__type__ designation）以及一些额外的元数据组成。
+* **OpenPGP 签名包**：在 link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-signature-packet-type-id-2[OpenPGP 标准]中定义，这些包由一个裸密码学签名、__类型__代号（__type__ designation）以及一些额外的元数据组成。
 
 在本文档中，“签名”将用来表示**OpenPGP 签名包**。
 
 == OpenPGP 的签名类型（signature types）
 
-OpenPGP 标准定义了一系列签名类型，每个类型都具有一个数字__签名类型 ID__。签名类型确定了一个签名包的用途，以及其该如何解析。
+OpenPGP 标准定义了一系列link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-signature-types[签名类型]，每个类型都具有一个数字__签名类型 ID__。签名类型确定了一个签名包的用途，以及其该如何解析。
 
 签名类型主要分为两大类：
 
-* **数据签名**：这些签名具有类型 ID `0x00` 以及 `0x01`，前者用于二进制文档，后者用于规范（canonical）文本文档。签名者使用这些签名来申明所有权、断言创建（assert creation）或保证文档的不可变性。
+* **数据签名**：这些签名具有类型 ID `0x00` 以及 `0x01`，前者用于二进制文档，后者用于规范（canonical）文本文档。签名者使用这些签名来申明所有权、断言创建（assert creation）或核证文档的不可变性。
 * **组件签名**：这些签名是关联在证书的组件密钥或身份组件上的。
 
-组件签名是复杂的话题，我们将在后续章节中深入讨论。他们基于两点进行判别：
+组件签名是复杂的话题，我们将在xref:73.08、组件签名.adoc[组件签名]中详细论述。他们基于两点进行判别：
 
-* 签名的来源，用于区分自签名和第三方签名
-* 签名产生的陈述的本质，比如是验证一个身份认证还是将组件密钥绑定至证书。
+* 签名的来源，分为自签名和第三方签名
+* 签名给出的陈述的性质，比如核证一个身份或者绑定组件密钥至一个证书
 
 本章将介绍适用于所有 OpenPGP 签名类型的总体原则。
 
-对于特定的签名类型，参见后面的章节。
+对于特定的签名类型，分别参考xref:73.07、对数据签名.adoc[数据签名]章节和xref:73.08、组件签名.adoc[组件签名]章节。
 
 == OpenPGP 签名包的结构
 
 正如上面所说，OpenPGP 签名是一个复合数据结构，包含：
 
 * **签名类型 ID**：确定了签名的目的，如上所述
-* **元数据**：部分基于签名类型 ID 而变化；大多数编码为“子包（subpacket）”
+* **元数据**：部分基于签名类型 ID 而变化；大多数编码为“子包（subpacket）”（见<<签名子包（signature subpackets）,签名子包>>）
 * **裸密码学签名**
 
 输入数据包随着签名的要求而不同。
 
 举例来说：
 
-* **二进制数据签名**：输入输出包是一个纯数据包。
-* **子密钥绑定签名**：输入数据包包含一个主密钥包和一个子密钥包。
+* xref:73.07、数据签名.adoc#_签名类型[**二进制数据签名**]：输入输出包是一个纯数据包。
+* xref:73.08、组件签名.adoc#_将子密钥绑定至证书[**子密钥绑定签名**]：输入数据包包含一个主密钥包和一个子密钥包。
 
 === 创建一个 OpenPGP 签名包
 
@@ -75,14 +75,14 @@ OpenPGP 标准定义了一系列签名类型，每个类型都具有一个数字
 
 == 签名子包（signature subpackets）
 
-在 OpenPGP 协议中，签名子包让签名不仅仅可以表达裸密码学签名和签名类型 ID。这些在 RFC 2440 中引入的子包，是在签名包中嵌入额外元数据的基础。
+在 OpenPGP 协议中，签名子包让签名不仅仅可以表达裸密码学签名和签名类型 ID。这些在 link:https://datatracker.ietf.org/doc/html/rfc2440[RFC 2440] 中引入的子包，是在签名包中嵌入额外元数据的基础。
 
-签名子包作为签名包的子元素（sub-element）出现，提供了额外的内容和签名的意义。它们被格式化为键值对，键的值由 RFC 的子包类型 ID 定义。RFC 同样也提供了值的格式和解释方法。
+签名子包作为签名包的子元素（sub-element）出现，提供了额外的内容和签名的意义。它们被格式化为键值对，键的值由 RFC 的link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-signature-subpacket-types-r[子包类型 ID] 定义。RFC 同样也提供了值的格式和解释方法。
 
 === 签名子包的案例
 
-* __签发者指纹（issuer fingerprint）__子包编码了签发该签名的组件密钥的指纹。
-* __密钥标识__子包定义了一个证书中的一个组件密钥被赋予的能力。
+* link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#issuer-fingerprint-subpacket[__签发者指纹（issuer fingerprint）__]子包编码了签发该签名的组件密钥的指纹。
+* link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-key-flags[__密钥标识__]子包定义了一个证书中的一个组件密钥被赋予的能力。
 
 === 散列和未散列（unhashed）签名子包
 
@@ -93,6 +93,8 @@ OpenPGP 的签名子包可以存储于签名包的两个完全不同的区域中
 
 绝大部分的签名子包都是存储在散列区域的。
 
+更详细的信和规范，见 OpenPGP RFC 的 link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-hashed-vs-unhashed-subpacke[Hashed vs. Unhashed Subpackets]。
+
 === 子包的关键性（criticality）
 
 在 OpenPGP 协议中，每一个签名子包都可以被标记上__关键性标识（criticality flag）__。该标识在签名的解析验证中具有重要作用。当启用它时，任何接收端实现在遇到了一个不认识的子包类型的时候，都将其当作严重错误，并无效化该签名。
@@ -100,3 +102,5 @@ OpenPGP 的签名子包可以存储于签名包的两个完全不同的区域中
 该机制考虑到不同的 OpenPGP 实现可能只支持标准的某些子集。而且，它参与了标准的演进，包含增加新的子包类型。
 
 考虑如下场景，一个实现不认识签名过期相关的子包。若无法理解这个概念，实现可能会错误地接收一个已经过期的签名。将该签名过期事件子包标记未关键的，签名的创建者可以保证任何不能解析该子包的接受者都会以无效原由拒绝该签名。
+
+关于那些子包应该标记为关键，参考 RFC 章节 link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-signature-creation-time[5.2.3.11] 和 link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-intended-recipient-fingerpr[5.2.3.36]。
