@@ -6,7 +6,7 @@
 
 数据签名仅能被具有__签名__link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-key-flags[密钥标识]的组件密钥签发。
 
-注意，数据签名与xref:73.08、组件签名.adoc[组件签名]完全不同，后者用于构造和维护证书，也可以用于核验证书上的身份。
+注意，数据签名与xref:73.08、组件签名.adoc[组件签名]完全不同，后者用于构造和维护证书，也可以用于核证证书上的身份。
 
 == 签名类型
 
