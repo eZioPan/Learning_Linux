@@ -1,6 +1,9 @@
 = 组件签名
 
 :密钥标识_url: https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-key-flags
+:直接密钥签名_url: https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-direct-key-signature-type-i
+:子密钥绑定签名_url: https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#sigtype-subkey-binding
+:证书吊销签名_url: https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-certification-revocation-si
 
 本章介绍与证书组件关联的 OpenPGP 签名，签名施加于：
 
@@ -59,7 +62,7 @@ OpenPGP 签名的含义极大地依赖于它的签发者。即便自签名和第
 
 另一个例子：
 
-* __当签发为自签名时__，link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-direct-key-signature-type-i[直接密钥签名]设置的偏好会作用于整个证书。
+* __当签发为自签名时__，link:{直接密钥签名_url}[直接密钥签名]设置的偏好会作用于整个证书。
 * __当签发者为第三方时__，特别时它附带了link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-trust-signature[可信签名（trust signature）]子包时，一个类似的直接密钥签名将用于信任签名的证书。它可以让签名的证书作为签发者的信任网的信任锚（trust anchor）。
 
 == 证书中的自签名的格式和管理方式
@@ -82,7 +85,7 @@ OpenPGP 使用密码学签名防止非授权地添加或修改组件。它确认
 
 === 将子密钥绑定至证书
 
-子密钥通过link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#sigtype-subkey-binding[子密钥绑定签名]（类型 ID `0x18`）链接至 OpenPGP 证书。该签名类型表示了主密钥与子密钥之间的联系。
+子密钥通过link:{子密钥绑定签名}[子密钥绑定签名]（类型 ID `0x18`）链接至 OpenPGP 证书。该签名类型表示了主密钥与子密钥之间的联系。
 
 一个子密钥绑定签名将子密钥绑定至主密钥，并将元数据嵌入签名包。一旦生成，子密钥绑定签名包会直接存储在证书中、所绑定的子密钥之后。
 
@@ -105,7 +108,7 @@ OpenPGP 使用密码学签名防止非授权地添加或修改组件。它确认
 
 这种互相绑定对安全至关重要。若没有它，那么一个个体（比如 Alice）可以声称连接至另一个人（比如 Bob）的签名子密钥。这样 Alice 就可以声明签发了实际上是 Bob 签发的签名。要防止这类情况——攻击者可能错误地“接受”了被害者的签名子密钥——会使用双层签名：
 
-* link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#sigtype-subkey-binding[子密钥绑定签名]（类型 ID `0x18`），由证书的主密钥签发
+* link:{子密钥绑定签名}[子密钥绑定签名]（类型 ID `0x18`），由证书的主密钥签发
 * link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#sigtype-primary-binding[主密钥绑定签名]（类型 ID `0x19`），由子密钥自己签发。其非正式地称为嵌入式“返回签名（back signature）”，因为子密钥的签名指向了之前的主密钥。
 
 返回签名强调了子密钥和主密钥之间的互关联性，其作为子密钥绑定签名的子包数据嵌入，强化了绑定的真实性。
@@ -120,9 +123,9 @@ OpenPGP 使用密码学签名防止非授权地添加或修改组件。它确认
 
 === 向证书添加全局元数据
 
-将子密钥和身份组件绑定至证书的签名由两个功能：将组件链接至证书，以及向组件中添加元数据。
+将子密钥和身份组件绑定至证书的签名有两个功能：将组件链接至证书，以及向组件中添加元数据。
 
-由于我们只是想添加影响整个证书的元数据，它并不要求将任何组件绑定至证书。此时，签名机制将仅用于全局地将元数据绑定至证书。
+虽然向证书中添加影响整个证书的元数据是基本需求，但他并不要求绑定任何组件至证书。此时，签名机制讲仅用于将元数据全局式地关联至证书。
 
 由两类签名可以执行这类功能：
 
@@ -134,15 +137,15 @@ OpenPGP 使用密码学签名防止非授权地添加或修改组件。它确认
 * 密钥过期时间
 * 密钥标识（能力）
 * 特性（features）
-* 算法偏好
+* 算法偏好指示
 
 ==== 直接密钥签名
 
-__直接密钥签名__是 OpenPGP 第 6 版中推荐的、为整个证书定义元数据的机制，它与主密钥关联
+link:{直接密钥签名_url}[__直接密钥签名__]是 OpenPGP 第 6 版中link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#section-5.2.3.10-9[推荐的]、为整个证书定义元数据的机制，通过与主密钥关联实现。
 
 ==== 绑定至主用户 ID 的自签名
 
-在 OpenPGP 第 4 版中，常使用另一个机制管理元数据：将全局证书元数据整合至一个用户 ID 绑定签名中。它特定出现在绑定__主__用户 ID 至证书的绑定签名上。
+在 OpenPGP 第 4 版中，常使用另一个机制管理元数据：将全局证书元数据整合至一个用户 ID 绑定签名中。它特定出现在绑定link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-primary-user-id[__主__用户 ID] 至证书的绑定签名上。
 
 这种方法导致主用户 ID 绑定签名中混合了两种元数据：一部分作用于那个用户 ID，而另一部分作用于证书全局。
 
@@ -156,7 +159,7 @@ __直接密钥签名__是 OpenPGP 第 6 版中推荐的、为整个证书定义�
 
 * link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-key-revocation-signature-ty[**密钥吊销签名（key revocation signature）**]（类型 ID `0x20`）吊销主密钥。
 * link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-subkey-revocation-signature[**子密钥吊销签名（subkey revocation signature）**]（类型 ID `0x28`）无效化子密钥的绑定。
-* link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-certification-revocation-si[**核证吊销（certification revocation）**]（类型 ID 0x30）无效化用户 ID 或用户属性的绑定。
+* link:{证书吊销签名_url}[**证书吊销（certification revocation）**]（类型 ID 0x30）无效化用户 ID 或用户属性的绑定。
 
 使用吊销的常见场景包含，将证书或独立的子密钥标记为不可用（比如私钥泄露或被替换）或者声明用户 ID 不再有效。
 
@@ -167,14 +170,14 @@ OpenPGP 证书在实践上是一个仅追加（append-only）的数据结构。�
 吊销用于将组件和签名标记为无效的。
 ====
 
-注意：证书签名可以被设置为不可吊销的（irrevocable）。
+注意：证书签名可以被设置为link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-revocable[不可吊销的（irrevocable）]。
 
 ==== 硬吊销和软吊销
 
-吊销签名通常包含一个__吊销原因（Reason for Revocation）__子包，其中使用一个代号表明__为什么__签发这个吊销。该代号将确定该吊销是__软的（soft）__还是__硬的（hard）__。
+吊销签名通常包含一个link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-reason-for-revocation[__吊销原因（Reason for Revocation）__子包]，其中使用一个代号表明__为什么__签发这个吊销。该代号将确定该吊销是__软的（soft）__还是__硬的（hard）__。
 
 * **软吊销**：它通常用于轻柔地或计划性地无效化组件，比如退让或更新组件。它从吊销签名创建时刻开始无效化组件，但之前的使用保持有效。软吊销可以被一个新的自签名反转。
-* **硬吊销**:其不可吊销地无效化组件，影响后者之前和未来所有的使用。它通常用于表示私钥的泄露。
+* **硬吊销**：本身不可吊销地无效化组件，影响后者之前和未来所有的使用。它通常用于表示私钥已经泄露。
 
 [NOTE]
 ====
@@ -195,20 +198,20 @@ OpenPGP 中的第三方签名主要用于编码身份的鉴别陈述、以及委
 
 === 信任签名：委派鉴别
 
-OpenPGP 使用__信任签名（trust signature）__子包来委派认证决策，将接受方的证书作为用户的“受信介绍人（trusted introducer）”（或称信任锚）。其包含确定暂态委托（transitive delegations）的信任深度（trust depth）（或级别 level），使用数字量化信任，表明介绍人的证书的可靠程度。
+OpenPGP 使用link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#trust-signature-subpacket[__信任签名（trust signature）__]子包来委派认证决策，将接受方的证书作为用户的“受信介绍人（trusted introducer）”（或称信任锚）。其包含确定暂态委托（transitive delegations）的信任深度（trust depth）（或级别 level），使用数字量化信任，表明介绍人的证书的可靠程度。
 
 信任签名子包在第三方签名中可用，更具体的来说：
 
 * 身份认证签名（类型 ID `0x10` 至 `0x13`）
-* 直接密钥签名（类型 ID `0x1F`）
+* link:{直接密钥签名_url}[直接密钥签名（类型 ID `0x1F`）]
 
 ==== 信任深度/级别
 
-OpenPGP 中的“信任深度”（或级别）强化了认证过程中暂态委托的程度。它确定了一个委托可以从原始受信介绍人扩展至其后中继的程度。基本上来说，若一个证书具有大于 1 的信任深度，那么它就会作为“元介绍人”，让认证决策可以跨多个网络。
+OpenPGP 中的“信任深度”（或级别）强化了鉴别过程中暂态委托的程度。它确定了一个委托可以从原始受信介绍人扩展至其后中继的程度。基本上来说，若一个证书具有大于 1 的信任深度，那么它就会作为“元介绍人”，让鉴别决策可以跨多个网络。
 
 信任深度为 1 表示其依赖于由可信介绍者直接制作的证书。对于验证身份来说，用户的 OpenPGP 软件将接受由介绍人直接制作的证书。
 
-但是，当信任深度更高时，它按时了委托链可以超越初始的介绍人。用户的软件将识别并介绍不仅仅时主介绍人制作的证书，同时也包含由主要介绍人指定为可信介绍人的其它中间人制作的证书。
+但是，当信任深度更高时，它按时了委托链可以超越初始的介绍人。用户的软件将识别并介绍不仅仅是主介绍人制作的证书，同时也包含由主要介绍人指定为可信介绍人的其它中间人制作的证书。
 
 其允许更据扩展性的可信证书网络，实现了更广泛更具连接性的信任网。
 
@@ -220,18 +223,18 @@ OpenPGP 中的“信任深度”（或级别）强化了认证过程中暂态委
 
 ==== 限制委派作用域
 
-当使用__信任签名__子包时，一个委派可以通过一个__正则表达式__限制到部分身份上。
+当使用__信任签名__子包时，一个委派可以通过一个link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#regex-subpacket[__正则表达式__]限制到部分身份上。
 
-通过这个机制，举例来说，可以将认证决策仅仅委派至匹配上特定组织的电邮域名的用户 ID 上。
+通过这个机制，举例来说，可以将鉴别决策仅仅委派至匹配上特定组织的电邮域名的用户 ID 上。
 
 === 信任网：去中心化信任决策
 
-OpenPGP 中的信任网是一个通过证书和委派网络构建的认证决策的认证模型。它的特点被称为强集（strong set），意思为通过第三方证书强健地相互连接在一起的一组证书。
+OpenPGP 中的信任网是一个通过证书和委派网络构建的鉴别决策的可信模型。它的特点被称为link:https://en.wikipedia.org/wiki/Web_of_trust#Strong_set[强集（strong set）]，意思为通过第三方证书强健地相互连接在一起的一组证书。
 
-在这个模型中，用户独立地委派认证决策，选择要依赖谁的证书。这个委派是基于可用的证书和第三方签名的，他们的 OpenPGP 软件应用信任网机制来辨别每个身份证书的可靠性。
+在这个模型中，用户独立地委派鉴别决策，选择要依赖谁的证书。这个委派是基于可用的证书和第三方签名的，他们的 OpenPGP 软件应用信任网机制来辨别每个身份证书的可靠性。
 
 OpenPGP RFC 并不明确规定信任网的计算该如何执行。它仅定义了可以用于执行信任网计算的数据的格式。
 
 === 吊销一个第三方签名
 
-要反转一个之前签发的第三方签名，签发者可以生成一个证书吊销签名（certification revocation signature）（类型 ID `0x30`）。该吊销必须有创建原始签名的密钥签发，或者，在过时的实践中，使用专用的吊销密钥（Revocation Key）。
+要反转一个之前签发的第三方签名，签发者可以生成一个link:{证书吊销签名_url}[证书吊销签名（certification revocation signature）]（类型 ID `0x30`）。该吊销必须有创建原始签名的密钥签发，或者，在过时的实践中，使用专用的link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-revocation-key[吊销密钥（Revocation Key）]。
