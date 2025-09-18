@@ -64,7 +64,7 @@ OpenPGP 标准定义了一系列link:https://www.ietf.org/archive/id/draft-ietf-
 ** 计算输入数据的散列摘要。
 ** 计算上述散列摘要的密码学签名。
 
-=== 检验一个 OpenPGP 签名包
+=== 验证一个 OpenPGP 签名包
 
 验证一个 OpenPGP 签名包与创建一个类似，但是具有关键性的不同，可以让非签名者本人的实体验证签名。
 
