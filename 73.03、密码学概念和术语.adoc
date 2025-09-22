@@ -62,7 +62,7 @@ link:{wikipedia_url}/Symmetric-key_algorithm[称密钥密码学]使用相同的�
 
 link:{wikipedia_url}/Authenticated_encryption[鉴别加密（authenticated encryption）]不仅保证了机密性，还能保证数据的完整性。
 
-在 OpenPGP 第 6 版中，AEAD 替换了 MDC 机制来处理可塑性（malleability）问题。在早期版本的 OpenPGP 中，恶意的对密文（ciphertext）的操作可能不会被发现。AEAD 保证了对抗该类（之前）不可察觉的修改。
+在 OpenPGP 第 6 版中，AEAD 替换了 MDC 机制来处理可篡改性（malleability）问题。在早期版本的 OpenPGP 中，恶意的对密文（ciphertext）的操作可能不会被发现。AEAD 保证了对抗该类（之前）不可察觉的修改。
 
 由于解决了可塑性问题，AEAD 同样解决了 EFAIL 攻击的一个变种。
 
@@ -103,9 +103,9 @@ OpenPGP 的数字签名主要用于两处：
 * xref:73.07、对数据签名.adoc[数据签名]
 * xref:https://openpgp.dev/book/signing_components.html[对于组件（components）的签名]
 
-== 混合密码系统（hybrid cryptosystems）
+== 混合密码系统
 
-link:{wikipedia_url}/Hybrid_cryptosystem[混合密码系统]结合使用对称和非对称（公钥）密码学，以发挥出两者各自的长处：也就是对称密码学的速度和效率，以及公钥密码学的安全交换密钥的机制。
+link:{wikipedia_url}/Hybrid_cryptosystem[混合密码系统（hybrid cryptosystems）]结合使用对称和非对称（公钥）密码学，以发挥出两者各自的长处：也就是对称密码学的速度和效率，以及公钥密码学的安全交换密钥的机制。
 
 === OpenPGP 中的用法和术语
 
