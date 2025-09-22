@@ -1,5 +1,7 @@
 = 证书（certification）
 
+:crypto-refresh-12_url: https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html
+
 OpenPGP 基本上是建立在“OpenPGP 证书（OpenPGP certification）”——又称“OpenPGP 公钥”——的概念上的。这些证书是复杂的数据结构，用来验证身份、数据加密和数字签名。理解其结构和功能是高效使用 OpenPGP 标准的核心内容。
 
 一个 OpenPGP 证书，从定义上来说，不含有私钥内容。
@@ -90,7 +92,7 @@ OpenPGP 主密钥是一个组件密钥，它在 OpenPGP 证书中具有特殊的
 
 === OpenPGP 证书中的用户 ID（User ID）
 
-OpenPGP 证书可以包含多个link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#uid[用户 ID]。每个用户 ID 通过一个身份认证与证书关联。
+OpenPGP 证书可以包含多个link:{crypto-refresh-12_url}#uid[用户 ID]。每个用户 ID 通过一个身份认证与证书关联。
 
 一个典型的用户 ID 身份由一个 UTF-8 编码的一个名字和一个电邮地址组成的字符串构成。按照惯例，若一个用户 ID 与 https://www.rfc-editor.org/rfc/rfc2822[RFC2822] 定义的格式一致时，其就称为 __name-addr__。
 
@@ -114,9 +116,9 @@ OpenPGP 证书可以包含多个link:https://www.ietf.org/archive/id/draft-ietf-
 
 === OpenPGP 中的用户属性（user attributes）
 
-虽然link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#user-attribute-packet[用户属性]类似于用户 ID，但是它们并不常见。
+虽然link:{crypto-refresh-12_url}#user-attribute-packet[用户属性]类似于用户 ID，但是它们并不常见。
 
-当前，OpenPGP 标准仅定义了一种可以存储在用户属性的格式：一个 JPEG 格式的link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-the-image-attribute-subpack[图片]。通常情况下，该图片表示密钥的拥有者，虽然它并非必须的。
+当前，OpenPGP 标准仅定义了一种可以存储在用户属性的格式：一个 JPEG 格式的link:{crypto-refresh-12_url}#name-the-image-attribute-subpack[图片]。通常情况下，该图片表示密钥的拥有者，虽然它并非必须的。
 
 == 组件的链接
 
@@ -145,7 +147,7 @@ OpenPGP 证书，其组件密钥和身份拥有的元数据并不存储在相关
 
 === 使用密钥标识（key flags）定义组件密钥的操作能力（operational capabilities）
 
-每个组件密钥都具有一组link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#key-flags[“密钥标识”]确定了一个密钥可以执行的操作。
+每个组件密钥都具有一组link:{crypto-refresh-12_url}#key-flags[“密钥标识”]确定了一个密钥可以执行的操作。
 
 通常使用的密钥标识有：
 
@@ -156,7 +158,7 @@ OpenPGP 证书，其组件密钥和身份拥有的元数据并不存储在相关
 
 [NOTE]
 ====
-每个组件密钥处理不同的操作。仅有主密钥可以用于核证，当然它也可以有额外的能力。子密钥可以用于签名、加密和鉴别，但它们不可以拥有核证能力。技术上来说，一个组件密钥技术上可以有多个能力。但是，良好的做法是link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#section-10.1.5-7[为每个能力设置不同的密钥]。
+每个组件密钥处理不同的操作。仅有主密钥可以用于核证，当然它也可以有额外的能力。子密钥可以用于签名、加密和鉴别，但它们不可以拥有核证能力。技术上来说，一个组件密钥技术上可以有多个能力。但是，良好的做法是link:{crypto-refresh-12_url}#section-10.1.5-7[为每个能力设置不同的密钥]。
 
 值得一提的是，在很多算法中，加密和签名相关的功能（比如，核证、签名和鉴别）是互斥的，因为算法仅支持两大类操作中的一种。
 ====
@@ -171,11 +173,11 @@ OpenPGP 具有明显的link:https://en.wikipedia.org/wiki/Cryptographic_agility[
 
 OpenPGP 中的协商机制包括：
 
-* link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#preferred-hashes-subpacket[偏好的散列算法]
-* link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#preferred-v1-seipd[偏好的 v1 SEIPD 对称加密]
-* link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#preferred-v2-seipd[偏好的 AEAD 加密套件]
-* link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#features-subpacket[特性子包]
-* link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#preferred-compression-subpacket[偏好的加密算法]
+* link:{crypto-refresh-12_url}#preferred-hashes-subpacket[偏好的散列算法]
+* link:{crypto-refresh-12_url}#preferred-v1-seipd[偏好的 v1 SEIPD 对称加密]
+* link:{crypto-refresh-12_url}#preferred-v2-seipd[偏好的 AEAD 加密套件]
+* link:{crypto-refresh-12_url}#features-subpacket[特性子包]
+* link:{crypto-refresh-12_url}#preferred-compression-subpacket[偏好的加密算法]
 
 除了这些明确表述的偏好，实现方也会通过 OpenPGP 证书具有的版本来推断通信对象的能力。
 

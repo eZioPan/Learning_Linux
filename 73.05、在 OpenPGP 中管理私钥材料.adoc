@@ -1,5 +1,8 @@
 = 在 OpenPGP 中管理私钥
 
+:crypto-refresh-12_url: https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html
+:wikipedia_url: https://en.wikipedia.org/wiki
+
 == 私钥概览
 
 本章讨论 OpenPGP 中私钥材料的管理。
@@ -18,7 +21,7 @@
 
 == 可转移密钥格式
 
-有时候，将 OpenPGP 证书和密钥材料以link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-transferable-secret-keys[可转移密钥（TSK）]的形式合并起来是很有用的。TSK 是一个序列化的格式，其将 OpenPGP 证书数据以及关联的私钥材料组合起来，存储在单个文件中。
+有时候，将 OpenPGP 证书和密钥材料以link:{crypto-refresh-12_url}#name-transferable-secret-keys[可转移密钥（TSK）]的形式合并起来是很有用的。TSK 是一个序列化的格式，其将 OpenPGP 证书数据以及关联的私钥材料组合起来，存储在单个文件中。
 
 TSK 格式在备份或转移 OpenPGP 密钥至不同的电脑时十分有效。要了解 TSK 的包内部结构，见章节 xref:抽丝剥茧：私钥材料的包结构.adoc[]
 
@@ -39,16 +42,16 @@ TSK 格式在备份或转移 OpenPGP 密钥至不同的电脑时十分有效。�
 
 在 OpenPGP 中，当我们保护私钥时，一个对称密钥会派生自用户的密码。该派生的密钥则会用于保护 OpenPGP 私钥数据。
 
-要实现它，OpenPGP 标准定义了一组被称为link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-string-to-key-s2k-specifier[字符串转密钥（string-to-key, S2K）]的机制。S2K 机制，使用link:https://en.wikipedia.org/wiki/Key_derivation_function[密钥派生函数（key derivation funtion, KDF）]，从低熵（low-entropy）的密码中生成高熵（high-entropy）的对称加密密钥。
+要实现它，OpenPGP 标准定义了一组被称为link:{crypto-refresh-12_url}#name-string-to-key-s2k-specifier[字符串转密钥（string-to-key, S2K）]的机制。S2K 机制，使用link:{wikipedia_url}/Key_derivation_function[密钥派生函数（key derivation funtion, KDF）]，从低熵（low-entropy）的密码中生成高熵（high-entropy）的对称加密密钥。
 
 该对称密钥用于在被动状态（passive state）——比如存储在硬盘上——下保护私钥。要使用密码保护的 OpenPGP 私钥，它首先需要使用对称密钥解密，之后才能用作私钥操作，解密后的私钥会在内存中短暂地保持解锁状态。
 
 ==== 对称密钥生成的机制
 
-随时间推移，OpenPGP 收录了各种link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-string-to-key-s2k-types-reg[用于生成对称密钥的 S2K 机制]，同时伴随密码学实践的演进。目前，有两种推荐的通用机制：
+随时间推移，OpenPGP 收录了各种link:{crypto-refresh-12_url}#name-string-to-key-s2k-types-reg[用于生成对称密钥的 S2K 机制]，同时伴随密码学实践的演进。目前，有两种推荐的通用机制：
 
-* link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-argon2[**Argon2**]：在 OpenPGP 第 6 版中推出，Argon2 是一种耗费内存（memory-hard）的机制，设计为减轻使用特殊硬件进行快速暴力破解的攻击。
-* link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-iterated-and-salted-s2k[**迭代加盐 S2K（Iterated and Salted S2K）**]：该机制是 OpenPGP 第 4 版的主要机制。
+* link:{crypto-refresh-12_url}#name-argon2[**Argon2**]：在 OpenPGP 第 6 版中推出，Argon2 是一种耗费内存（memory-hard）的机制，设计为减轻使用特殊硬件进行快速暴力破解的攻击。
+* link:{crypto-refresh-12_url}#name-iterated-and-salted-s2k[**迭代加盐 S2K（Iterated and Salted S2K）**]：该机制是 OpenPGP 第 4 版的主要机制。
 
 第三种机制在部分条件下也可用于密钥生成。允许解密使用过时机制生成的私钥。
 
@@ -60,7 +63,7 @@ RFC 使用术语“String-to-Key (S2K) specifier”或“String-to-Key (S2K) spe
 
 RFC 使用术语“String-to-Key Usage (S2K usage)”来表示__施加__对称密钥的过程。
 
-不同的机制定义在 link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-secret-key-encryption[OpenPGP 私钥材料的加密]。
+不同的机制定义在 link:{crypto-refresh-12_url}#name-secret-key-encryption[OpenPGP 私钥材料的加密]。
 
 === 基于组件的密码保护
 
@@ -75,7 +78,7 @@ OpenPGP 中保护私钥的机制是独立应用在每个组件密钥上的：
 
 == 私钥的 OpenPGP 卡（OpenPGP card）
 
-link:https://en.wikipedia.org/wiki/OpenPGP_card[OpenPGP 卡] 是一类硬件安全设备，它们特别设计为处理 OpenPGP 私钥材料。这些卡提供了另一种在用户电脑上直接管理私钥材料的方法。
+link:{wikipedia_url}/OpenPGP_card[OpenPGP 卡] 是一类硬件安全设备，它们特别设计为处理 OpenPGP 私钥材料。这些卡提供了另一种在用户电脑上直接管理私钥材料的方法。
 
 硬件安全设备，比如 OpenPGP 卡，设计为防止用户的电脑直接访问私钥材料。其目标为完全防止密钥材料泄露，即便远程攻击者完全攻陷了用户的系统。
 
@@ -94,4 +97,4 @@ OpenPGP 卡遵守 link:https://gnupg.org/ftp/specs/OpenPGP-smart-card-applicatio
 . 给定一个支持解密算法的私钥，他可以解密一个__会话密钥__。
 . 给定一个支持签名算法的私钥，他可以计算一个散列摘要的__密码学签名__。
 
-这些基本操作只需要访问组件密钥及其相关的私钥材料，特别是link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-secret-key-packet-formats[私钥包]。其它包，比如绑定签名，是不需要的。
+这些基本操作只需要访问组件密钥及其相关的私钥材料，特别是link:{crypto-refresh-12_url}#name-secret-key-packet-formats[私钥包]。其它包，比如绑定签名，是不需要的。

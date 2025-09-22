@@ -1,5 +1,7 @@
 = 总览
 
+:wikipedia_url: https://en.wikipedia.org/wiki
+
 == 为什么使用 OpenPGP？
 
 OpenPGP 是总所周知的、IETF 标准化的加密操作集。它广泛用于保证通信安全——比如加密信息和邮件；并且，在大多数 Linux 分发版中，它用来保证软件包的完整性。它拥有大量的库、工具、社区支持论坛组成的生态系统。而且，它的强健性和多功能让 OpenPGP 在其它需要加密和保证完整性的领域也有一席之地——包括文件传输程序、密码管理器、安全数据存储以及为 git 仓库中的源码签名。
@@ -22,15 +24,15 @@ OpenPGP 标准随时间演进，并且仍在活跃开发。
 
 === Pretty Good Privacy（PGP）
 
-OpenPGP 的历史可以溯回至 __Pretty Good Privacy（PGP）__，由 link:https://en.wikipedia.org/wiki/Phil_Zimmermann[Phil Zimmermann] 编写的软件，其发布于 1991 年。
+OpenPGP 的历史可以溯回至 __Pretty Good Privacy（PGP）__，由 link:{wikipedia_url}/Phil_Zimmermann[Phil Zimmermann] 编写的软件，其发布于 1991 年。
 
-虽然原始的 PGP 软件从未赋予自由软件许可，但其源码已被作者广泛公开了。link:https://en.wikipedia.org/wiki/Pretty_Good_Privacy#PGP_Corporation_and_Symantec[PGP 的所有权随时间几经转手]，link:https://en.wikipedia.org/wiki/Pretty_Good_Privacy#PGP_Corporation_encryption_applications[PGP 的产品范围和套件都有所扩展]。
+虽然原始的 PGP 软件从未赋予自由软件许可，但其源码已被作者广泛公开了。link:{wikipedia_url}/Pretty_Good_Privacy#PGP_Corporation_and_Symantec[PGP 的所有权随时间几经转手]，link:{wikipedia_url}/Pretty_Good_Privacy#PGP_Corporation_encryption_applications[PGP 的产品范围和套件都有所扩展]。
 
 === 标准化 OpenPGP
 
 虽然 PGP 最开始是作为商业软件开发的，但是当时的所有者，PGP 公司，与 IETF 合作开始其标准化，在 1996 年 8 月发表了 link:https://datatracker.ietf.org/doc/html/rfc1991[RFC 1991 “OpenPGP Message Exchange Formats”]。
 
-在 1997 年 7 月，启动了一个在新名称 link:https://en.wikipedia.org/wiki/Pretty_Good_Privacy#OpenPGP[OpenPGP] 下制定一个新的开放标准的进程，在 1995 年 11 月发表了 link:https://datatracker.ietf.org/doc/html/rfc2440[RFC 2440 “OpenPGP Message Format”]。
+在 1997 年 7 月，启动了一个在新名称 link:{wikipedia_url}/Pretty_Good_Privacy#OpenPGP[OpenPGP] 下制定一个新的开放标准的进程，在 1995 年 11 月发表了 link:https://datatracker.ietf.org/doc/html/rfc2440[RFC 2440 “OpenPGP Message Format”]。
 
 OpenPGP 这个名称可以被实现自由使用，不像名称 PGP，是一个link:https://uspto.report/TM/74685229[注册商标]。
 
@@ -38,7 +40,7 @@ OpenPGP 这个名称可以被实现自由使用，不像名称 PGP，是一个li
 
 在 link:https://gnupg.org/download/release_notes.html#sec-2-70[1997 年 12 月 20 日首次发布的]，由德国计算机程序员 Werner Koch 编写的 GNU Privacy Guard（GnuPG）是 OpenPGP 标准的一个自由的、开源的实现。
 
-GnuPG 是 OpenPGP 的早期的主要的实现。随着时间推移，GnuPG 的重要性与日俱增，因为它称为了邮件安全、软件签名等的基础工具。它在 link:https://en.wikipedia.org/wiki/Edward_Snowden[Edward Snowden] 发表 link:https://theintercept.com/2014/10/28/smuggling-snowden-secrets/[NSA 文档]中，起到了重要而成功的作用。
+GnuPG 是 OpenPGP 的早期的主要的实现。随着时间推移，GnuPG 的重要性与日俱增，因为它称为了邮件安全、软件签名等的基础工具。它在 link:{wikipedia_url}/Edward_Snowden[Edward Snowden] 发表 link:https://theintercept.com/2014/10/28/smuggling-snowden-secrets/[NSA 文档]中，起到了重要而成功的作用。
 
 因为 GnuPG 程序的二进制文件称为“gpg”，因此“GnuPG”和“gpg”通常互换使用。
 
@@ -92,7 +94,7 @@ OpenPGP 第 6 版已经得到了多个实现的大力支持，包括:
 
 === OpenGPG 中的后量子时代加密
 
-已有link:https://datatracker.ietf.org/doc/draft-ietf-openpgp-pqc/[正在进行的工作]，为 OpenGPG 中标准化并添加后量子时代的公钥算法。该项目由link:https://en.wikipedia.org/wiki/Federal_Office_for_Information_Security[德国“BSI”]资助。其目标包括向 Thunderbird 和 GnuPG 中添加后量子时代的加密支持。link:https://datatracker.ietf.org/meeting/113/session/openpgp/[IETF 113] 中有相关的link:https://datatracker.ietf.org/meeting/113/materials/slides-113-openpgp-a-post-quantum-approach-for-openpgp-00[演示]。
+已有link:https://datatracker.ietf.org/doc/draft-ietf-openpgp-pqc/[正在进行的工作]，为 OpenGPG 中标准化并添加后量子时代的公钥算法。该项目由link:{wikipedia_url}Federal_Office_for_Information_Security[德国“BSI”]资助。其目标包括向 Thunderbird 和 GnuPG 中添加后量子时代的加密支持。link:https://datatracker.ietf.org/meeting/113/session/openpgp/[IETF 113] 中有相关的link:https://datatracker.ietf.org/meeting/113/materials/slides-113-openpgp-a-post-quantum-approach-for-openpgp-00[演示]。
 
 == 展示细节：OpenGPG 数据的内部结构
 

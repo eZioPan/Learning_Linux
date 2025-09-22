@@ -1,5 +1,7 @@
 = OpenPGP 签名（signatures）
 
+:crypto-refresh-12_url: https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html
+
 签名是 OpenPGP 的基础功能。它提供了一种语法来构建和解析关于证书及其组件的完全陈述（statements），并能保证数据的完整性和真实性。
 
 没有签名，密钥不会与任何证书或所有者关联。签名对绑定组件密钥和身份认证密钥形成层级式的证书十分关键，也是构建信息真实性的关键。
@@ -9,13 +11,13 @@
 在 OpenPGP 中，术语__签名__可以有两个不同的含义：
 
 * **密码学签名**：由密码学密钥创建的一串字节，由签名方案计算而来。
-* **OpenPGP 签名包**：在 link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-signature-packet-type-id-2[OpenPGP 标准]中定义，这些包由一个裸密码学签名、__类型__代号（__type__ designation）以及一些额外的元数据组成。
+* **OpenPGP 签名包**：在 link:{crypto-refresh-12_url}#name-signature-packet-type-id-2[OpenPGP 标准]中定义，这些包由一个裸密码学签名、__类型__代号（__type__ designation）以及一些额外的元数据组成。
 
 在本文档中，“签名”将用来表示**OpenPGP 签名包**。
 
 == OpenPGP 的签名类型（signature types）
 
-OpenPGP 标准定义了一系列link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-signature-types[签名类型]，每个类型都具有一个数字__签名类型 ID__。签名类型确定了一个签名包的用途，以及其该如何解析。
+OpenPGP 标准定义了一系列link:{crypto-refresh-12_url}#name-signature-types[签名类型]，每个类型都具有一个数字__签名类型 ID__。签名类型确定了一个签名包的用途，以及其该如何解析。
 
 签名类型主要分为两大类：
 
@@ -77,12 +79,12 @@ OpenPGP 标准定义了一系列link:https://www.ietf.org/archive/id/draft-ietf-
 
 在 OpenPGP 协议中，签名子包让签名不仅仅可以表达裸密码学签名和签名类型 ID。这些在 link:https://datatracker.ietf.org/doc/html/rfc2440[RFC 2440] 中引入的子包，是在签名包中嵌入额外元数据的基础。
 
-签名子包作为签名包的子元素（sub-element）出现，提供了额外的内容和签名的意义。它们被格式化为键值对，键的值由 RFC 的link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-signature-subpacket-types-r[子包类型 ID] 定义。RFC 同样也提供了值的格式和解释方法。
+签名子包作为签名包的子元素（sub-element）出现，提供了额外的内容和签名的意义。它们被格式化为键值对，键的值由 RFC 的link:{crypto-refresh-12_url}#name-signature-subpacket-types-r[子包类型 ID] 定义。RFC 同样也提供了值的格式和解释方法。
 
 === 签名子包的案例
 
-* link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#issuer-fingerprint-subpacket[__签发者指纹（issuer fingerprint）__]子包编码了签发该签名的组件密钥的指纹。
-* link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-key-flags[__密钥标识__]子包定义了一个证书中的一个组件密钥被赋予的能力。
+* link:{crypto-refresh-12_url}#issuer-fingerprint-subpacket[__签发者指纹（issuer fingerprint）__]子包编码了签发该签名的组件密钥的指纹。
+* link:{crypto-refresh-12_url}#name-key-flags[__密钥标识__]子包定义了一个证书中的一个组件密钥被赋予的能力。
 
 === 散列和未散列（unhashed）签名子包
 
@@ -93,7 +95,7 @@ OpenPGP 的签名子包可以存储于签名包的两个完全不同的区域中
 
 绝大部分的签名子包都是存储在散列区域的。
 
-更详细的信和规范，见 OpenPGP RFC 的 link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-hashed-vs-unhashed-subpacke[Hashed vs. Unhashed Subpackets]。
+更详细的信和规范，见 OpenPGP RFC 的 link:{crypto-refresh-12_url}#name-hashed-vs-unhashed-subpacke[Hashed vs. Unhashed Subpackets]。
 
 === 子包的关键性（criticality）
 
@@ -103,4 +105,4 @@ OpenPGP 的签名子包可以存储于签名包的两个完全不同的区域中
 
 考虑如下场景，一个实现不认识签名过期相关的子包。若无法理解这个概念，实现可能会错误地接收一个已经过期的签名。将该签名过期事件子包标记未关键的，签名的创建者可以保证任何不能解析该子包的接受者都会以无效原由拒绝该签名。
 
-关于那些子包应该标记为关键，参考 RFC 章节 link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-signature-creation-time[5.2.3.11] 和 link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-intended-recipient-fingerpr[5.2.3.36]。
+关于那些子包应该标记为关键，参考 RFC 章节 link:{crypto-refresh-12_url}#name-signature-creation-time[5.2.3.11] 和 link:{crypto-refresh-12_url}#name-intended-recipient-fingerpr[5.2.3.36]。
