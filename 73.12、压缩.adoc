@@ -8,7 +8,7 @@
 
 == 解压过程产生一个“封装的”OpenPGP 包流
 
-OpenPGP 中的压缩是一个简单的机制：一个压缩数据包（Compressed Data packet）作为一系列 OpenPGP 包的压缩容器。
+OpenPGP 中的压缩是一个简单的机制：一个link:https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html#name-compressed-data-packet-type[压缩数据包（Compressed Data packet）]作为一系列 OpenPGP 包的压缩容器。
 
 压缩数据包包含了压缩算法的规格，跟随所包含数据的压缩后表示。
 
@@ -16,4 +16,4 @@ OpenPGP 中的压缩是一个简单的机制：一个压缩数据包（Compresse
 
 == 典型用法
 
-压缩数据包常在加密后数据包中使用，或者包裹内联签名信息的数据。
+压缩数据包常在xref:73.10、加密.adoc[已加密数据包]中使用，或者包裹xref:73.12、压缩.adoc#_内联式签名[内联签名报文]的数据。

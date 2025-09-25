@@ -36,7 +36,7 @@ OpenPGP 是密码学操作（cryptographic operations）的一个开放标准。
 
 == 为什么不直接使用 OpenPGP RFC？
 
-link:https://datatracker.ietf.org/doc/draft-ietf-openpgp-crypto-refresh/[OpenPGP RFC] 定义了 OpenPGP 所使用的__信息格式__。它描述了 OpenPGP 数据的内部结构，这些信息对于 OpenPGP 库的实现者来说很重要。但这个层级的细节，对于通过库使用 OpenPGP 的软件开发者来说并非必须。
+link:https://datatracker.ietf.org/doc/draft-ietf-openpgp-crypto-refresh/[OpenPGP RFC] 定义了 OpenPGP 所使用的__报文格式__。它描述了 OpenPGP 数据的内部结构，这些信息对于 OpenPGP 库的实现者来说很重要。但这个层级的细节，对于通过库使用 OpenPGP 的软件开发者来说并非必须。
 
 本文在库的级别讨论 OpenPGP 概念，隐去了 OpenPGP 产物（artifacts）的内部的编码细节。我们专注于 OpenPGP 产物的属性，以及它该如何使用，并额外添加了 link:{wikipedia_url}/Request_for_Comments[RFC] 中未能详尽说明的内容。
 
