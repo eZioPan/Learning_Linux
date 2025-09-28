@@ -3,7 +3,7 @@
 :crypto-refresh-12_url: https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html
 :wikipedia_url: https://en.wikipedia.org/wiki
 
-== 密码学散列（hash）函数
+== 密码学散列函数
 
 [NOTE]
 ====
@@ -18,7 +18,7 @@ link:{wikipedia_url}/Cryptographic_hash_function[密码学散列函数]可以接
 * link:{wikipedia_url}/Preimage_attack[**原像抗性（pre-image resistance）**]：给定一个散列摘要，它应该极难确定任何可以匹配上该散列摘要的原始数据（包含但不限于生成该散列摘要的原始数据）。该属性包含了一个被称为link:{wikipedia_url}/One-way_function[单向函数（one-way function）]的特点——一个计算方法可以简单的运算，但非常难以逆运算。
 * link:{wikipedia_url}/Collision_resistance[**碰撞抗性（collision resistance）**]：我们应该很难找到两个不同的原始数据，它们可以被映射至相同散列摘要值。
 
-== 消息认证码（message authentication code）
+== 消息鉴别码
 
 一个link:{wikipedia_url}/Message_authentication_code[消息鉴别码（message authentication code, MAC）]，又被称为鉴别标签（authentication tag），是一小段信息，用来检验信息的完整性和真实性。
 
@@ -26,7 +26,7 @@ link:{wikipedia_url}/Cryptographic_hash_function[密码学散列函数]可以接
 
 link:{wikipedia_url}/HMAC[HMAC] 是依赖于散列函数的一类 MAC。OpenPGP 协议会使用它。
 
-=== 密钥派生函数（key derivation functions）
+=== 密钥派生函数
 
 一个散列函数也可以被用于创建link:{wikipedia_url}/Key_derivation_function[密钥派生函数（key derivation function, KDF）]。KDF 的一个用法就是将一个密码迭代地传入一个散列函数来生成对称密钥材料。
 
@@ -34,9 +34,9 @@ OpenPGP 规范中一个值得注意的 KDF 是 link:{wikipedia_url}/HKDF[HKDF]�
 
 关于 KDF 和它在 OpenPGP 协议中的角色的详细信息，见 xref:73.05、在 OpenPGP 中管理私钥材料.adoc#_用密码passphrases保护密钥[加密私钥]章节和加密章节的 link:73.10、加密.adoc#_v2_seipd基于_aead[SEIPDv2] 段。
 
-== 对称密钥密码学（symmetric-key cryptography）
+== 对称密钥密码学
 
-link:{wikipedia_url}/Symmetric-key_algorithm[称密钥密码学]使用相同的密码学密钥进行加密和解密。非对称密码学与之不同，其使用一队密钥：公钥用来加密，对应的私钥用来解密。对称密钥密码学系统支持__加密/解密__操作。
+link:{wikipedia_url}/Symmetric-key_algorithm[称密钥密码学（symmetric-key cryptography）]使用相同的密码学密钥进行加密和解密。非对称密码学与之不同，其使用一队密钥：公钥用来加密，对应的私钥用来解密。对称密钥密码学系统支持__加密/解密__操作。
 
 对称密钥操作的参与者需要通过安全的信道（channel）分享密钥。
 
@@ -46,14 +46,14 @@ link:{wikipedia_url}/Symmetric-key_algorithm[称密钥密码学]使用相同的�
 
 但是，交换密钥的问题需要单独解决。
 
-<<混合密码系统（hybrid cryptosystems）>>结合了对称密钥密码学的优势，并使用额外的公钥密码学来管理前者的密钥。
+<<混合密码系统>>结合了对称密钥密码学的优势，并使用额外的公钥密码学来管理前者的密钥。
 
 === OpenPGP 中的对称密钥密码学
 
 在 OpenPGP 中，对称密钥加密用于三个情景下：
 
 * 最显著的，在混合密码系统中用来加密和解密数据
-* 加密link:{crypto-refresh-12_url}#name-secret-key-encryption[由密码保护的私钥]
+* 加密link:{crypto-refresh-12_url}#name-secret-key-encryption[由密码保护的私钥材料]
 * 用于link:{crypto-refresh-12_url}#name-symmetric-key-encrypted-ses[密码保护的数据的加密]，这是标准中一个较为少见的用法
 
 在 OpenPGP 中，当对称密钥用来加密数据时，它们会称为“信息密钥（message key）”或者“会话密钥（session key）”。
@@ -70,7 +70,7 @@ link:{wikipedia_url}/Authenticated_encryption[鉴别加密（authenticated encry
 
 link:{wikipedia_url}/Public-key_cryptography[公钥密码学]使用一对相关但不同的密钥。每对密钥包含一个公钥（public key）和一个私钥（private key）。该系统支持加密、解密和数字签名（digital signature）操作。
 
-与对称加密学不同，参与者不需要提前分享密钥。在公钥密码学中，对于特定的密码学操作——比如加密和签名验证——公钥是公开发布的，而私钥，则保持机密，用于解密和签名创建操作。
+与对称加密学不同，参与者不需要提前分享密钥。在公钥密码学中，对于特定的密码学操作——比如加密和签名验证——公钥材料是公开发布的，而私钥，则保持机密，用于解密和签名创建操作。
 
 === 非对称密码学密钥对
 
