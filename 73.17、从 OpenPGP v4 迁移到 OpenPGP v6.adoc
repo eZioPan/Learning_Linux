@@ -1,5 +1,7 @@
 = 从 OpenPGP v4 迁移到 OpenPGP v6
 
+:crypto-refresh-12_url: https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html
+
 OpenPGP 协议在持续开发，并将一直如此，以面对新的挑战和需求。
 
 有一些修改可能很细微，比如添加新的散列算法，而另一些则更有侵略性，比如新的 OpenPGP 密钥格式。
@@ -28,11 +30,11 @@ OpenPGP 协议在持续开发，并将一直如此，以面对新的挑战和需
 
 这个特性关心每个用户机器上的 OpenPGP 私钥的本地拷贝。也就是说，从定义上，该特性无需考虑交互性：私钥材料的密码保护是每个用户机器上的本地实现细节。
 
-RFC 表明：“**推荐**用户迁移至 AEAD。”
+RFC link:{crypto-refresh-12_url}#name-avoiding-ciphertext-malleab[表明]：“**推荐**用户迁移至 AEAD。”
 
-在本章的语境下，它表示加密后的私钥应该由用户的 OpenPGP 软件升级使用 S2K 用法模式 253（AEAD）来加密用户的私钥材料。
+在本章的语境下，它表示加密后的私钥应该由用户的 OpenPGP 软件升级使用 link:{crypto-refresh-12_url}#name-secret-key-encryption-s2k-u[S2K 用法模式 253]（AEAD）来加密用户的私钥材料。
 
-注意 S2K 用法模式 253（AEAD）可以用于版本 6 和版本 4 的私钥，只要 OpenPGP 软件足够新。推荐所有版本的私钥都使用该 S2K 用法模式。
+注意 S2K 用法模式 253（AEAD）可以用于版本 6 和版本 4 的私钥，只要 OpenPGP 软件足够新。强烈推荐所有版本的私钥都使用该 S2K 用法模式。
 
 ==== S2K 方法 Argon2
 
@@ -52,19 +54,21 @@ Argon2 仅能与 AEAD 结合使用。
 
 随着时间的推移，会有越来越多的 OpenPGP 库和工具支持 OpenPGP v6 特性。实现们需要花些时间来迁移。
 
-OpenPGP v6 标准为库作者写了份让 OpenPGP 实现支持第 6 版的指导，在 Appendix B. Upgrade Guidance 中。
+OpenPGP v6 标准为库作者写了份让 OpenPGP 实现支持第 6 版的指导，在 link:{crypto-refresh-12_url}#name-upgrade-guidance-adapting-i[Appendix B. Upgrade Guidance] 中。
 
 == 密钥迁移
 
 有些 OpenPGP v6 特性仅在使用 v6 格式的密钥时才可用。
 
-举例来说，仅有一个 OpenPGP v6 密钥可以签发 v6 签名。
+举例来说，仅有 link:{crypto-refresh-12_url}#name-packet-versions-in-signatur[OpenPGP v6 密钥可以签发 v6 签名]。
 
 另一方面，OpenPGP v6 密钥__仅能__签发 v6 签名，所以若你需要兼容 v4 验证者，则你还不应该迁移至 v6 密钥/证书。
 
 当迁移至一个 v6 密钥时，生成一个全新的 v6 密钥是推荐的方式。
 
-不可能将 v4 子密钥直接嵌入 v6 密钥中，因为 v6 主密钥的所有子密钥也必须是 v6 子密钥，见 OpenPGP v6 证书结构。
+link:{crypto-refresh-12_url}#section-10.1.1-5
+
+不可能将 v4 子密钥直接嵌入 v6 密钥中，因为 v6 主密钥的所有子密钥也必须是 v6 子密钥，见 link:{crypto-refresh-12_url}#section-10.1.1-5[OpenPGP v6 证书结构]。
 
 === 将 v4 组件密钥转换至 v6 组件密钥
 
@@ -78,7 +82,7 @@ OpenPGP v6 标准为库作者写了份让 OpenPGP 实现支持第 6 版的指导
 
 ==== 转换的动机
 
-将现有的密钥转换为 v6 格式可能是很吸引人的。不过这种步骤应该非常小心地考虑。
+将现有的密钥材料转换为 v6 格式可能是很吸引人的。不过这种步骤应该非常小心地考虑。
 
 非常不幸，密钥不可能简单地转换为新格式，并无缝地使用。比如说，具有相同密钥材料的第 4 版和第 6 版组件密钥的指纹是不同的（同理，密钥 ID 也不同，因为后者是指纹的短版本）。
 
@@ -99,3 +103,8 @@ OpenPGP v6 标准为库作者写了份让 OpenPGP 实现支持第 6 版的指导
 ==== 总结
 
 总结，将 v4 密钥材料转换为 v6 来验证旧签名并非一个很强的理由。使用转换后的密钥读取旧信息实际上也不现实，因为简单的方法是用新的 v6 密钥重新创建一个新的 PKESK 头部。
+
+[NOTE]
+====
+同见 link:https://wiki.gnupg.org/OpenPGPEmailSummit202305Notes[]
+====
