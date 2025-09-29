@@ -1,12 +1,19 @@
 = 进阶材料：证书
 
+:crypto-refresh-12_url: https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html
+:web-key-directory_url: https://datatracker.ietf.org/doc/draft-koch-openpgp-webkey-service/
+:hagrid_url: https://gitlab.com/keys.openpgp.org/hagrid
+:wikipedia_url: https://en.wikipedia.org/wiki
+:hockeypuck_url: https://github.com/hockeypuck/hockeypuck
+:openpgp-certificate-flooding_url: https://dkg.fifthhorseman.net/blog/openpgp-certificate-flooding.html
+
 == 何时证书是有效的？
 
-证书是由被签名链接在一起的组件构成的。
+证书是由被xref:73.08、组件签名.adoc[签名]链接在一起的组件构成的。
 
 一个证书可以作为一个整体有效或无效化。但是，即便一个证书是有效的，其中独立的组件（子密钥或身份认证）也可以是无效的。
 
-在本章节中，我们将讨论证书和其组件的有效性。本讨论与签名的有效性紧密关联，并建立在后者之上。
+在本章节中，我们将讨论证书和其组件的有效性。本讨论与xref:73.09、签名验证.adoc[签名的有效性]紧密关联，并建立在后者之上。
 
 关联一个证书的签名的自身的有效性是必须的预备条件。有两个概念紧密关系到证书和组件的有效性：
 
@@ -26,29 +33,29 @@ OpenPGP 中的过期机制，具有一个扩展/更新过期时间的机制作�
 * 一个过期的证书意味着该证书不可以继续使用。它强制让使用该证书的用户（或它们的 OpenPGP 软件）拉取该证书的更新。比如，从一个密钥服务器拉取更新。
 * 这是一种被动的让证书“无效”的方法，比如，当它们的所有者无法再控制它们，或者因为任何原因无法广播一个吊销的时候。
 
-组件密钥使用__密钥过期时间__子包来表达过期时间。身份组件依赖其绑定签名的__签名过期时间__子包。若绑定签名过期，则绑定无效化，而组件也被认为是过期了。
+组件密钥使用__密钥过期时间__子包来表达过期时间。身份组件依赖其绑定签名的link:{crypto-refresh-12_url}#signature-expiration-subpacket[__签名过期时间__]子包。若绑定签名过期，则绑定无效化，而组件也被认为是过期了。
 
 === 吊销
 
-由于 OpenPGP 证书是“仅追加”数据结构，现有的组件或签名不可以简单地“移除”。相反，它们可以被签发的吊销签名标记为无效。这些追加的吊销签名会添加至证书中。
+由于 OpenPGP 证书是<<_证书实际上是仅追加数据结构, “仅追加”数据结构>>，现有的组件或签名不可以简单地“移除”。相反，它们可以被签发的吊销签名标记为无效。这些追加的吊销签名会添加至证书中。
 
 每个组件，比如用户 ID 和子密钥，可以被单独吊销而不影响证书的其余部分。
 
 __主用户 ID__是一个特例：当它被吊销时，整个证书都被认为是无效的。
 
-通过__密钥吊销签名__（类型 ID `0x20`）吊销主密钥，会将整个证书，包含它所有的组件，标记为无效和无法使用的。
+通过link:{crypto-refresh-12_url}#name-key-revocation-signature-ty[__密钥吊销签名__]（类型 ID `0x20`）吊销主密钥，会将整个证书，包含它所有的组件，标记为无效和无法使用的。
 
 === 吊销的语义（semantics）
 
 与过期不同，吊销通常是最终的、无法撤销的。
 
-一个吊销意味着组件不应该被使用。组件上的吊销签名使用一个__吊销理由__子包来进一步指出组件和证书的吊销的原因。OpenPGP 格式定义了一系列不同的__吊销原因的值__，并额外提供了一个人类可读的自由文本字段，来注解吊销。
+一个吊销意味着组件不应该被使用。组件上的吊销签名使用一个link:{crypto-refresh-12_url}#reason-for-revocation[__吊销理由__]子包来进一步指出组件和证书的吊销的原因。OpenPGP 格式定义了一系列不同的link:{crypto-refresh-12_url}#table-10[__吊销原因的值__]，并额外提供了一个人类可读的自由文本字段，来注解吊销。
 
 一些库，例如 Sequoia PGP，向用户公开了这些不同的原因，使撤销者能够提供细致的机器可读的语句。其它实现主要集中于区分“硬”和“软”吊销。
 
-就定义的吊销类型，__密钥被废止（superseded）__、__密钥已退位（retired）__以及__用户 ID 不再有效（valid）__被认为是“软”吊销。任何其它的理由（包括没有__吊销理由__子包）被认为是“硬”吊销。
+就定义的吊销类型，__密钥被废止（superseded）__、__密钥已退位（retired）__以及__用户 ID 不再有效（no longer valid）__被认为是“软”吊销。任何其它的理由（包括没有__吊销理由__子包）被认为是“硬”吊销。
 
-软吊销和硬吊销，在特定的参考时间上评估组件和签名的有效性时，有着截然不同的作用：硬吊销有不受限制的时间有效性，它们甚至在它们自身创建的时间点之前都起效，因此会在整个时间上无效化被吊销的组件或签名。
+软吊销和硬吊销，在特定的参考时间上评估组件和签名的有效性时，有着截然不同的作用：硬吊销有不受限制的xref:73.09、签名验证.adoc#_时间有效性[时间有效性]，它们甚至在它们自身创建的时间点之前都起效，因此会在整个时间上无效化被吊销的组件或签名。
 
 反过来说，软吊销让被吊销的组件或签名，在吊销钱签名创建时间点之前，保持有效。一个软吊销在技术上是可以——比如说，通过一个新的绑定签名——被覆盖的（新的绑定签名和它的元数据将遮蔽吊销，并重连和再次有效化组件）。
 
@@ -68,7 +75,7 @@ OpenPGP 证书实际上是__仅追加数据结构__。一旦发表，于证书�
 
 === 分发系统中，仅追加属性的原由
 
-OpenPGP 去中心的和分布式的系统。用户可以使用各种机制持有或传送他们自己的证书信息，以及其它用户的证书。这些机制包括密钥服务器、手动处理、网络密钥目录（Web Key Directory, WKD）以及 Autocrypt。
+OpenPGP 去中心的和分布式的系统。用户可以使用各种机制持有或传送他们自己的证书信息，以及其它用户的证书。这些机制包括密钥服务器、手动处理、link:{web-key-directory_url}[网络密钥目录（Web Key Directory, WKD）]以及 link:{wikipedia_url}/Autocrypt[Autocrypt]。
 
 随着时间的前进，不同用户的 OpenPGP 软件可能持有相同证书的不同“视角”（view）。每个用户的 OpenPGP 实例都需要调和和存储它们从不同来源获取的元素，并将它们合并起来。
 
@@ -97,7 +104,7 @@ OpenPGP 去中心的和分布式的系统。用户可以使用各种机制持有
 
 == 合并
 
-如上所述，OpenPGP 证书实际上是仅添加数据结构。作为该事实的实现，OpenPGP 软件需要__合并__一个证书的不同拷贝。
+如上所述，OpenPGP 证书实际上是<<_证书实际上是仅追加数据结构, 仅添加>>数据结构。作为该事实的实现，OpenPGP 软件需要__合并__一个证书的不同拷贝。
 
 举例来说，Bob 的 OpenPGP 软件可能在本地有一份 Alice 证书的拷贝，同时又从密钥服务器上取得了 Alice 的一份不同版本的证书。实现的目标则是将任何 Alice 证书的新信息添加至本地拷贝中。Alice 可能添加了新的身份认证，用新的子密钥替换了旧的，或者吊销了她证书中的部分组件。或者，Alice 也可能吊销了她的证书，表明她不再想让通信同伴使用这个证书。所有这些更新对 Bob 来说都是至关重要的。
 
@@ -117,8 +124,8 @@ OpenPGP 去中心的和分布式的系统。用户可以使用各种机制持有
 过滤证书的部分元素以实现各种目的：
 
 * 对于特定的用途，忽略不必要的组件。比如，电邮客户端需要加密、签名和证书组件密钥，但是不需要鉴权子密钥，后者主要用于 SSH 连接。
-* 若在某些用途中不需要第三方证书，则忽略它们。比如，“证书洪水（certification flooding）”，就会导致接收端软件完全拒绝一个证书。在导入时过滤第三方用户 ID 可以缓解这个问题。
-* 有时候，证书会自然地扩张的过大，以至于用户软件无法正确处理它。
+* 若在某些用途中不需要第三方证书，则忽略它们。比如，link:{openpgp-certificate-flooding_url}[“证书洪水（certification flooding）”]，就会导致接收端软件完全拒绝一个证书。在导入时过滤第三方用户 ID 可以缓解这个问题。
+* 有时候，证书会自然地扩展地过大，以至于用户软件link:https://www.reddit.com/r/GnuPG/comments/bp23p4/my_key_is_too_large/[无法正确处理它]。
 
 === 在最小化过程中，可以被忽略的元素
 
@@ -134,13 +141,13 @@ OpenPGP 去中心的和分布式的系统。用户可以使用各种机制持有
 
 ==== hagrid，keys.openpgp.org 的后端
 
-hagrid 密钥服务器软件，默认不会发布证书中的身份组件。这是该服务的隐私策略的中心概念。证书可以被第三方上传至服务。然而,身份信息只有在用户明确选择加入的情况下,才会由该服务进行分发。
+link:{hagrid_url}[hagrid 密钥服务器软件]，默认不会发布证书中的身份组件。这是该服务的link:https://keys.openpgp.org/about/privacy[隐私策略]的中心概念。证书可以被第三方上传至服务。然而，身份信息只有在用户明确选择加入的情况下，才会由该服务进行分发。
 
 单独地，目前，第三方证书被服务器过滤掉，以防止洪水攻击。
 
 ==== GnuPG
 
-GnuPG 提供了两种不同的方法执行证书最小化，在 GnuPG 手册中表述为：
+GnuPG 提供了两种不同的方法执行证书最小化，link:https://www.gnupg.org/documentation/manuals/gnupg-devel/OpenPGP-Key-Management.html[在 GnuPG 手册中]表述为：
 
 clean::
 （通过移除除了自签名之外的全部签名）简化任何不再可用的用户 ID。之后，移除任何经可信计算后不再可用的签名。具体来说，它会移除任何无效的签名、任何被更新的签名替代的签名、已吊销的签名、以及那些通过没出现在密钥环中的密钥签发的签名。
@@ -150,13 +157,13 @@ minimize::
 
 `clean` 移除不在当前密钥环中的证书的第三方签名、以及其它数据。`minimize` 移除在命令执行时刻，不再需要的、被替换掉的签名。
 
-独立地，GnuPG 在导入密钥时，默认移除一些签名。但是，一些 Linux 发行版修改这个默认行为，在导入的过程中不执行最小化。比如，Debian 和 Arch Linux：默认情况下，在导入时移除第三方签名，会导致那些想使用信任网机制执行认证的用户面对问题。
+与之无关，默认情况下，GnuPG link:https://dev.gnupg.org/T4607#127792[在导入密钥时，会移除一些签名]。但是，一些 Linux 发行版修改这个默认行为，在导入的过程中不执行最小化。比如 link:https://dev.gnupg.org/T4628#128513[Debian] 和 Arch Linux：默认情况下，在导入时移除第三方签名，会导致那些想使用xref:73.08、组件签名.adoc#_信任网去中心化信任决策[信任网机制]执行认证的用户面对问题。
 
-=== 移除旧的自签名可能带来的后果
+=== 移除旧的自签名可能带来的限制
 
 一些实现，比如 Sequoia，更偏好依赖完整的自签名历史来构建证书的一个完整的视角。用这种方法，签名可以在不同的参考时间进行检验。在这种模型下，移除被替换的自签名可能会导致历史签名的校验的问题。
 
-在最小化和细致化之间的差异，可以通过一个验证签名的时间有效性的 rpm-squoia 案例来体现（详细讨论xref:https://github.com/rpm-software-management/rpm-sequoia/issues/50#issuecomment-1689642607[见此]）：
+在最小化和细致化之间的差异，可以通过一个验证签名的xref:73.09、签名验证.adoc#_时间有效性[时间有效性]的 rpm-squoia 案例来体现（详细讨论xref:https://github.com/rpm-software-management/rpm-sequoia/issues/50#issuecomment-1689642607[见此]）：
 
 最开始，当 `rpm-sequoia` 检查一个软件的包的数据签名的有效性的时候，其会使用签名的创建时间作为参考时间。但是，证书中的历史自签名是有限的。因此有时候主密钥仅有一个最近的自签名，从而导致在参考时间点上，没有证据表明主密钥是有效的。
 
@@ -169,7 +176,7 @@ xref:https://autocrypt.org/[Autocrypt] 项目将自己描述为：
 [quote]
 ……一组规范，让开发者可以实现方便的端对端电邮加密。它定义了电邮软件应该如何通过常规电邮协商加密能力。
 
-Autocrypt Level 1 规范定义了一个特殊的 OpenPGP 证书的最小化格式，后者通过 Autocrypt 机制进行分发。
+Autocrypt Level 1 规范定义了一个特殊的 link:https://autocrypt.org/level1.html#openpgp-based-key-data[OpenPGP 证书的最小化格式]，后者通过 Autocrypt 机制进行分发。
 
 Autocrypt 机制的一个目标就是广泛分发证书。为此，Autocrypt 在邮件头中发送证书，此时，更小的体积是需要的。
 
@@ -230,7 +237,7 @@ OpenPGP 中的证书通常使用不同长度的十六进制字符串“命名”
 
 === 第 6 版中的指纹
 
-OpenPGP 第 6 版标准使用 32 字节（256 位）指纹，但明确没有定义指纹的任何人类可读的形式。标准强烈反对使用第 6 版的指纹作为面向用户的工作流的身份认证。
+OpenPGP 第 6 版标准使用 32 字节（256 位）指纹，但明确没有定义指纹的任何人类可读的形式。标准link:{crypto-refresh-12_url}#name-fingerprint-usability[强烈反对]使用第 6 版的指纹作为面向用户的工作流的身份认证。
 
 转而，当可能时，应该使用“机械式指纹传输与比较”。这是由于人类不擅长比较高熵数据（另外，很多用于对于比较十六进制字符串感到厌烦）。
 
@@ -240,7 +247,7 @@ OpenPGP 第 6 版标准使用 32 字节（256 位）指纹，但明确没有定�
 
 注意，无论在任何一版的 OpenPGP 中，依赖 8 字节密钥 ID 的软件都不应该假定密钥 ID 是唯一的。创建会碰撞的 8 字节密钥 ID 是平凡的，因此应用必要能够优雅处理密钥 ID 碰撞。
 
-历史上的 4 字节“短密钥 ID”格式不应使用在任何地方、任何时候（在很长时间里，在 32 位密钥空间中找到碰撞已经是平凡的了）。
+历史上的 4 字节“短密钥 ID”格式不应使用在任何地方、任何时候（在 32 位密钥空间中找到碰撞，link:https://evil32.com/[在很长时间里已经是平凡的了]）。
 
 === 通过电邮地址查找证书
 
@@ -248,13 +255,13 @@ OpenPGP 第 6 版标准使用 32 字节（256 位）指纹，但明确没有定�
 
 有不同的机制可以通过电邮地址查找证书，比如：
 
-* 网络密钥字典（Web Key Directory ，WKD）
+* link:{web-key-directory_url}[网络密钥字典（Web Key Directory ，WKD）]
 
-* keys.openpgp.org“验证密钥服务器”（verifying keyserver，又称为“hagrid”，后者是运行该服务的软件的名称）
+* link:https://keys.openpgp.org/[keys.openpgp.org]“验证密钥服务器”（verifying keyserver，又称为link:{hagrid_url}[“hagrid”]，后者是运行该服务的软件的名称）
 
-* SKS 风格的 OpenPGP 密钥服务器（如今，大多数运行着 Hockeypuck 软件）
+* SKS 风格的 OpenPGP 密钥服务器（如今，大多数运行着 link:{hockeypuck_url}[Hockeypuck] 软件）
 
-它们的特性并不相同，见证书分发机制。
+它们的特性并不相同，见<<证书分发机制>>。
 
 == 证书新鲜度（freshness）：使用过期时间触发更新
 
@@ -285,9 +292,9 @@ OpenPGP 软件可以分析这个图。基于图中的证书和一系列信任锚
 
 == 向证书中添加未绑定的、本地用户 ID
 
-有一些 OpenPGP 软件可能会向证书中添加，没有被绑定至证书所有者主密钥的，用户 ID。其可用于存储本地身份信息（比如，通过这种方法，Sequoia 的公共存储向证书添加“昵称（pet-name）”）。
+有一些 OpenPGP 软件可能会向证书中添加，没有被绑定至证书所有者主密钥的，用户 ID。其可用于存储本地身份信息（比如，通过这种方法，Sequoia 的公共存储向证书添加link:https://sequoia-pgp.org/blog/2023/04/08/sequoia-sq/#an-address-book-style-trust-model[“昵称（pet-name）”]）。
 
-Sequoia 使用本地可信锚额外认证那些“本地的、第三方的、用户 ID”，以促成本验证证决策。以防止意外将这些本地用户 ID 公之于众（比如，传输到公共密钥服务器），Sequoia 通过可导出证书（Exportable Certification）子包，将这些绑定签名标记为“本地”产物，以将其标记为不可导出。
+Sequoia 使用本地可信锚额外认证那些“本地的、第三方的、用户 ID”，以促成本验证证决策。以防止意外将这些本地用户 ID 公之于众（比如，传输到公共密钥服务器），Sequoia 通过link:{crypto-refresh-12_url}#name-exportable-certification[可导出证书（Exportable Certification）]子包，将这些绑定签名标记为“本地”产物，以将其标记为不可导出。
 
 == 证书分发机制
 
@@ -303,7 +310,7 @@ hockeypuck 和 hagrid（运行 __keys.openpgp.org__ 的软件）的一个核心�
 
 == 第三方证书洪水
 
-传统的 OpenPGP 密钥服务器是收集和分发证书信息的一个机制。它们的模型围绕着从，没有向密钥服务器网络认证自身身份的来源，接收证书信息。传统上，这些密钥服务器会接受由子签名绑定至证书的组件，以及第三方身份证书。
+传统的 OpenPGP 密钥服务器是<<_证书分发机制, 收集和分发>>证书信息的一个机制。它们的模型围绕着从，没有向密钥服务器网络认证自身身份的来源，接收证书信息。传统上，这些密钥服务器会接受由子签名绑定至证书的组件，以及第三方身份证书。
 
 虽然这对接收者很方便，胡乱接受和整合第三方身份证书有着明显的风险。
 
@@ -311,7 +318,7 @@ hockeypuck 和 hagrid（运行 __keys.openpgp.org__ 的软件）的一个核心�
 
 它同时也为潜在的拒绝服务攻击敞开了大门，使证书无法工作，或显著地拖慢它的操作。
 
-著名的 SKS 密钥网络在 2019 年就经历了证书洪水，导致了其行为的明显变化。
+在 2019 年，著名的 link:{openpgp-certificate-flooding_url}[SKS 密钥网络就经历了证书洪水]，导致了其行为的明显变化。
 
 [NOTE]
 ====
@@ -319,7 +326,7 @@ __keys.openpgp.org__（KOO）服务与 SKS 风格的密钥服务器有类似的�
 
 KOO 密钥服务器被设计为：
 
-. 服从 GDPR 限制，并且
+. 服从 link:{wikipedia_url}/General_Data_Protection_Regulation[GDPR 限制]，并且
 . 可抵御洪水风格的破坏。
 
 要实现这些目标，KOO 完全不提供身份组件，除非通过电邮确认流程，明确执行了可选加入。除了在非常特别的情况下，默认也不提供第三方证书，也避免了洪水。
@@ -327,16 +334,18 @@ KOO 密钥服务器被设计为：
 
 === 基于 hockeypuck 的密钥服务器
 
-目前，第三方认证泛滥可以通过用户或管理员申请删除/重新添加证书来解决。
+目前，第三方认证泛滥可以通过用户或管理员申请删除/重新添加证书来解决。link:{hockeypuck_url}/wiki/HIP-1:-Regaining-control-over-public-key-identity-with-authenticated-key-management[见此]。
+
+额外机制<<_支持情况, 即将推出>>。
 
 == OpenPGP 中的第一方核验第三方证书（1pa3pc）
 
-OpenPGP 中的第一方核验第三方证书（First-Party attested third-party certifications）是一种“允许证书持有者明确同意特定第三方证书的机制”。1pa3pc 设计可以防止洪水的分发第三方证书。
+link:https://datatracker.ietf.org/doc/draft-dkg-openpgp-1pa3pc/[OpenPGP 中的第一方核验第三方证书（First-Party attested third-party certifications）]是一种“允许证书持有者明确同意特定第三方证书的机制”。1pa3pc 设计可以防止洪水的分发第三方证书。
 
-该机制实用__核验证书（attested certifications）__签名子包（类型 ID `37`），当前，其仅在 draft-ietf-openpgp-rfc4880bis 作为提议特性而存在。
+该机制实用__核验证书（attested certifications）__签名子包（类型 ID `37`），当前，其仅在 link:https://www.ietf.org/archive/id/draft-ietf-openpgp-rfc4880bis-10.html#table-3[draft-ietf-openpgp-rfc4880bis] 作为提议特性而存在。
 
 === 支持情况
 
-* __keys.openpgp.org__（KOO）密钥服务器支持 __1pa3pc__。
-* Hockeypuck 密钥服务器软件计划在 2.2.0 版本中添加对 __1pa3pc__ 的支持。
-* Sequoia `sq` 命令行工具允许向证书中添加核验第三方证书。
+* __keys.openpgp.org__（KOO）密钥服务器支持 link:{hagrid_url}/-/commit/39c0e12ac64588220d36bada6497d8396f5915b3[__1pa3pc__]。
+* Hockeypuck 密钥服务器软件在 2.2.0 版本中link:{hockeypuck_url}/issues/136#issuecomment-1812466084[计划添加对 __1pa3pc__ 的支持]。
+* Sequoia `sq` 命令行工具允许向证书中link:https://man.archlinux.org/man/sq-key-attest-certifications.1[添加]核验第三方证书。
