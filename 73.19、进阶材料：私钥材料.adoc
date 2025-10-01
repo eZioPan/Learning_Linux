@@ -1,4 +1,7 @@
-= 进阶材料：私钥
+= 进阶材料：私钥材料
+
+:crypto-refresh-12_url: https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html
+:rfc3394_url: https://www.rfc-editor.org/rfc/rfc3394.html
 
 == 私钥存储
 
@@ -8,9 +11,9 @@
 
 OpenPGP 框架中的私钥子系统的设计有多种，提供了密码学操作的不同实现方法：
 
-. **分离后端操作**：有些设计在不同的后端中执行主要密码学操作，仅使用密码学密钥材料。这种方法特别容易兼容通用的硬件密码学设备，比如可信平台模块（TPM）。
+. **分离后端操作**：有些设计在不同的后端中执行主要密码学操作，仅使用密码学密钥材料。这种方法特别容易兼容通用的硬件密码学设备，比如link:https://en.wikipedia.org/wiki/Trusted_Platform_Module[可信平台模块（TPM）]。
 
-. **基于模块密钥的系统**：一个 OpenPGP 私钥子系统可能围绕着组件密钥，特别是密钥子包的内容进行构建。这些包包含了某些特定的操作需要的元数据。比如，ECDH 操作，就需要元数据作为 KDF 参数。
+. **基于模块密钥的系统**：一个 OpenPGP 私钥子系统可能围绕着组件密钥，特别是link:{crypto-refresh-12_url}#name-secret-key-packet-formats[密钥包]的内容进行构建。这些包包含了某些特定的操作需要的元数据。比如，ECDH 操作，就需要元数据作为 KDF 参数。
 
 . **完整可转移密钥**（**full transferable secret keys**）：一些设计会在密钥子系统中保留完整的 TSK 拷贝，以方便私钥操作。
 
@@ -32,16 +35,16 @@ OpenPGP 框架中的私钥子系统的设计有多种，提供了密码学操作
 
 但是，子系统同样支持那些需要额外访问组件密钥的元数据的操作。这些补充了核心密钥存储操作的操作，不涉及私钥材料。
 
-当实现一个基于如 OpenPGP 卡的硬件密码学设备的密钥存储，它的设计就会包含两层：
+当实现一个基于如 xref:73.05、在 OpenPGP 中管理私钥材料.adoc#_私钥的_openpgp_卡[OpenPGP 卡]的硬件密码学设备的密钥存储，它的设计就会包含两层：
 
 * **核心层**：直接处理私钥材料，以及
-* **补充层**：执行那些不需要直接使用密钥材料的，额外的密码学操作，比如 ECDH 的 AES key wrap。
+* **补充层**：执行那些不需要直接使用密钥材料的，额外的密码学操作，比如 ECDH 的 link:{rfc3394_url}[AES key wrap]。
 
 [NOTE]
 ====
-使用 ECC 算法的解密过程，特别是 ECDH，具有多个步骤。初始步骤，可能会被类似于 OpenPGP 卡的设备执行，直接使用密钥材料来生成一个“分享的机密（shared secret）”。在此之后，如“AES key wrap”的操作在硬件设备之外的软件中进行操作。
+使用 ECC 算法的解密过程，特别是 ECDH，具有多个步骤。初始步骤，可能会被类似于 OpenPGP 卡的设备执行，直接使用密钥材料来生成一个“分享的机密（shared secret）”。在此之后，如link:{crypto-refresh-12_url}#name-ec-dh-algorithm-ecdh[“AES key unwrap”]的操作在硬件设备之外的软件中进行操作。
 
-该过程的更多细节见“Advanced Encryption Standard (AES) Key Wrap Algorithm”RFC 3394。
+该过程的更多细节见“Advanced Encryption Standard (AES) Key Wrap Algorithm”link:{rfc3394_url}[RFC 3394]。
 ====
 
 === 定位不同的密钥
@@ -72,7 +75,7 @@ OpenPGP 具有特定的被称为密钥覆写攻击的弱点。这些攻击利用
 
 理解 KO 攻击至关重要，因为它可能影响加密通信的完整性和可信度，也可能导致私钥材料的完全泄露。KO 攻击强调了强健的密钥验证过程的必要性，以及将密钥存储在不安全环境中的危险性。OpenPGP 应用程序开发人员应进行风险评估，以确定 KO 攻击与其应用程序的相关性。
 
-使用 S2K 用法模式 253（AEAD）安保的私钥可防止 KO 攻击。在解密过程中，该模式使用它的非加密字段（包括算法字段）作为__鉴别标签__来进行完整性验证，保证了私钥的完整性。
+使用 link:{crypto-refresh-12_url}#name-secret-key-encryption[S2K 用法模式 253（AEAD）]安保的私钥可防止 KO 攻击。在解密过程中，该模式使用它的非加密字段（包括算法字段）作为__鉴别标签__来进行完整性验证，保证了私钥的完整性。
 
 当攻击者篡改了密钥包的非加密的部分，解密私钥资料就会失败。这有效地阻止用户毫不知情地在私钥上使用篡改后的攻击者控制的算法。
 
