@@ -1,8 +1,10 @@
 = 进阶材料：签名
 
+:crypto-refresh-12_url: https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html
+
 == 注释签名子包
 
-注释签名（notation signature）子包可以通过用户定义的注释，有效地用于扩展 OpenPGP 中有限的签名子包类型。签发者可以使用这些注释向一个 OpenPGP 签名中添加键值对。
+link:{crypto-refresh-12_url}#notation-data[注释签名（notation signature）]子包可以通过用户定义的注释，有效地用于扩展 OpenPGP 中有限的签名子包类型。签发者可以使用这些注释向一个 OpenPGP 签名中添加键值对。
 
 注释名——以 UTF-8 编码——可以置于“用户命名空间”。该命名空间的特点是一个注释标签，跟随一个 DNS 域名，两者均以 UTF-8 格式编码。
 
@@ -29,7 +31,7 @@
 
 === 特定的签名上下文，接收者驱动的选择
 
-当一个信息是为特定的接收者准备的时候，签名包的散列算法的选择则由，接收者的散列算法偏好所指引。
+当一个信息是为特定的接收者准备的时候，签名包的散列算法的选择则由，link:{crypto-refresh-12_url}#name-hash-algorithm-preferences[接收者的散列算法偏好]所指引。
 
 接收者的散列算法偏好在他们的 OpenPGP 证书的元数据中定义。见xref:73.04、证书.adoc#_算法偏好和特性标记feature_signaling[算法偏好和特性标记]了解详情。
 
@@ -37,7 +39,7 @@
 
 == 签名版本
 
-如 RFC 中描述的，生成的签名包的版本必须服从签发该签名的密钥的版本。
+如 link:{crypto-refresh-12_url}#name-signature-packet-type-id-2[RFC] 中描述的，生成的签名包的版本必须服从签发该签名的密钥的版本。
 
 也就是说：
 
