@@ -1,5 +1,7 @@
 = 进阶材料：数据签名
 
+:crypto-refresh-12_url: https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-12.html
+
 == 内联已签名报文的内部
 
 内联已签名报文是 xref:73.07、对数据签名.adoc#_openpgp_数据签名的形式[OpenPGP 数据签名]的一种形式。一个内联已签名报文将已签名的数据和其对应的数据签名结合为单一的 OpenPGP 报文。
@@ -18,7 +20,7 @@ OpenPGP 定义了两种内联已签名报文的形式：
 一个单程式已签名 OpenPGP 报文由三段组成：
 
 . **单程式签名包**：一个或多个在已签名数据之前的包，并允许（在创建时的和验证时的）签名计算一次性完成。
-. **OpenPGP 报文**：包含原始数据载荷（比如报文的正文），其被签名而不需要额外的解释或转换。在内部，一个已签名报文包含一个或多个 OpenPGP 包。该载荷通常使用字面量数据包（Literal Data Packet）或压缩数据包（Compressed Data Packet）存储。
+. **OpenPGP 报文**：包含原始数据载荷（比如报文的正文），其被签名而不需要额外的解释或转换。在内部，一个已签名link:{crypto-refresh-12_url}#name-openpgp-messages[报文]包含一个或多个 OpenPGP 包。该载荷通常使用字面量数据包（Literal Data Packet）或压缩数据包（Compressed Data Packet）存储。
 . **数据签名包**：它们包含了已签名的数据的密码学签名。
 
 [NOTE]
@@ -80,7 +82,7 @@ OpenPGP 定义了两种内联已签名报文的形式：
 
 一个单程已签名报文可能实际上包含多个嵌套的签名。
 
-正式来说，因为在 OpenPGP 报文语法中，当一个输入的 OpenPGP 报文被单程签名，生成的包也被认为是一个 OpenPGP 报文。
+正式来说，因为在 link:{crypto-refresh-12_url}#name-openpgp-messages[OpenPGP 报文语法]中，当一个输入的 OpenPGP 报文被单程签名，生成的包也被认为是一个 OpenPGP 报文。
 
 因此，已签名的报文可以再次被单程签名。这种结构意味着单程签名可以一层层嵌套。
 
@@ -95,7 +97,7 @@ OpenPGP 定义了两种内联已签名报文的形式：
 
 当嵌套单程签名时，默认的期望是每个签名都对其封装的整个报文（包括内部报文的任何单程签名）制作陈述。
 
-签名的签发者可以选择他们签名的语义，使用单程签名包的“nested”标识。“nested”标识的值为 `1` 或者 `0`。
+签名的签发者可以选择他们签名的语义，使用单程签名包的link:{crypto-refresh-12_url}#section-5.4-3.8.1[“nested”标识]。“nested”标识的值为 `1` 或者 `0`。
 
 “nested”标识的含义为：
 
