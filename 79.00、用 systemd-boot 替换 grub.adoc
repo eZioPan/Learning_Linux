@@ -11,6 +11,7 @@ v2 版改版说明：
 == 关于按照第一版文章操作后，在系统大版本更新之后无法启动的急救
 
 [%collapsible]
+.急救方案
 ====
 如果你阅读了第一版文章，且更新到了 Fedora 41，那么在 systemd-boot 引导后会出现 **Error preparing initrd: not found**，请使用下方的命令进行急救：
 
@@ -44,6 +45,9 @@ v2 版改版说明：
 
 请务必准备一个可以启动的 Fedora Workstation LiveCD，万一在下面的调整中出现任何错误，我们还有从 LiveCD 启动，并挂载硬盘 chroot 进行补救的操作。
 
+[%collapsible]
+.挂载方案
+====
 在 LiveCD 环境中，为了保证 chroot 后可以使用大部分工具，除了 mount 根目录之外，还需要额外挂载一些关键目录：
 
 [source, sh]
@@ -68,6 +72,7 @@ mount --bind /sys/firmware/efi/efivars /mnt/sys/firmware/efi/efivars
 ------
 
 这样设置之后，我们就有了一个基本可用的 chroot 环境了。使用 `chroot /mnt` 进入环境后，我们就可以使用 `mount -a` 自动加载其它的文件系统了。
+====
 
 == 简述
 
@@ -126,7 +131,7 @@ sdubby 包中有不少与 systemd-boot 相关的配置文件，而 systemd-boot-
 [IMPORTANT]
 ====
 在这一步之后，`bootctl` 会调整 UEFI 的默认启动项，但由于缺少必要的操作，此时新的默认启动项是无法正确引导系统的。 +
-如果你不幸关闭了系统，那么可以在 BIOS/UEFI 中选择 **shimx64.efi** 进行启动。
+如果你不幸关闭了系统，那么可以在 UEFI 中选择 **shimx64.efi** 进行启动。
 ====
 
 在正式操作之前，我们先将系统自带的，错误的 systemd-boot 条目进行备份：
@@ -143,7 +148,7 @@ mv /boot/loader/ /boot/loader.bk
 bootctl install
 ----
 
-该操作将会在 **/boot/efi** 中释放相关的文件，主要是将 **sysstemd-bootx64.efi** 拷贝至 **/boot/efi/EFI/systemd/** 下，并用相同的文件覆盖了 **/boot/efi/EFI/BOOT/BBOTX64.efi**；并在 EFI 自己的 NVRAM 里写入 systemd-boot 对应的启动项配置，我们可以通过 `efibootmgr` 命令观察到名为 `Linux Boot Manager` 的启动项。
+该操作将会在 **/boot/efi** 中释放相关的文件，主要是将 **systemd-bootx64.efi** 拷贝至 **/boot/efi/EFI/systemd/** 下，并用相同的文件覆盖了 **/boot/efi/EFI/BOOT/BBOTX64.efi**；并在 EFI 自己的 NVRAM 里写入 systemd-boot 对应的启动项配置，我们可以通过 `efibootmgr` 命令观察到名为 `Linux Boot Manager` 的启动项。
 
 === 使用 kernel-install 产生可用的配置文件
 
@@ -224,10 +229,9 @@ dnf remove --setopt=tsflags=test sdubby systemd-boot-unsigned
 [source, sh]
 ----
 # 临时禁用所有的包保护
+# 注：我的电脑不是 mac，因此我还移除了引导 mac 相关的 mactel-boot 包
 dnf remove --setopt protected_packages= grub* shim* mactel-boot
 ----
-+
-注：我的电脑不是 mac，因此我还移除了引导 mac 相关的 mactel-boot 包
 
 . 备份可能需要的文件
 +
@@ -261,8 +265,9 @@ restorecon -v -R /boot
 chcon --recursive --verbose --user system_u /boot
 ----
 
-. 删除 BOOT 分区，并调整 EFI 分区的大小
-.. 用 gdisk 删除 BOOT 分区和 EFI 分区
+. 删除 BOOT 分区，并调整 EFI 分区的大小 +
+用 gdisk
+.. 删除 BOOT 分区和 EFI 分区
 .. 创建新的 EFI 分区，其分区类型的编号为 `EF00`
 
 . 新建 EFI 分区的 vfat 文件系统
@@ -280,7 +285,7 @@ mkfs.vfat /dev/sda1
 +
 [source, sh]
 ----
-# systemd 似乎接管了 mount 的工作
+# systemd 似乎接管了 mount 的工作，这里让 systemd 重载一下配置文件
 systemctl daemon-reload
 
 mount /boot/efi
