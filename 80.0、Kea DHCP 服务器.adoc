@@ -20,7 +20,7 @@ dnf install kea
 Kea 的 DHCPv4 服务器配置存储在 `/etc/kea/kea-dhcp4.conf`，其文件格式为带注释的 json 文件。 +
 默认的文件有非常详细的注释，因此也很长，我们可以去 link:https://gitlab.isc.org/isc-projects/kea/-/blob/master/doc/examples/kea4/single-subnet.json[single-subnet.json] 看一看最简易的 DHCPv4 设置
 
-[source, json]
+[source, jsonc]
 .link:https://gitlab.isc.org/isc-projects/kea/-/blob/master/doc/examples/kea4/single-subnet.json[single-subnet.json]
 ----
 // 在该配置中，我们启用了一个 Kea DHCPv4 服务器，
@@ -159,7 +159,7 @@ echo '{"command": "list-commands"}' | socat /tmp/kea4-ctrl-socket -
 
 首先查看/编辑 `/etc/kea/kea-ctrl-agent.conf`
 
-[source, json]
+[source, jsonc]
 ./etc/kea/kea-ctrl-agent.conf
 ----
 {
@@ -320,7 +320,7 @@ kea-admin db-init pgsql --name <数据库名> --user <数据库用户名> --pass
 
 修改 `/etc/kea/kea-dhcp4.conf`
 
-[source, json]
+[source, jsonc]
 ./etc/kea/kea-dhcp4.conf
 ----
 {
